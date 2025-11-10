@@ -1,0 +1,97 @@
+  private async gerarRelatorioUnico() {
+    console.log('📄 Gerando relatório do dia...');
+
+    const hoje = new Date().toISOString().split('T')[0];
+    const hojeFormatado = new Date().toLocaleDateString('pt-BR');
+    const arquivo = path.join(CONFIG.outputDir, `Publicacoes-OAB-129021-${hoje}.txt`);
+
+    // Buscar publicações de hoje agrupadas por cliente
+    const publicacoes = this.db.prepare(`
+      SELECT * FROM publicacoes
+      WHERE data_disponibilizacao LIKE ?
+      ORDER BY cliente_id, tribunal, numero_processo
+    `).all(`${hoje}%`) as Publicacao[];
+
+    if (publicacoes.length === 0) {
+      console.log('   ℹ️  Nenhuma publicação para gerar relatório\n');
+      return;
+    }
+
+    // Agrupar por cliente
+    const porCliente = new Map<string, Publicacao[]>();
+    for (const pub of publicacoes) {
+      const clienteId = pub.clienteId || 'DESCONHECIDO';
+      if (!porCliente.has(clienteId)) {
+        porCliente.set(clienteId, []);
+      }
+      porCliente.get(clienteId)!.push(pub);
+    }
+
+    // Gerar conteúdo do relatório
+    let conteudo = '═══════════════════════════════════════════════════════════\n';
+    conteudo += '           PUBLICAÇÕES DJEN - OAB 129021/SP\n';
+    conteudo += '═══════════════════════════════════════════════════════════\n\n';
+    conteudo += `Data: ${hojeFormatado} (${hoje})\n`;
+    conteudo += `Total de publicações: ${publicacoes.length}\n`;
+    conteudo += `Gerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+
+    // Resumo por cliente
+    conteudo += '═══════════════════════════════════════════════════════════\n';
+    conteudo += 'RESUMO POR CLIENTE\n';
+    conteudo += '═══════════════════════════════════════════════════════════\n\n';
+
+    for (const [clienteId, pubs] of Array.from(porCliente.entries()).sort((a, b) => b[1].length - a[1].length)) {
+      const nomeCliente = this.clientesConfig.clientes.find(c => c.id === clienteId)?.nome || clienteId;
+      conteudo += `${nomeCliente}: ${pubs.length} publicação${pubs.length > 1 ? 'ões' : ''}\n`;
+    }
+
+    // Detalhamento por cliente
+    conteudo += '\n\n═══════════════════════════════════════════════════════════\n';
+    conteudo += 'DETALHAMENTO POR CLIENTE\n';
+    conteudo += '═══════════════════════════════════════════════════════════\n\n';
+
+    for (const [clienteId, pubs] of Array.from(porCliente.entries()).sort((a, b) => b[1].length - a[1].length)) {
+      const nomeCliente = this.clientesConfig.clientes.find(c => c.id === clienteId)?.nome || clienteId;
+
+      conteudo += '\n───────────────────────────────────────────────────────────\n';
+      conteudo += `CLIENTE: ${nomeCliente.toUpperCase()} (${pubs.length})\n`;
+      conteudo += '───────────────────────────────────────────────────────────\n\n';
+
+      // Agrupar por processo
+      const porProcesso = new Map<string, Publicacao[]>();
+      for (const pub of pubs) {
+        if (!porProcesso.has(pub.numeroProcesso)) {
+          porProcesso.set(pub.numeroProcesso, []);
+        }
+        porProcesso.get(pub.numeroProcesso)!.push(pub);
+      }
+
+      // Listar cada processo
+      for (const [numeroProcesso, pubsProcesso] of porProcesso.entries()) {
+        const primeira = pubsProcesso[0];
+
+        conteudo += `Processo: ${numeroProcesso}\n`;
+        conteudo += `Tribunal: ${primeira.tribunal}\n`;
+        conteudo += `Classe: ${primeira.classe || 'N/A'}\n`;
+        conteudo += `Órgão: ${primeira.orgaoJulgador || 'N/A'}\n\n`;
+
+        // Listar publicações do processo
+        for (const pub of pubsProcesso) {
+          const dataPub = new Date(pub.dataDisponibilizacao).toLocaleDateString('pt-BR');
+          conteudo += `  • ${pub.tipo} - ${dataPub}\n`;
+          conteudo += `    ${pub.texto}\n`;
+          conteudo += `    Link: ${pub.link}\n\n`;
+        }
+
+        conteudo += '\n';
+      }
+    }
+
+    conteudo += '\n═══════════════════════════════════════════════════════════\n';
+    conteudo += 'FIM DO RELATÓRIO\n';
+    conteudo += '═══════════════════════════════════════════════════════════\n';
+
+    // Salvar arquivo (sobrescreve se existir)
+    await fs.writeFile(arquivo, conteudo, 'utf-8');
+    console.log(`   ✅ Relatório salvo: ${path.basename(arquivo)}\n`);
+  }

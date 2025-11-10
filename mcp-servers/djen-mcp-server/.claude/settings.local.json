@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx:*)",
+      "Read(//e/projetos/agents/monitoramento-oab/**)",
+      "Read(//e/djen-data/**)",
+      "Bash(claude --version:*)",
+      "Bash(powershell -Command \"irm https://claude.ai/install.ps1 | iex\")",
+      "Bash(powershell -Command \"claude --version\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "monitoramento-oab",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Agente de monitoramento de publicações OAB 129021/SP",
+  "main": "main.ts",
+  "scripts": {
+    "start": "tsx main.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "tsx": "^4.19.2"
+  }
+}
