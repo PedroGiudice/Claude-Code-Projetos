@@ -428,3 +428,4 @@ Before proposing or implementing any architectural change:
 **Last updated:** 2025-11-07
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** C:\claude-work\repos\Claude-Code-Projetos
+- add to memory
