@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Directory -Path ''C:\\claude-work\\repos\\Claude-Code-Projetos\\skills'' | Format-Table Name\")",
+      "Bash(powershell:*)",
+      "Bash(Test-Path \"C:\\claude-work\\repos\\Claude-Code-Projetos\\claude-code-projetos-architecture.html\")"
     ],
     "deny": [],
     "ask": []
