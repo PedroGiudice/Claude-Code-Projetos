@@ -274,6 +274,34 @@ git add .venv/
 # __pycache__/
 ```
 
+### ❌ Creating 'nul' Files on Windows
+```powershell
+# BLOCKED - 'nul' is a special device on Windows (like /dev/null on Linux)
+# Claude Code may accidentally create these files when confusing Windows/Linux environments
+
+# PROBLEM: Files named 'nul' in directories
+agentes\oab-watcher\nul
+
+# DETECTION: Check git status for untracked 'nul' files
+git status | grep nul
+
+# IMMEDIATE REMOVAL:
+cd agentes\<agent-name>
+rm nul  # or: del nul (PowerShell)
+
+# WHY THIS HAPPENS:
+# - Redirecting to /dev/null in Linux becomes "nul" on Windows
+# - Windows treats 'nul' as special device, but file creation still succeeds
+# - Results in empty files that pollute the repository
+```
+
+**CRITICAL:** If Claude Code creates a file named `nul` anywhere in the repository:
+1. **Immediately delete it** using `rm nul` or `del nul`
+2. **Do NOT commit it** to Git
+3. **Report the command that created it** so the mistake can be corrected
+
+This typically occurs when using redirections like `> nul` (Windows) instead of `> /dev/null` (Linux), or when accidentally creating files with this reserved name.
+
 ---
 
 ## Debugging Methodology
@@ -425,7 +453,8 @@ Before proposing or implementing any architectural change:
 
 ---
 
-**Last updated:** 2025-11-07
+**Last updated:** 2025-11-11
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** C:\claude-work\repos\Claude-Code-Projetos
 - add to memory
+- add
