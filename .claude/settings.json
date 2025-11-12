@@ -15,15 +15,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js"
+            "command": "node .claude/hooks/session-start.js"
           },
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-context.js"
+            "command": "node .claude/hooks/session-context.js"
           },
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/venv-check.js"
+            "command": "node .claude/hooks/venv-check.js"
           }
         ]
       }
