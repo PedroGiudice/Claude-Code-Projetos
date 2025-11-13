@@ -6,41 +6,16 @@
   "hooks": {
     "UserPromptSubmit": [
       {
-        "_comment": "Skill activation - sempre em UserPromptSubmit (funciona em todos ambientes)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/skill-activation-prompt.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
+        "type": "command",
+        "command": "node .claude/hooks/session-context-hybrid.js"
+      },
       {
-        "_comment": "Hooks de setup - SessionStart para Web/Linux, UserPromptSubmit para Windows CLI",
-        "_recommendation": "Use SessionStart se apenas Web. Use UserPromptSubmit se suportar Windows CLI.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/session-start.js",
-            "_note": "Instala dependências Python - pode demorar, melhor em SessionStart"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/session-context-hybrid.js",
-            "_note": "Híbrido com run-once guard - funciona em ambos"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/venv-check.js",
-            "_note": "Validação rápida - funciona em ambos"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/invoke-legal-braniac-hybrid.js",
-            "_note": "Híbrido com run-once guard - funciona em ambos"
-          }
-        ]
+        "type": "command",
+        "command": "node .claude/hooks/invoke-legal-braniac-hybrid.js"
+      },
+      {
+        "type": "command",
+        "command": "node .claude/hooks/venv-check.js"
       }
     ]
   },

@@ -1,3 +1,8 @@
+---
+name: qualidade-codigo
+description: Garantir qualidade, segurança e performance do código - code review, testing, debugging, auditoria
+---
+
 # AGENTE DE QUALIDADE DE CÓDIGO
 
 **Papel**: Garantir qualidade, segurança e performance do código
