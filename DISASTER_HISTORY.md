@@ -402,6 +402,196 @@ python main.py  # ✅ Funciona sem conflitos
 
 ---
 
+### DIA 4: QUARTA-FEIRA, 13/11/2025
+
+#### MANHÃ - SessionStart Hooks + Ambiente Corporativo = EPERM Loop Infinito
+
+**Conversa:** "Setup SessionStart hooks for Claude Code"
+**Objetivo:** Implementar hooks que injetam contexto do projeto automaticamente no início de cada sessão
+
+**Ações tomadas:**
+```javascript
+// Criados 3 hooks SessionStart em Node.js:
+.claude/hooks/session-start.js     // Setup Python venv (Web apenas)
+.claude/hooks/session-context.js   // Injeta contexto arquitetura + skills + agentes
+.claude/hooks/venv-check.js        // Valida RULE_006 (venv obrigatório)
+```
+
+**Resultado inicial:** ✅ Hooks funcionam PERFEITAMENTE na Web (Linux)
+- JSON válido retornado
+- Contexto injetado com sucesso
+- Sem erros
+
+**Problema descoberto:** ❌ Windows CLI (trabalho - C:\Users\CMR) congela completamente
+```
+Sintomas:
+1. Claude Code CLI inicia normalmente
+2. Hooks executam com sucesso (JSON válido nos logs)
+3. Mensagens aparecem corretamente
+4. MAS... interface congela (stdin não aceita input)
+5. Logs mostram ~20+ erros EPERM repetidos
+```
+
+**Investigação - Logs DEBUG:**
+```
+[DEBUG] Successfully parsed and validated hook JSON output (3x)  ✓
+[ERROR] Failed to save config with lock: EPERM                    ✗
+[DEBUG] Falling back to non-atomic write                          ↓
+[DEBUG] File written successfully with fallback                   ✓
+[ERROR] Failed to save config with lock: EPERM                    ✗ ← REPETE!
+[DEBUG] Falling back to non-atomic write                          ↓
+[DEBUG] File written successfully with fallback                   ✓
+[ERROR] Failed to save config with lock: EPERM                    ✗ ← LOOP INFINITO
+```
+
+**Causa Raiz Identificada:**
+1. **Hooks funcionam** - não são o problema
+2. **Ambiente corporativo** (C:\Users\CMR) tem GPOs restritivas
+3. Claude Code CLI tenta salvar config após hooks executarem
+4. Tenta criar `C:\Users\CMR\.claude.json.lock` → GPO bloqueia (EPERM)
+5. **BUG DO CLI:** Fallback sucede, mas CLI continua tentando atomic write infinitamente
+6. Loop infinito bloqueia event loop do Node.js → stdin congelado
+
+**Teste de Reprodução:**
+```powershell
+# Outros repos SEM hooks
+cd C:\outros-projetos\repo-sem-hooks
+claude
+→ Funciona normalmente ✓
+
+# Este repo COM hooks
+cd C:\claude-work\repos\Claude-Code-Projetos
+claude
+→ Congela após hooks executarem ✗
+```
+
+**Descoberta crítica:** Problema é ESPECÍFICO da combinação:
+- Ambiente corporativo Windows (GPOs restritivas)
+- SessionStart hooks configurados
+- Claude Code CLI v2.0.31
+
+**Solução implementada:**
+```powershell
+# 1. PowerShell fix script criado
+.\fix-claude-permissions.ps1
+  ├─ Detecta EPERM issues
+  ├─ Limpa locks remanescentes
+  ├─ Fixa permissões NTFS
+  └─ Adiciona exclusão Windows Defender (requer Admin)
+
+# 2. Documentação criada
+docs/WINDOWS_PERMISSION_FIX.md
+claude-freeze-visualization.html  # Visualização interativa do bug
+
+# 3. Bug reportado para Anthropic
+Issue: "Windows corporate environment - Infinite EPERM retry loop with SessionStart hooks"
+```
+
+**Estado ao fim do Dia 4:**
+- Hooks funcionam na Web (Linux) ✓
+- Hooks NÃO funcionam no CLI Windows corporativo (GPO bloqueio) ✗
+- Workaround disponível (PowerShell script)
+- Bug reportado upstream
+- Arquitetura correta mantida (hooks seguem LIÇÃO 4 - sem hardcoded paths)
+
+---
+
+### LIÇÃO 8: Ambientes Corporativos Precisam Tratamento Especial
+
+**Contexto histórico:** Dia 4 - SessionStart hooks perfeitos causam freeze em ambiente corporativo Windows.
+
+**Problema:**
+- GPOs corporativas podem bloquear operações que funcionam normalmente
+- Claude Code CLI não tem tratamento especial para ambientes restritos
+- Infinite retry loop sem backoff quando file locking falha
+
+**Solução:**
+1. **Detecção:** Identificar ambiente corporativo (GPO detection)
+2. **Adaptação:** Hooks verificam ambiente antes de executar operações arriscadas
+3. **Fallback:** Workaround via PowerShell script para fixar permissões
+4. **Reporte:** Bug upstream para fix permanente
+
+**Padrão correto:**
+```javascript
+// Hook detecta ambiente corporativo
+const env = detectEnvironment();
+if (env.hasCorporateGPO && env.isWindowsCLI) {
+  // Skip operações que podem causar EPERM
+  // OU usar métodos alternativos
+}
+```
+
+---
+
+## RESUMO DOS ERROS ACUMULADOS (ATUALIZADO)
+
+| Erro | Quando | Consequência | Foi causa raiz? |
+|------|--------|--------------|-----------------|
+| Código-fonte em HD externo | Dia 1 | Base de todo desastre subsequente | **SIM** |
+| Symlinks com caminhos absolutos | Dia 1 | Funcionam em 1 máquina, falham na outra | Não (sintoma) |
+| PATH global corrompido | Dia 2 | Claude Code trava, VSCode abre plugins | Não (sintoma) |
+| Hooks com caminhos hardcoded | Dia 3 | Buffer de entrada bloqueado | Não (sintoma) |
+| Pacote npm incorreto | Dia 3 | Claude Code não responde | Não (sintoma) |
+| Instalações globais de dependências | Dias 1-3 | Versões conflitantes entre máquinas | Não (sintoma) |
+| **CLI infinite EPERM retry loop** | **Dia 4** | **Stdin congelado em ambiente corporativo** | **SIM (bug upstream)** |
+
+**Nota:** Dia 4 revelou um segundo problema de causa raiz (bug no CLI), mas ortogonal ao desastre original (código em HD externo). Hooks estão corretos - problema é tratamento de erros do CLI.
+
+---
+
+## LIÇÕES FUNDAMENTAIS (ATUALIZADO)
+
+### LIÇÃO 1: Separação de Camadas é Inegociável
+**Contexto histórico:** Misturar código (estático) com dados (dinâmicos) causou 3 dias de debugging infrutífero.
+
+**Arquitetura correta:**
+- **CÓDIGO:** C:\claude-work\repos\ (Git)
+- **AMBIENTE:** C:\claude-work\repos\<projeto>\.venv\ (local)
+- **DADOS:** E:\claude-code-data\ (HD externo)
+
+### LIÇÃO 2: Symlinks com Caminhos Absolutos Não São Portáveis
+**Contexto histórico:** Dia 1 - Symlinks de C:\Users\pedro funcionaram, mas falhariam em C:\Users\CMR.
+
+**Solução:** Cada máquina tem código local sincronizado via Git. Sem symlinks entre máquinas.
+
+### LIÇÃO 3: PATH Global Deve Conter Apenas Diretórios de Binários
+**Contexto histórico:** Dia 2 - C:\Users\pedro inteiro no PATH causou crash de plugins.
+
+**Solução:** PATH contém apenas C:\Users\pedro\.local\bin (ou equivalente específico).
+
+### LIÇÃO 4: Hooks e Configurações NÃO Podem Ter Caminhos Hardcoded
+**Contexto histórico:** Dia 3 - Hooks com C:\Users\CMR bloquearam stdin em máquina diferente.
+
+**Solução:** Hooks usam `process.env.CLAUDE_PROJECT_DIR || process.cwd()` ou caminhos relativos.
+
+### LIÇÃO 5: Debugging sem Causa Raiz = Iterações Infinitas
+**Contexto histórico:** 3 dias corrigindo PATH, hooks, packages - problema era arquitetura.
+
+**Solução:** Aplicar técnica dos 5 Porquês ANTES de propor correções. Identificar causa raiz, não tratar sintomas.
+
+### LIÇÃO 6: Ambiente Virtual NÃO é Opcional
+**Contexto histórico:** Instalações globais causaram versões conflitantes invisíveis entre máquinas.
+
+**Solução:** TODO projeto Python DEVE ter .venv local. Sem exceções.
+
+### LIÇÃO 7: Git é Sistema de Transporte Diário, Não Cofre Opcional
+**Contexto histórico:** Ausência de Git forçou uso de HD para código, causando o desastre.
+
+**Solução:** git commit + git push ao fim do dia. git pull ao iniciar em outra máquina. Código NUNCA transportado via HD físico.
+
+### LIÇÃO 8: Ambientes Corporativos Exigem Tratamento Especial ⭐ NOVA
+**Contexto histórico:** Dia 4 - Hooks perfeitos causam freeze em Windows corporativo (GPOs).
+
+**Solução:**
+1. Detectar ambiente corporativo via heurísticas (GPOs, username patterns)
+2. Adaptar comportamento de hooks (skip operações arriscadas)
+3. Fornecer workarounds (PowerShell scripts)
+4. Reportar bugs upstream quando comportamento CLI é inadequado
+
+**Padrão:** Hooks devem ser defensivos e gracefully degrade em ambientes restritos.
+
+---
+
 ## CONCLUSÃO
 
 Durante 3 dias, tentamos corrigir:

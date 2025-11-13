@@ -24,6 +24,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/venv-check.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/invoke-legal-braniac.js"
           }
         ]
       }

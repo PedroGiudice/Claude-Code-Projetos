@@ -22,23 +22,11 @@ function main() {
     // VENV NÃO ATIVO - Gerar mensagem com instruções multi-plataforma
     const isWindows = platform === 'win32';
 
-    let instructions = '';
-    if (isWindows) {
-      instructions = `Para ativar (Windows PowerShell):
-  .venv\\Scripts\\Activate.ps1
+    const activateCmd = isWindows
+      ? '.venv\\Scripts\\Activate.ps1'
+      : 'source .venv/bin/activate';
 
-Para ativar (Windows CMD):
-  .venv\\Scripts\\activate.bat`;
-    } else {
-      instructions = `Para ativar (Linux/Mac):
-  source .venv/bin/activate`;
-    }
-
-    const message = `⚠️ RULE_006 VIOLATION: Virtual environment NÃO está ativo!
-
-${instructions}
-
-Este é um requisito OBRIGATÓRIO antes de qualquer execução Python.`;
+    const message = `⚠️ RULE_006: venv não ativo! Ative com: ${activateCmd}`;
 
     outputJSON({
       continue: true,
@@ -46,10 +34,10 @@ Este é um requisito OBRIGATÓRIO antes de qualquer execução Python.`;
     });
 
   } else {
-    // VENV ATIVO - Mensagem de sucesso
+    // VENV ATIVO - Mensagem concisa
     outputJSON({
       continue: true,
-      systemMessage: `✓ Virtual environment ativo: ${venvPath}`
+      systemMessage: `✓ venv ativo`
     });
   }
 }
@@ -58,7 +46,7 @@ Este é um requisito OBRIGATÓRIO antes de qualquer execução Python.`;
  * Output JSON para Claude Code
  */
 function outputJSON(obj) {
-  console.log(JSON.stringify(obj, null, 2));
+  console.log(JSON.stringify(obj));
 }
 
 // ============================================================================

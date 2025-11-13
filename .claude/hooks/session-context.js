@@ -84,20 +84,8 @@ function main() {
   // -------------------------------------------------------------------------
   // 1. Arquitetura 3 Layers
   // -------------------------------------------------------------------------
-  const codeLayer = isWindows
-    ? 'C:\\claude-work\\repos\\Claude-Code-Projetos'
-    : projectDir;
-
-  context += `
-ARQUITETURA DO PROJETO:
-- LAYER_1_CODE: Código em Git (${codeLayer})
-- LAYER_2_ENVIRONMENT: venv local (.venv/)
-- LAYER_3_DATA: Dados externos (configurável via env vars)
-
-REGRAS CRÍTICAS:
-- RULE_006: venv SEMPRE obrigatório
-- RULE_004: NUNCA hardcode paths
-- LESSON_001: Código NUNCA em HD externo
+  context += `📁 Arquitetura: CODE (Git) | ENV (.venv) | DATA (externo)
+⚠️  Regras: RULE_006 (venv obrigatório) | RULE_004 (sem hardcode paths)
 `;
 
   // -------------------------------------------------------------------------
@@ -107,10 +95,7 @@ REGRAS CRÍTICAS:
   const skillCount = countDirectories(skillsDir);
 
   if (skillCount > 0) {
-    context += `
-SKILLS DISPONÍVEIS: ${skillCount} skills instaladas
-Localização: ${skillsDir}/
-`;
+    context += `🛠️  Skills: ${skillCount} disponíveis\n`;
   }
 
   // -------------------------------------------------------------------------
@@ -120,15 +105,8 @@ Localização: ${skillsDir}/
   const agentFiles = listMdFiles(agentsDir);
 
   if (agentFiles.length > 0) {
-    context += `
-AGENTES ESPECIALIZADOS: ${agentFiles.length} agentes
-`;
-
-    // Listar agentes (equivalente a sed 's/^/  - /')
-    agentFiles.forEach(file => {
-      const agentName = removeExtension(file);
-      context += `  - ${agentName}\n`;
-    });
+    const names = agentFiles.map(f => removeExtension(f)).join(', ');
+    context += `🤖 Agentes: ${agentFiles.length} (${names})\n`;
   }
 
   // -------------------------------------------------------------------------
