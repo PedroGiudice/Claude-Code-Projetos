@@ -1,4 +1,8 @@
 {
+  "_comment": "Configuração HÍBRIDA de hooks - Solução para Windows CLI subprocess polling issue",
+  "_docs": "https://github.com/DennisLiuCk/cc-toolkit/commit/09ab8674200a7bf9e31b0090f39ed12cbc3f6f5d",
+  "_strategy": "Use SessionStart para Web/Linux, UserPromptSubmit para Windows CLI. Hooks híbridos previnem execução repetida via run-once guard.",
+
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -14,5 +18,42 @@
         "command": "node .claude/hooks/venv-check.js"
       }
     ]
+  },
+
+  "_alternative_windows_cli": {
+    "_comment": "Se precisar suportar Windows CLI, copie esta configuração para .claude/settings.json",
+    "hooks": {
+      "UserPromptSubmit": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/skill-activation-prompt.sh"
+            },
+            {
+              "type": "command",
+              "command": "node .claude/hooks/session-context-hybrid.js",
+              "_note": "Executa apenas na 1ª vez via run-once guard"
+            },
+            {
+              "type": "command",
+              "command": "node .claude/hooks/invoke-legal-braniac-hybrid.js",
+              "_note": "Executa apenas na 1ª vez via run-once guard"
+            }
+          ]
+        }
+      ],
+      "SessionStart": [
+        {
+          "_comment": "Apenas hooks que não dependem de subprocess (rápidos e síncronos)",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node .claude/hooks/venv-check.js"
+            }
+          ]
+        }
+      ]
+    }
   }
 }
