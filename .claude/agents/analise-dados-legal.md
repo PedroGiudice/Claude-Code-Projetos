@@ -1,3 +1,8 @@
+---
+name: analise-dados-legal
+description: Analisar dados jurídicos e criar visualizações insights - métricas legais, publicações DJEN, estatísticas OAB
+---
+
 # AGENTE DE ANÁLISE DE DADOS LEGAIS
 
 **Papel**: Analisar dados jurídicos e criar visualizações insights

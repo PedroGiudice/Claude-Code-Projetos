@@ -1,3 +1,8 @@
+---
+name: documentacao
+description: Criar e manter documentação técnica de alta qualidade - arquitetura, APIs, guias, onboarding
+---
+
 # AGENTE DE DOCUMENTAÇÃO
 
 **Papel**: Criar e manter documentação técnica de alta qualidade
