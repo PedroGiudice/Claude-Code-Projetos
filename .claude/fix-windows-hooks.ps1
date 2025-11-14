@@ -264,7 +264,7 @@ Write-Host "   1. Execute: claude doctor" -ForegroundColor Gray
 Write-Host "   2. Execute: claude" -ForegroundColor Gray
 Write-Host "   3. NÃO deve mais precisar de tab+enter 3x" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Hooks configurados agora (3 ASYNC):" -ForegroundColor Cyan
+Write-Host "Hooks configurados agora:" -ForegroundColor Cyan
 Write-Host "   ✅ session-context-hybrid.js      (contexto do projeto)" -ForegroundColor Green
 Write-Host "   ✅ invoke-legal-braniac-hybrid.js (orquestrador)" -ForegroundColor Green
 Write-Host "   ✅ venv-check.js                  (verifica venv)" -ForegroundColor Green
@@ -299,11 +299,12 @@ if (Test-Path $userSettingsPath) {
             }
         } catch {
             Write-Host "   ❌ Erro ao remover arquivo: $_" -ForegroundColor Red
-            Write-Host "   Remova manualmente: Remove-Item '$userSettingsPath' -Force" -ForegroundColor Yellow
+            Write-Host "   Remova manualmente:" -ForegroundColor Yellow
+            Write-Host "   Remove-Item `"$userSettingsPath`" -Force" -ForegroundColor Gray
         }
     } else {
         Write-Host "   ⚠️  Arquivo não removido. Para remover manualmente:" -ForegroundColor Yellow
-        Write-Host "   Remove-Item '$userSettingsPath' -Force" -ForegroundColor Gray
+        Write-Host "   Remove-Item `"$userSettingsPath`" -Force" -ForegroundColor Gray
     }
     Write-Host ""
 }
