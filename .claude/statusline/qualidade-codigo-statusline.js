@@ -56,16 +56,18 @@ async function main() {
  * Coleta dados do projeto
  */
 async function getProjectData(projectDir) {
-  const [agents, skills, hooks] = await Promise.all([
+  const [agents, skills, hooks, hooksStatus] = await Promise.all([
     discoverAgents(projectDir),
     discoverSkills(projectDir),
-    discoverHooks(projectDir)
+    discoverHooks(projectDir),
+    getHooksStatus(projectDir)
   ]);
 
   return {
     agents,
     skills,
-    hooks
+    hooks,
+    hooksStatus
   };
 }
 
@@ -157,11 +159,24 @@ async function discoverHooks(projectDir) {
 }
 
 /**
+ * Lê status de execução dos hooks
+ */
+async function getHooksStatus(projectDir) {
+  try {
+    const statusFile = path.join(projectDir, '.claude', 'statusline', 'hooks-status.json');
+    const content = await fs.readFile(statusFile, 'utf8');
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Gera statusline formatado
  */
 function generateStatusline(claudeData, projectData) {
   const { workspace, model, git, tokens, cost } = claudeData;
-  const { agents, skills, hooks } = projectData;
+  const { agents, skills, hooks, hooksStatus } = projectData;
 
   const lines = [];
 
@@ -169,7 +184,7 @@ function generateStatusline(claudeData, projectData) {
   lines.push(generateHeader(model, workspace, git, cost, tokens));
 
   // Linha 2: Contadores de sistema
-  lines.push(generateSystemInfo(agents, skills, hooks));
+  lines.push(generateSystemInfo(agents, skills, hooks, hooksStatus));
 
   return lines.join('\n');
 }
@@ -195,15 +210,32 @@ function generateHeader(model, workspace, git, cost, tokens) {
 /**
  * Gera informações de sistema (sem emojis)
  */
-function generateSystemInfo(agents, skills, hooks) {
+function generateSystemInfo(agents, skills, hooks, hooksStatus) {
   const agentCount = agents.length;
   const skillCount = skills.length;
   const hookCount = hooks.length;
 
+  // Contar hooks com sucesso/erro
+  const hooksArray = Object.values(hooksStatus);
+  const hooksSuccess = hooksArray.filter(h => h.status === 'success').length;
+  const hooksError = hooksArray.filter(h => h.status === 'error').length;
+
+  // Formatar hooks (com status se houver)
+  let hookInfo = `${colors.green}${hookCount}${colors.reset} hooks`;
+  if (hooksArray.length > 0) {
+    if (hooksError > 0) {
+      hookInfo += ` ${colors.red}(${hooksError} ERR)${colors.reset}`;
+    } else if (hooksSuccess === hooksArray.length) {
+      hookInfo += ` ${colors.green}(OK)${colors.reset}`;
+    } else {
+      hookInfo += ` ${colors.yellow}(${hooksSuccess}/${hooksArray.length} OK)${colors.reset}`;
+    }
+  }
+
   return `${colors.dim}└${colors.reset} ` +
          `${colors.green}${agentCount}${colors.reset} agentes ${colors.dim}|${colors.reset} ` +
          `${colors.green}${skillCount}${colors.reset} skills ${colors.dim}|${colors.reset} ` +
-         `${colors.green}${hookCount}${colors.reset} hooks`;
+         `${hookInfo}`;
 }
 
 /**
