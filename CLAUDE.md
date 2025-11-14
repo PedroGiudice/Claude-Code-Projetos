@@ -458,3 +458,4 @@ Before proposing or implementing any architectural change:
 **For Claude Code instances operating in:** C:\claude-work\repos\Claude-Code-Projetos
 - add to memory
 - add
+- add to session-context and episodic-memory
