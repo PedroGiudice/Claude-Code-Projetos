@@ -56,18 +56,20 @@ async function main() {
  * Coleta dados do projeto
  */
 async function getProjectData(projectDir) {
-  const [agents, skills, hooks, hooksStatus] = await Promise.all([
+  const [agents, skills, hooks, hooksStatus, activeAgents] = await Promise.all([
     discoverAgents(projectDir),
     discoverSkills(projectDir),
     discoverHooks(projectDir),
-    getHooksStatus(projectDir)
+    getHooksStatus(projectDir),
+    getActiveAgents(projectDir)
   ]);
 
   return {
     agents,
     skills,
     hooks,
-    hooksStatus
+    hooksStatus,
+    activeAgents
   };
 }
 
@@ -173,11 +175,25 @@ async function getHooksStatus(projectDir) {
 }
 
 /**
+ * Lê agentes ativos
+ */
+async function getActiveAgents(projectDir) {
+  try {
+    const activeFile = path.join(projectDir, '.claude', 'statusline', 'active-agents.json');
+    const content = await fs.readFile(activeFile, 'utf8');
+    const data = JSON.parse(content);
+    return data.activeAgents || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Gera statusline formatado
  */
 function generateStatusline(claudeData, projectData) {
   const { workspace, model, git, tokens, cost } = claudeData;
-  const { agents, skills, hooks, hooksStatus } = projectData;
+  const { agents, skills, hooks, hooksStatus, activeAgents } = projectData;
 
   const lines = [];
 
@@ -185,7 +201,7 @@ function generateStatusline(claudeData, projectData) {
   lines.push(generateHeader(model, workspace, git, cost, tokens));
 
   // Linha 2: Contadores de sistema
-  lines.push(generateSystemInfo(agents, skills, hooks));
+  lines.push(generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents));
 
   // Linha 3: Status do Legal-Braniac (se disponível)
   const brainiacInfo = generateBrainiacStatus(hooksStatus);
@@ -217,15 +233,39 @@ function generateHeader(model, workspace, git, cost, tokens) {
 /**
  * Gera informações de sistema
  */
-function generateSystemInfo(agents, skills, hooks) {
+function generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents) {
   const agentCount = agents.length;
   const skillCount = skills.length;
   const hookCount = hooks.length;
 
+  // Contar hooks com sucesso/erro
+  const hooksArray = Object.values(hooksStatus);
+  const hooksSuccess = hooksArray.filter(h => h.status === 'success').length;
+  const hooksError = hooksArray.filter(h => h.status === 'error').length;
+
+  // Formatar agentes (com ativos se houver)
+  let agentInfo = `🤖 ${colors.green}${agentCount}${colors.reset} agentes`;
+  if (activeAgents && activeAgents.length > 0) {
+    const activeNames = activeAgents.map(a => a.name).join(', ');
+    agentInfo += ` ${colors.yellow}(${activeAgents.length} ativo${activeAgents.length > 1 ? 's' : ''}: ${activeNames})${colors.reset}`;
+  }
+
+  // Formatar hooks (com status se houver)
+  let hookInfo = `🔧 ${colors.green}${hookCount}${colors.reset} hooks`;
+  if (hooksArray.length > 0) {
+    if (hooksError > 0) {
+      hookInfo += ` ${colors.red}(${hooksError} ✗)${colors.reset}`;
+    } else if (hooksSuccess === hooksArray.length) {
+      hookInfo += ` ${colors.green}(all ✓)${colors.reset}`;
+    } else {
+      hookInfo += ` ${colors.yellow}(${hooksSuccess}/${hooksArray.length} ✓)${colors.reset}`;
+    }
+  }
+
   return `${colors.dim}├${colors.reset} ` +
-         `🤖 ${colors.green}${agentCount}${colors.reset} agentes ${colors.dim}|${colors.reset} ` +
+         `${agentInfo} ${colors.dim}|${colors.reset} ` +
          `📦 ${colors.green}${skillCount}${colors.reset} skills ${colors.dim}|${colors.reset} ` +
-         `🔧 ${colors.green}${hookCount}${colors.reset} hooks`;
+         `${hookInfo}`;
 }
 
 /**
