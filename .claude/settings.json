@@ -16,8 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/session-context-hybrid.js",
-            "_note": "Injeta contexto do projeto (agentes, skills, arquitetura)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/session-context-hybrid.js",
+            "_note": "Injeta contexto do projeto (agentes, skills, arquitetura) [WRAPPED]"
           },
           {
             "type": "command",
@@ -26,28 +26,28 @@
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/venv-check.js",
-            "_note": "Valida se venv está ativo (RULE_006)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/venv-check.js",
+            "_note": "Valida se venv está ativo (RULE_006) [WRAPPED]"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/git-status-watcher.js",
-            "_note": "Avisa se último commit há >1h (previne perda de trabalho)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/git-status-watcher.js",
+            "_note": "Avisa se último commit há >1h (previne perda de trabalho) [WRAPPED]"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/data-layer-validator.js",
-            "_note": "Valida separação CODE/ENV/DATA (previne DISASTER_HISTORY)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/data-layer-validator.js",
+            "_note": "Valida separação CODE/ENV/DATA (previne DISASTER_HISTORY) [WRAPPED]"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/dependency-drift-checker.js",
-            "_note": "Detecta requirements.txt desatualizados (>30 dias)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/dependency-drift-checker.js",
+            "_note": "Detecta requirements.txt desatualizados (>30 dias) [WRAPPED]"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/corporate-detector.js",
-            "_note": "Detecta ambiente corporativo Windows (GPOs, EPERM)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/corporate-detector.js",
+            "_note": "Detecta ambiente corporativo Windows (GPOs, EPERM) [WRAPPED]"
           }
         ]
       }
