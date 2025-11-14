@@ -16,7 +16,12 @@
       "Bash(git log:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: implementa status line UI com hook wrapper e tracking\n\n- Adiciona status line customizado exibindo agentes/skills/hooks em tempo real\n- Implementa hook wrapper para tracking de execuções via hooks-status.json\n- Configura legal-braniac-statusline.js com auto-discovery\n- Atualiza .gitignore para excluir arquivos temporários de statusline\n- Modifica invoke-legal-braniac-hybrid.js para usar wrapper\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(if [ -f .claude/statusline/hooks-status.json ])",
+      "Bash(then echo \"hooks-status.json existe\")",
+      "Bash(cat:*)",
+      "Bash(else echo \"hooks-status.json ainda não existe (será criado no próximo prompt)\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
