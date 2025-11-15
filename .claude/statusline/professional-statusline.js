@@ -55,6 +55,30 @@ function getGitStatus() {
   }
 }
 
+function getLegalBraniacStatus() {
+  // Verificar se legal-braniac está orquestrando
+  const braniacMarker = path.join(
+    process.cwd(),
+    '.claude/legal-braniac-active.json'
+  );
+
+  try {
+    if (fs.existsSync(braniacMarker)) {
+      const data = JSON.parse(fs.readFileSync(braniacMarker, 'utf8'));
+      const age = Date.now() - (data.timestamp || 0);
+
+      // Considerar ativo se < 30 segundos
+      if (age < 30000) {
+        const frame = spinner.getCurrentFrame();
+        const action = data.action || 'orchestrating';
+        return `${colorize('🧠 Legal-Braniac:', 'purple')} ${colorize(frame + ' ' + action, 'purple')} ${colorize('(ACTIVE)', 'green', 'bold')}`;
+      }
+    }
+  } catch {}
+
+  return null;  // Não mostrar se não ativo
+}
+
 function getHooksStatus() {
   // Verificar se há hooks rodando (via marker file)
   const hooksStatusFile = path.join(
@@ -102,12 +126,22 @@ function padRight(text, width) {
 }
 
 function line1() {
+  // DESTAQUE: Legal-Braniac (se ativo, aparece PRIMEIRO)
+  const braniacStatus = getLegalBraniacStatus();
+
   // Coluna esquerda: informações principais
   const gitStatus = getGitStatus();
   const hooksStatus = getHooksStatus();
   const skillsStatus = getSkillsStatus();
 
-  const leftColumn = [gitStatus, hooksStatus, skillsStatus].filter(Boolean).join(` ${separator()} `);
+  const leftParts = [gitStatus, hooksStatus, skillsStatus].filter(Boolean);
+
+  // Se legal-braniac ativo, adicionar no início
+  if (braniacStatus) {
+    leftParts.unshift(braniacStatus);
+  }
+
+  const leftColumn = leftParts.join(` ${separator()} `);
 
   // Coluna direita: contexto
   const venvStatus = getVenvStatus();
@@ -251,16 +285,50 @@ function getTokenCost() {
 }
 
 function getContextPercentage() {
-  // Calcular % de contexto usado
+  // Calcular % de contexto usado DINAMICAMENTE
   // Claude Code tem limite de ~200k tokens de contexto
   const CONTEXT_LIMIT = 200000;
 
   try {
-    // Tentar ler do session file ou calcular baseado em mensagens
-    // Por ora, retornar placeholder
-    const used = 45000;  // Exemplo
-    const percent = Math.min(100, Math.round((used / CONTEXT_LIMIT) * 100));
-    return percent;
+    // Estratégia 1: Ler de system-reminder se disponível
+    const process_env_token_usage = process.env.CLAUDE_TOKEN_USAGE;
+    if (process_env_token_usage) {
+      const used = parseInt(process_env_token_usage);
+      return Math.min(100, Math.round((used / CONTEXT_LIMIT) * 100));
+    }
+
+    // Estratégia 2: Estimar baseado em arquivos lidos recentemente
+    // Ler diretório de cache do Claude Code (se existir)
+    const cacheDir = path.join(
+      process.env.HOME || '/home/cmr-auto',
+      '.cache/claude-code'
+    );
+
+    if (fs.existsSync(cacheDir)) {
+      const files = fs.readdirSync(cacheDir);
+      // Heurística: cada arquivo de cache ≈ 5k tokens
+      const estimatedTokens = files.length * 5000;
+      return Math.min(100, Math.round((estimatedTokens / CONTEXT_LIMIT) * 100));
+    }
+
+    // Estratégia 3: Estimar baseado em timestamp da sessão
+    const sessionFile = path.join(
+      process.env.HOME || '/home/cmr-auto',
+      '.claude/statusline/session-start.json'
+    );
+
+    if (fs.existsSync(sessionFile)) {
+      const data = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+      const elapsed = Date.now() - (data.timestamp || Date.now());
+      const hours = elapsed / (1000 * 60 * 60);
+
+      // Heurística: ~15k tokens/hora de conversa ativa
+      const estimatedTokens = Math.floor(hours * 15000);
+      return Math.min(100, Math.round((estimatedTokens / CONTEXT_LIMIT) * 100));
+    }
+
+    // Fallback: 0%
+    return 0;
   } catch {
     return 0;
   }
