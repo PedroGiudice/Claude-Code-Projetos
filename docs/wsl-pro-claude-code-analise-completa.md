@@ -1762,9 +1762,439 @@ excel-windows ~/claude-code-data/outputs/relatorio.xlsx
 
 ---
 
-## Parte 6: Recomendações Finais
+## Parte 6: Arquitetura para Servidor Corporativo e Documentos Jurídicos
 
-### 6.1 Para o Projeto Claude-Code-Projetos
+### 6.1 Contexto do Ambiente
+
+**Infraestrutura atual:**
+- Servidor corporativo central (SSD, proxy configurado, acesso remoto)
+- 7 usuários simultâneos sem degradação de performance
+- Source of truth: todos os documentos vão para servidor primeiro
+- Dois tipos de dados distintos:
+  1. Downloads massivos: Cadernos DOU/DJEN (E:\, volume alto, descartável)
+  2. Documentos jurídicos: Íntegra de autos, documentos das partes (servidor, crítico, permanente)
+
+**Projeto extrator:**
+- Objetivo: Processar documentos jurídicos do servidor
+- Output: Autos organizados com YAML tags, estrutura mínima
+- Requisito: Acesso contínuo à base de documentos sem friction de sincronização
+
+**Desafio arquitetural:**
+- Downloads massivos (E:\): Performance degradada aceitável (acesso esporádico)
+- Documentos jurídicos (servidor): Performance crítica (base de desenvolvimento)
+- Necessidade: Evitar duplicação/sincronização manual constante
+
+### 6.2 Soluções de Integração Servidor-WSL
+
+#### Solução 1: Mount SMB do Servidor no WSL (RECOMENDADA)
+
+**Arquitetura:**
+
+```
+Servidor Corporativo (\\servidor\documentos-juridicos\)
+    |
+    | SMB/CIFS mount
+    V
+WSL2 (/mnt/servidor/)
+    |
+    +-- Cache local (~/cache-servidor/) para processamento intensivo
+    +-- Outputs (~/outputs/) -> sincronizado para servidor
+```
+
+**Implementação:**
+
+```bash
+# Instalar CIFS utilities
+sudo apt install cifs-utils -y
+
+# Criar ponto de montagem
+sudo mkdir -p /mnt/servidor
+
+# Criar credentials file (seguro)
+sudo nano /root/.smbcredentials
+# Conteúdo:
+# username=seu_usuario
+# password=sua_senha
+# domain=DOMINIO_ESCRITORIO
+
+sudo chmod 600 /root/.smbcredentials
+
+# Configurar mount automático em /etc/fstab
+sudo nano /etc/fstab
+# Adicionar linha:
+//servidor/documentos-juridicos /mnt/servidor cifs credentials=/root/.smbcredentials,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,iocharset=utf8 0 0
+
+# Montar
+sudo mount -a
+
+# Verificar
+ls /mnt/servidor
+```
+
+**Performance esperada:**
+
+```
+Rede gigabit (1Gbps):
+- Ler PDF 50MB: 2-4s (vs 8-12s de /mnt/e/, vs 0.8s de ~/)
+- Throughput: 100-125 MB/s
+- Latência: Baixa (rede local)
+
+Rede corporativa típica (100Mbps):
+- Ler PDF 50MB: 5-8s
+- Throughput: 10-12 MB/s
+```
+
+**Trade-offs:**
+
+- Performance: 2-3x mais lento que WSL local, mas 2-3x mais rápido que /mnt/e/
+- Consistência: Sempre dados atualizados (source of truth)
+- Dependência: Requer servidor acessível
+- Zero duplicação de dados
+
+**Quando usar:**
+- Leitura ocasional de documentos
+- Servidor com SSD e rede gigabit
+- Documentos que mudam frequentemente (atualização de autos)
+
+#### Solução 2: Cache Híbrido com Rsync Seletivo
+
+**Arquitetura:**
+
+```
+Servidor (\\servidor\documentos-juridicos\)
+    |
+    | rsync incremental (apenas mudanças)
+    V
+WSL Cache (~/documentos-juridicos-cache/)
+    |
+    | Processamento local (rápido)
+    V
+Outputs (~/outputs/) -> sincronizado de volta para servidor
+```
+
+**Implementação:**
+
+```bash
+# Script de sincronização inteligente
+cat > ~/bin/sync-servidor.sh << 'EOF'
+#!/bin/bash
+
+SERVIDOR="/mnt/servidor/documentos-juridicos"
+CACHE="$HOME/documentos-juridicos-cache"
+
+# Criar cache se não existir
+mkdir -p "$CACHE"
+
+# Sincronização incremental (apenas mudanças)
+rsync -avz --delete \
+  --filter='+ */' \
+  --filter='+ *.pdf' \
+  --filter='+ *.docx' \
+  --filter='+ *.jpg' \
+  --filter='- *' \
+  "$SERVIDOR/" "$CACHE/"
+
+echo "Sincronização completa: $(date)"
+EOF
+
+chmod +x ~/bin/sync-servidor.sh
+
+# Executar inicialmente
+~/bin/sync-servidor.sh
+
+# Agendar via cron (a cada 2 horas durante expediente)
+crontab -e
+# Adicionar:
+# 0 8-18/2 * * 1-5 /home/user/bin/sync-servidor.sh >> /home/user/logs/sync.log 2>&1
+```
+
+**Script de processamento com cache:**
+
+```python
+from pathlib import Path
+import shutil
+
+CACHE = Path.home() / 'documentos-juridicos-cache'
+SERVIDOR = Path('/mnt/servidor/documentos-juridicos')
+
+def processar_com_cache(processo_id):
+    """Usa cache local, fallback para servidor se necessário"""
+
+    # Tentar cache primeiro (rápido)
+    pdf_cache = CACHE / f'{processo_id}.pdf'
+
+    if pdf_cache.exists():
+        # Verificar se está atualizado (comparar mtime com servidor)
+        pdf_servidor = SERVIDOR / f'{processo_id}.pdf'
+
+        if pdf_servidor.exists():
+            if pdf_cache.stat().st_mtime >= pdf_servidor.stat().st_mtime:
+                # Cache atualizado, usar
+                return processar_pdf(pdf_cache)
+            else:
+                # Cache desatualizado, atualizar
+                shutil.copy(pdf_servidor, pdf_cache)
+                return processar_pdf(pdf_cache)
+
+    # Cache miss, buscar do servidor
+    pdf_servidor = SERVIDOR / f'{processo_id}.pdf'
+    if not pdf_servidor.exists():
+        raise FileNotFoundError(f"Processo {processo_id} não encontrado")
+
+    # Copiar para cache
+    pdf_cache.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(pdf_servidor, pdf_cache)
+
+    return processar_pdf(pdf_cache)
+```
+
+**Performance esperada:**
+
+```
+Cache hit (documento já sincronizado):
+- Acesso: 0.8-1.2s (performance WSL nativa)
+- Processamento: 8-12s
+- TOTAL: ~10-14s
+
+Cache miss (busca do servidor):
+- Cópia inicial: 2-4s (rede gigabit)
+- Processamento: 8-12s
+- TOTAL: ~12-16s (cache subsequente: 10-14s)
+
+Sincronização rsync (100 documentos, apenas mudanças):
+- Primeira vez (todos): 5-10 minutos
+- Incremental (mudanças): 30-60 segundos
+```
+
+**Trade-offs:**
+
+- Performance: Idêntica a WSL nativo (cache hit)
+- Consistência: Depende de frequência de rsync
+- Duplicação: Sim, mas controlada (apenas documentos processados)
+- Offline: Funciona mesmo sem servidor (usa cache)
+
+**Quando usar:**
+- Processamento batch intensivo
+- Documentos relativamente estáveis (poucas mudanças diárias)
+- Necessidade de trabalhar offline ocasionalmente
+
+#### Solução 3: NFS Mount (Performance Superior a SMB)
+
+**Vantagens sobre SMB:**
+- 20-30% mais rápido para operações pequenas
+- Menor overhead de protocolo
+- Melhor integração com permissões Linux
+
+**Configuração servidor (se disponível):**
+
+```bash
+# No servidor Linux/NAS com suporte NFS
+# /etc/exports
+/srv/documentos-juridicos 192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash)
+
+# Reiniciar NFS
+sudo exportfs -ra
+```
+
+**Configuração WSL:**
+
+```bash
+# Instalar cliente NFS
+sudo apt install nfs-common -y
+
+# Mount
+sudo mkdir -p /mnt/servidor-nfs
+sudo mount -t nfs servidor:/srv/documentos-juridicos /mnt/servidor-nfs
+
+# /etc/fstab
+servidor:/srv/documentos-juridicos /mnt/servidor-nfs nfs defaults,_netdev 0 0
+```
+
+**Performance esperada:**
+
+```
+NFS vs SMB (rede gigabit):
+- Ler PDF 50MB: 1.5-3s (NFS) vs 2-4s (SMB)
+- Operações pequenas: 30% mais rápido
+- Throughput máximo: Similar
+```
+
+**Trade-off:**
+- Requer servidor com suporte NFS (pode não estar disponível)
+- Configuração mais complexa
+- Performance superior se disponível
+
+### 6.3 Arquitetura Recomendada para Automação Jurídica
+
+**Estrutura de dados em camadas:**
+
+```
+CAMADA 1: Servidor Corporativo (Source of Truth)
+\\servidor\documentos-juridicos\
+├── processos\
+│   ├── 2024\
+│   ├── 2025\
+│   └── ...
+└── documentos-partes\
+
+CAMADA 2: WSL Mount (Acesso direto, consistente)
+/mnt/servidor/ -> \\servidor\documentos-juridicos\
+
+CAMADA 3: WSL Cache (Performance, processamento intensivo)
+~/documentos-juridicos-cache/
+├── processos-ativos/      # Rsync de processos em andamento
+└── temp-processing/        # Copy-on-demand para OCR
+
+CAMADA 4: WSL Outputs (Geração rápida)
+~/claude-code-data/outputs/
+├── autos-estruturados/
+├── yaml-extractions/
+└── relatorios/
+
+CAMADA 5: Sincronização de volta (Outputs -> Servidor)
+~/outputs/ --rsync--> \\servidor\outputs-extrator\
+```
+
+**Workflow completo:**
+
+```python
+from pathlib import Path
+import shutil
+
+# Configuração
+SERVIDOR = Path('/mnt/servidor/documentos-juridicos')
+CACHE = Path.home() / 'documentos-juridicos-cache/processos-ativos'
+TEMP = Path.home() / 'documentos-juridicos-cache/temp-processing'
+OUTPUTS = Path.home() / 'claude-code-data/outputs'
+
+def extrair_autos_processo(numero_processo):
+    """Pipeline completo: servidor -> cache -> processamento -> output"""
+
+    # 1. Localizar no servidor
+    pdf_servidor = SERVIDOR / 'processos' / f'{numero_processo}.pdf'
+    if not pdf_servidor.exists():
+        raise FileNotFoundError(f"Processo {numero_processo} não encontrado")
+
+    # 2. Verificar cache
+    pdf_cache = CACHE / f'{numero_processo}.pdf'
+
+    if not pdf_cache.exists() or \
+       pdf_cache.stat().st_mtime < pdf_servidor.stat().st_mtime:
+        # Cache desatualizado, copiar do servidor
+        print(f"Atualizando cache: {numero_processo}")
+        shutil.copy(pdf_servidor, pdf_cache)
+
+    # 3. Copy para temp (processamento pesado)
+    pdf_temp = TEMP / f'{numero_processo}.pdf'
+    shutil.copy(pdf_cache, pdf_temp)
+
+    # 4. Processar (OCR, extração, tudo em WSL = rápido)
+    texto_bruto = extrair_texto_ocr(pdf_temp)
+    estrutura = parse_estrutura_processual(texto_bruto)
+    yaml_tagged = gerar_yaml_tags(estrutura)
+
+    # 5. Salvar output em WSL
+    output_file = OUTPUTS / 'autos-estruturados' / f'{numero_processo}.yaml'
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(yaml_tagged)
+
+    # 6. Limpar temp
+    pdf_temp.unlink()
+
+    # 7. Sincronizar output para servidor (background)
+    # Script separado roda a cada hora via cron
+
+    return output_file
+```
+
+**Script de sincronização bidirecional:**
+
+```bash
+#!/bin/bash
+# ~/bin/sync-bidirectional.sh
+
+# 1. Sincronizar processos ativos (servidor -> cache)
+rsync -avz --delete \
+  --include='processos/2025/***' \
+  --include='processos/2024/***' \
+  --exclude='processos/*' \
+  /mnt/servidor/documentos-juridicos/ \
+  ~/documentos-juridicos-cache/processos-ativos/
+
+# 2. Sincronizar outputs (cache -> servidor)
+rsync -avz \
+  ~/claude-code-data/outputs/ \
+  /mnt/servidor/outputs-extrator/
+
+echo "Sincronização completa: $(date)"
+```
+
+**Cron job:**
+
+```
+# Sincronizar a cada 2 horas durante expediente
+0 8-18/2 * * 1-5 /home/user/bin/sync-bidirectional.sh
+```
+
+### 6.4 Performance Esperada por Cenário
+
+```
+Cenário 1: Leitura direta do servidor (mount SMB)
+- Ler PDF 50MB: 2-4s
+- OCR: 40-50s (operações I/O via rede)
+- Parse: 12-15s
+- TOTAL: ~55-70s por processo
+
+Cenário 2: Cache local (rsync + processamento WSL)
+- Sincronização inicial: 5-10 min (100 processos)
+- Leitura de cache: 0.8-1.2s
+- OCR: 5-7s (tudo local)
+- Parse: 2-3s
+- TOTAL: ~8-12s por processo (após cache)
+
+Cenário 3: Híbrido (mount + copy-on-demand)
+- Cópia servidor->temp: 2-4s
+- Processamento temp: 8-12s
+- TOTAL: ~10-16s por processo
+
+Batch 100 processos:
+- Cenário 1: 90-115 minutos
+- Cenário 2: 13-20 minutos (após sync inicial)
+- Cenário 3: 16-26 minutos
+```
+
+### 6.5 Recomendação Específica
+
+**Para desenvolvimento do extrator:**
+
+Implementar Solução 2 (Cache Híbrido com Rsync):
+
+1. Mount SMB do servidor em /mnt/servidor (acesso direto quando necessário)
+2. Rsync seletivo para ~/cache/ (apenas processos ativos)
+3. Processamento em WSL (performance máxima)
+4. Outputs sincronizados de volta para servidor
+
+**Justificativa:**
+
+- Servidor permanece source of truth (zero risco de inconsistência)
+- Performance de processamento é máxima (tudo em WSL após cache)
+- Sincronização incremental evita duplicação desnecessária
+- Funciona offline (útil para desenvolvimento)
+- Outputs automaticamente disponíveis no servidor para equipe
+
+**Dados críticos:**
+
+- Downloads massivos (E:\): Permanecem em E:\, acesso via /mnt/e/ (performance degradada aceitável)
+- Documentos jurídicos (servidor): Cache em WSL, sincronização automática
+- Outputs: Gerados em WSL, sincronizados para servidor
+
+---
+
+## Parte 7: Recomendações Finais
+
+### 7.1 Para o Projeto Claude-Code-Projetos
 
 **Recomendação Primária: Migrar para WSL2 com dados no filesystem Linux**
 
