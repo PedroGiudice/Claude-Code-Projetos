@@ -200,13 +200,13 @@ Show-ClaudeWelcome
 # AUTO-START WSL
 #==============================================================================
 
-# AUTO-START: Opens WSL automatically when PowerShell starts
+# AUTO-START: Opens WSL automatically when PowerShell starts in project directory
 # To DISABLE auto-start, comment the line below:
-wsl
+wsl -- bash -c "cd $PROJECT_DIR && exec bash"
 
 # ALTERNATIVES:
-# - To start Claude Code automatically: scc
-# - To just navigate to project: gcp
+# - To start Claude Code automatically instead: scc
+# - To open WSL in home directory: wsl
 
 #==============================================================================
 # TROUBLESHOOTING
