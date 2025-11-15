@@ -9,7 +9,7 @@
 # COMPORTAMENTO:
 # - Ao abrir PowerShell, WSL inicia automaticamente
 # - Navegação automática para ~/claude-work/repos/Claude-Code-Projetos
-# - Comandos rápidos disponíveis (claude, sc, gcp, etc.)
+# - Comandos rápidos disponíveis (claude, scc, gcp, etc.)
 #
 # Última atualização: 2025-11-15
 # Projeto: Claude-Code-Projetos
@@ -91,7 +91,7 @@ function Start-Claude {
     Write-Host "🚀 Iniciando Claude Code no projeto..." -ForegroundColor Cyan
     wsl -- bash -c "cd $PROJECT_DIR && $CLAUDE_PATH"
 }
-Set-Alias -Name sc -Value Start-Claude
+Set-Alias -Name scc -Value Start-Claude
 
 function Go-ClaudeProject {
     <#
@@ -282,7 +282,7 @@ function Show-ClaudeWelcome {
     Write-Host "⚡ Comandos Rápidos:" -ForegroundColor Yellow
     Write-Host "  claude      " -NoNewline -ForegroundColor Green
     Write-Host "- Executar Claude Code no WSL" -ForegroundColor White
-    Write-Host "  sc          " -NoNewline -ForegroundColor Green
+    Write-Host "  scc         " -NoNewline -ForegroundColor Green
     Write-Host "- Iniciar Claude no diretório do projeto" -ForegroundColor White
     Write-Host "  gcp         " -NoNewline -ForegroundColor Green
     Write-Host "- Abrir bash WSL no projeto" -ForegroundColor White
@@ -325,7 +325,7 @@ Show-ClaudeWelcome
 Open-WSL
 
 # ALTERNATIVAS:
-# - Para iniciar Claude Code automaticamente: Start-Claude
+# - Para iniciar Claude Code automaticamente: scc (Start-Claude)
 # - Para apenas navegar ao projeto: Go-ClaudeProject
 # - Para desabilitar auto-start: comente a linha Open-WSL
 
@@ -353,7 +353,7 @@ Open-WSL
 #
 # PROBLEMA: Auto-start demora muito
 # SOLUÇÃO: Desabilite auto-start comentando a linha Open-WSL
-#   Use comandos manuais (sc, gcp, owsl) quando necessário
+#   Use comandos manuais (scc, gcp, owsl) quando necessário
 
 #───────────────────────────────────────────────────────────────────────────
 # FIM DO PROFILE
