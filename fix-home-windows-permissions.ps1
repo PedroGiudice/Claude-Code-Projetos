@@ -156,7 +156,11 @@ function Write-DiagnosticTable {
 
             if ($value -is [bool]) {
                 $icon = Get-BooleanIcon $value
-                $color = if ($value) { "Green" } else { "Red" }
+                if ($value) {
+                    $color = "Green"
+                } else {
+                    $color = "Red"
+                }
                 Write-Host "  $key`: " -NoNewline
                 Write-Host $icon -ForegroundColor $color
             } elseif ($value -is [array]) {
@@ -467,7 +471,12 @@ function Test-DefenderStatus {
 
         Write-Status "Defender ativo: $($defender.AntivirusEnabled)" -Level Info
         Write-Status "Real-time protection: $($defender.RealTimeProtectionEnabled)" -Level Info
-        Write-Status ".claude.json em exclusões: $(Get-BooleanIcon $isExcluded)" -Level $(if ($isExcluded) { "Success" } else { "Warning" })
+        if ($isExcluded) {
+            $defenderLevel = "Success"
+        } else {
+            $defenderLevel = "Warning"
+        }
+        Write-Status ".claude.json em exclusões: $(Get-BooleanIcon $isExcluded)" -Level $defenderLevel
 
         $Script:DiagnosticResults['Defender'] = @{
             Enabled = $defender.AntivirusEnabled
@@ -568,7 +577,12 @@ function Repair-AllOwnership {
         Failed = $failed
     }
 
-    Write-Status "Ownership corrigido: $fixed/$($issues.Count)" -Level $(if ($failed -eq 0) { "Success" } else { "Warning" })
+    if ($failed -eq 0) {
+        $ownershipLevel = "Success"
+    } else {
+        $ownershipLevel = "Warning"
+    }
+    Write-Status "Ownership corrigido: $fixed/$($issues.Count)" -Level $ownershipLevel
 }
 
 # =============================================================================
@@ -627,7 +641,12 @@ function Repair-AllPermissions {
         Failed = $failed
     }
 
-    Write-Status "Permissões corrigidas: $fixed/$($issues.Count)" -Level $(if ($failed -eq 0) { "Success" } else { "Warning" })
+    if ($failed -eq 0) {
+        $permissionsLevel = "Success"
+    } else {
+        $permissionsLevel = "Warning"
+    }
+    Write-Status "Permissões corrigidas: $fixed/$($issues.Count)" -Level $permissionsLevel
 }
 
 # =============================================================================
@@ -726,7 +745,12 @@ function Clear-AllStaleLocks {
         Failed = $failed
     }
 
-    Write-Status "Locks removidos: $removed/$($locks.Count)" -Level $(if ($failed -eq 0) { "Success" } else { "Warning" })
+    if ($failed -eq 0) {
+        $locksLevel = "Success"
+    } else {
+        $locksLevel = "Warning"
+    }
+    Write-Status "Locks removidos: $removed/$($locks.Count)" -Level $locksLevel
 }
 
 # =============================================================================
