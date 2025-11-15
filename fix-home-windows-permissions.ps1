@@ -133,7 +133,11 @@ function Test-AdminPrivileges {
 
 function Get-BooleanIcon {
     param([bool]$Value)
-    return if ($Value) { "✓" } else { "✗" }
+    if ($Value) {
+        return "✓"
+    } else {
+        return "✗"
+    }
 }
 
 function Write-DiagnosticTable {
