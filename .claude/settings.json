@@ -5,9 +5,9 @@
 
   "statusLine": {
     "type": "command",
-    "command": "node .claude/statusline/legal-braniac-statusline.js",
+    "command": "node .claude/statusline/professional-statusline.js",
     "padding": 0,
-    "_note": "Status line customizado - exibe agentes/skills/hooks em tempo real"
+    "_note": "Professional statusline - liquid spinner, vibrant colors, skills tracking, MCP monitoring, context %"
   },
 
   "hooks": {
