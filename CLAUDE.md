@@ -131,10 +131,19 @@ Claude-Code-Projetos/
 │   ├── parse-legal/   # Parses legal texts
 │   └── send-alert/    # Sends alerts via email/webhook
 │
-├── skills/            # Claude Code skills (specialized capabilities)
+├── skills/            # Claude Code skills (PROJECT-SPECIFIC, CUSTOM)
 │   ├── ocr-pro/       # Advanced OCR for documents
 │   ├── deep-parser/   # Deep parsing of complex structures
-│   └── sign-recognition/  # Signature recognition
+│   ├── frontend-design/ # Frontend design system skill
+│   └── ... (37 total) # Each MUST have SKILL.md to be functional
+│
+├── .claude/           # Claude Code configuration (MANAGED, SETTINGS)
+│   ├── skills/        # Managed/official skills (DO NOT add custom skills here)
+│   │   ├── anthropic-skills/  # Official Anthropic skills collection
+│   │   └── superpowers/       # Advanced Claude Code capabilities
+│   ├── hooks/         # Execution hooks (UserPromptSubmit, SessionStart, etc)
+│   ├── agents/        # Agent definitions (.md files)
+│   └── statusline/    # Statusline UI configuration
 │
 ├── shared/            # Shared code between projects
 │   ├── utils/         # Utility functions (logging, path management)
@@ -217,6 +226,34 @@ output_file = downloads_dir / 'publicacao_2025-11-07.pdf'
 ## Prohibited Actions (BLOCKING)
 
 These actions **must be refused** with reference to DISASTER_HISTORY.md:
+
+### ❌ Custom Skills in .claude/skills/
+```bash
+# BLOCKED - Custom skills MUST go in skills/, NOT .claude/skills/
+mv my-custom-skill .claude/skills/  # ❌ WRONG
+
+# CORRECT - Custom skills in skills/ root
+mv my-custom-skill skills/  # ✅ CORRECT
+```
+
+**Why this is blocked:**
+- `.claude/skills/` = Managed/official skills (anthropic-skills, superpowers)
+- `skills/` = Project-specific custom skills
+- Mixing them causes count confusion and breaks statusline tracking
+- Each skill in `skills/` MUST have `SKILL.md` to be functional
+
+**Detection:**
+```bash
+# Check for misplaced skills
+find .claude/skills -maxdepth 1 -type d -name "*" | while read dir; do
+  [ -f "$dir/SKILL.md" ] && echo "⚠️  MISPLACED: $dir should be in skills/"
+done
+```
+
+**Correct structure:**
+- `skills/` → 37 custom skills (34 functional with SKILL.md, 3 placeholders)
+- `.claude/skills/anthropic-skills/` → 13 official sub-skills
+- `.claude/skills/superpowers/` → 20 official sub-skills
 
 ### ❌ Code to External Drive
 ```powershell
@@ -477,3 +514,4 @@ See `WSL_SETUP.md` and `CHANGELOG.md` for details.
 - add to memory
 - add
 - add to session-context and episodic-memory
+- add executive summary of key findings
