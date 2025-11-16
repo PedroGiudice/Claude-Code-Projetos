@@ -56,12 +56,13 @@ async function main() {
  * Coleta dados do projeto
  */
 async function getProjectData(projectDir) {
-  const [agents, skills, hooks, hooksStatus, activeAgents] = await Promise.all([
+  const [agents, skills, hooks, hooksStatus, activeAgents, promptQuality] = await Promise.all([
     discoverAgents(projectDir),
     discoverSkills(projectDir),
     discoverHooks(projectDir),
     getHooksStatus(projectDir),
-    getActiveAgents(projectDir)
+    getActiveAgents(projectDir),
+    getPromptQuality(projectDir)
   ]);
 
   return {
@@ -69,7 +70,8 @@ async function getProjectData(projectDir) {
     skills,
     hooks,
     hooksStatus,
-    activeAgents
+    activeAgents,
+    promptQuality
   };
 }
 
@@ -189,11 +191,24 @@ async function getActiveAgents(projectDir) {
 }
 
 /**
+ * Lê métricas de qualidade de prompts
+ */
+async function getPromptQuality(projectDir) {
+  try {
+    const qualityFile = path.join(projectDir, '.claude', 'statusline', 'prompt-quality.json');
+    const content = await fs.readFile(qualityFile, 'utf8');
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Gera statusline formatado
  */
 function generateStatusline(claudeData, projectData) {
   const { workspace, model, git, tokens, cost } = claudeData;
-  const { agents, skills, hooks, hooksStatus, activeAgents } = projectData;
+  const { agents, skills, hooks, hooksStatus, activeAgents, promptQuality } = projectData;
 
   const lines = [];
 
@@ -203,7 +218,13 @@ function generateStatusline(claudeData, projectData) {
   // Linha 2: Contadores de sistema
   lines.push(generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents));
 
-  // Linha 3: Status do Legal-Braniac (se disponível)
+  // Linha 3: Prompt Enhancer status (se disponível)
+  const enhancerInfo = generatePromptEnhancerStatus(promptQuality);
+  if (enhancerInfo) {
+    lines.push(enhancerInfo);
+  }
+
+  // Linha 4: Status do Legal-Braniac (se disponível)
   const brainiacInfo = generateBrainiacStatus(hooksStatus);
   if (brainiacInfo) {
     lines.push(brainiacInfo);
@@ -266,6 +287,34 @@ function generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents) {
          `${agentInfo} ${colors.dim}|${colors.reset} ` +
          `📦 ${colors.green}${skillCount}${colors.reset} skills ${colors.dim}|${colors.reset} ` +
          `${hookInfo}`;
+}
+
+/**
+ * Gera status do Prompt Enhancer
+ */
+function generatePromptEnhancerStatus(qualityData) {
+  if (!qualityData || !qualityData.stats) {
+    return null;
+  }
+
+  const enabled = qualityData.enabled ? '●ON' : '○OFF';
+  const enabledColor = qualityData.enabled ? colors.green : colors.dim;
+
+  const avg = qualityData.stats.averageQuality || 0;
+  const total = qualityData.stats.totalPrompts || 0;
+  const enhanced = qualityData.stats.enhancedPrompts || 0;
+  const rate = total > 0 ? Math.round((enhanced / total) * 100) : 0;
+
+  // Color coding para quality
+  let qualityColor = colors.yellow;
+  if (avg >= 70) qualityColor = colors.green;
+  else if (avg < 40) qualityColor = colors.red;
+
+  return `${colors.dim}├${colors.reset} ` +
+         `📝 Enhancer [${enabledColor}${enabled}${colors.reset}] ` +
+         `Quality: ${qualityColor}${avg}/100${colors.reset} ${colors.dim}|${colors.reset} ` +
+         `Enhanced: ${colors.cyan}${rate}%${colors.reset} ${colors.dim}(${enhanced}/${total})${colors.reset} ${colors.dim}|${colors.reset} ` +
+         `${colors.dim}Manual: ${colors.yellow}++${colors.reset}`;
 }
 
 /**

@@ -59,8 +59,13 @@
     ],
     "UserPromptSubmit": [
       {
-        "_comment": "ÚNICO hook - delega TODAS decisões para Legal-Braniac",
+        "_comment": "Hook chain: prompt-enhancer → context-collector (Legal-Braniac Decision Engine)",
         "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/prompt-enhancer.js",
+            "_note": "Prompt Enhancer: detect intent patterns, translate to technical context, quality scoring [WRAPPED]"
+          },
           {
             "type": "command",
             "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/context-collector.js",
