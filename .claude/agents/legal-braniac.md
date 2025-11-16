@@ -569,3 +569,188 @@ Um cÃƒÆ’Ã‚Â©rebro coordenador especializado em sistemas jurÃƒÆ’Ã
 
 **Invoque com**: `@legal-braniac [sua tarefa complexa]`
 **Ou espere**: Hook SessionStart invoca automaticamente na Web
+
+---
+
+## ROADMAP - PRÓXIMAS IMPLEMENTAÇÕES
+
+### FASE 1: MELHORIA SUBSTANCIAL DOS ENGINES 🚀
+
+**Objetivo**: Elevar capacidade de decisão, organização e delegação do Legal-Braniac
+
+#### 1.1 Decision Engine Upgrade
+```javascript
+// Melhoria de capacidades de decisão
+- Análise de complexidade mais sofisticada (multi-dimensional)
+- Detecção de padrões em tarefas similares (historical learning)
+- Heurísticas adaptativas baseadas em contexto do projeto
+- Confidence scoring para cada decisão
+```
+
+#### 1.2 Orchestration Engine Upgrade
+```javascript
+// Melhoria de orquestração
+- Grafo de dependências com validação topológica
+- Paralelização automática de subtarefas independentes
+- Retry logic inteligente (backoff exponencial)
+- Circuit breaker para agentes com falhas recorrentes
+```
+
+#### 1.3 Delegation Engine Upgrade
+```javascript
+// Melhoria de delegação
+- Multi-agent selection (quando 2+ agentes aplicáveis)
+- Skill matching mais preciso (embedding-based similarity)
+- Resource allocation (evitar sobrecarga de agentes)
+- Delegação hierárquica (agentes podem sub-delegar)
+```
+
+---
+
+### FASE 2: AGENTES VIRTUAIS + GAP DETECTION 🤖
+
+**Objetivo**: Criar agentes on-demand para suprir gaps + evitar "agent zoo"
+
+#### 2.1 Virtual Agents (Session-Scoped)
+```javascript
+// Agentes de uso único
+- Criação automática quando gap detectado
+- Escopo: Session-only (não persistem)
+- Definição via prompt engineering (sem .md file)
+- Memória efêmera (descartada ao fim da sessão)
+
+Exemplo:
+  Tarefa: "Implementar integração com API X"
+  Gap detectado: Nenhum agente especializado em API X
+  → Legal-Braniac cria VirtualAgent("api-x-integrator", session_id)
+  → Executa tarefa
+  → Descarta agente ao fim da sessão
+```
+
+#### 2.2 Task-Specific Identification
+```javascript
+// Identificação precisa de tarefas específicas
+- NLU (Natural Language Understanding) para decomposição
+- Entity extraction (tecnologias, frameworks, APIs)
+- Intent classification (implementar, debugar, refatorar, documentar)
+- Contexto-aware task routing
+```
+
+#### 2.3 Persistent Agent Gap Detection
+```javascript
+// Sistema de identificação de gaps persistentes
+- Tracking de agentes virtuais recorrentes
+- Peso dobrado para gaps que aparecem 2+ vezes
+- Sugestão automática: "Considere criar agente persistente 'X'"
+- Template auto-gerado para novo agente (.md scaffold)
+
+Heurística:
+  if (virtual_agent_used >= 2 vezes em 30 dias):
+    weight = 2.0
+    suggest_persistent_agent(name, especialidade, uso_count)
+```
+
+#### 2.4 Skill Gap Detection
+```javascript
+// Identificação automática de "skill gap"
+- Detecta quando tarefa requer skill inexistente
+- Identifica padrões de tasks que não mapeiam para skills
+- Categorização: frontend, backend, data, docs, testing, etc
+- Auto-invocação de skill_creator para gerar nova skill
+
+Workflow:
+  1. Tarefa não mapeia para skill existente
+  2. Legal-Braniac identifica gap
+  3. Invoca skill "skill_creator" com contexto
+  4. skill_creator gera SKILL.md + estrutura base
+  5. Legal-Braniac valida e adiciona ao registry
+```
+
+#### 2.5 Hook Gap Detection
+```javascript
+// Identificação automática de "hook gap"
+- Detecta quando validação manual se repete
+- Identifica padrões de checks que deveriam ser hooks
+- Categorização: validations, enforcements, notifications
+- Sugestão de novo hook + template
+
+Exemplo:
+  Padrão detectado: UsuÁrio sempre verifica "git status" antes de commit
+  → Legal-Braniac sugere: "Criar hook pre-commit-check.js?"
+  → Se aceito, gera template + adiciona a settings.json
+```
+
+---
+
+### FASE 3: SKILL_CREATOR INTEGRATION 🛠️
+
+**Objetivo**: Automatizar criação de skills via skill existente
+
+```javascript
+// Uso da skill "skill_creator" para auto-criação
+workflow createSkillFromGap(gap) {
+  // 1. Preparar contexto
+  const context = {
+    gap_type: gap.type,  // "frontend", "backend", "data", etc
+    task_description: gap.task,
+    similar_skills: findSimilarSkills(gap),
+    project_context: getCurrentProjectContext()
+  };
+
+  // 2. Invocar skill_creator
+  const newSkill = await invokeSkill("skill_creator", context);
+
+  // 3. Validar skill gerada
+  if (!validateSkill(newSkill)) {
+    return { success: false, error: "Invalid skill structure" };
+  }
+
+  // 4. Criar arquivos
+  await createSkillFiles(newSkill);
+
+  // 5. Atualizar registry
+  await updateSkillRegistry(newSkill.name);
+
+  // 6. Notificar usuário
+  return {
+    success: true,
+    skill_name: newSkill.name,
+    path: `skills/${newSkill.name}/SKILL.md`,
+    message: `✅ Skill "${newSkill.name}" criada automaticamente`
+  };
+}
+```
+
+---
+
+### PRIORIZAÇÃO
+
+**Peso dobrado para Virtual Agents**: Evitar "agent zoo" (proliferação de agentes pouco usados)
+
+```
+Critério de decisão:
+  1ª tentativa de gap → Virtual Agent (efêmero)
+  2ª ocorrência do gap → Aviso ao usuário
+  3ª ocorrência → Recomendação forte de agente persistente
+
+Exemplo:
+  Gap: "Integração com Selenium"
+  Uso 1: Virtual Agent criado (session-scoped)
+  Uso 2: "⚠️  Selenium integration usado 2x - considere agente persistente"
+  Uso 3: "🚨 RECOMENDAÇÃO: Criar agente 'selenium-automator' (usado 3x)"
+```
+
+---
+
+### TIMELINE ESTIMADO
+
+- **FASE 1 (Engines)**: Sprint 1-2 (~1 semana)
+- **FASE 2 (Virtual Agents)**: Sprint 3-5 (~2 semanas)
+- **FASE 3 (skill_creator)**: Sprint 6 (~3-5 dias)
+
+**Status atual**: FASE 0 (Migração arquitetura centralizada) - Em andamento
+
+---
+
+**Última atualização**: 2025-11-16
+**Responsável**: PedroGiudice + Legal-Braniac (meta-agente)
