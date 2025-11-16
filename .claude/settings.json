@@ -27,8 +27,7 @@
           },
           {
             "type": "command",
-            "command": "npx vibe-log-cli send --silent --hook sessionstart",
-            "timeout": 30000,
+            "command": "npx vibe-log-cli send --silent --background --hook-trigger=sessionstart --hook-version=1.0.0 --claude-project-dir=\"$CLAUDE_PROJECT_DIR\"",
             "_note": "Vibe-log: capture session on startup"
           }
         ]
@@ -40,8 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx vibe-log-cli send --silent --hook precompact",
-            "timeout": 30000,
+            "command": "npx vibe-log-cli send --silent --background --hook-trigger=precompact --hook-version=1.0.0 --claude-project-dir=\"$CLAUDE_PROJECT_DIR\"",
             "_note": "Vibe-log: capture full session before compression"
           }
         ]
@@ -53,8 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx vibe-log-cli send --silent --hook sessionend",
-            "timeout": 30000,
+            "command": "npx vibe-log-cli send --silent --background --hook-trigger=sessionend --hook-version=1.0.0 --claude-project-dir=\"$CLAUDE_PROJECT_DIR\"",
             "_note": "Vibe-log: capture final session state"
           }
         ]
