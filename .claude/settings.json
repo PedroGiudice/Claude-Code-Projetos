@@ -61,6 +61,19 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "_comment": "Hooks executados no início de cada sessão Claude Code",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/venv-auto-activate.sh",
+            "_note": "Ativa venv do projeto automaticamente (valida existência, informa usuário)",
+            "_limitation": "Bash tool não mantém estado - cada comando ainda precisa de 'source .venv/bin/activate &&'"
+          }
+        ]
+      }
     ]
   },
 
