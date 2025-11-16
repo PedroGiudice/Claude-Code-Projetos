@@ -17,6 +17,9 @@ const { spawn } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
 
+// Import last-used tracker
+const lastUsedTracker = require('../statusline/lib/last-used-tracker.js');
+
 /**
  * Main entry point
  */
@@ -48,6 +51,14 @@ async function main() {
     // Registrar resultado
     if (result.exitCode === 0) {
       await updateHookStatus(statusFile, hookName, 'success', Date.now(), result.stdout);
+
+      // Atualizar last-used tracker
+      lastUsedTracker.updateHook(hookName);
+
+      // Se for o orchestrator, atualizar também
+      if (hookName === 'invoke-legal-braniac-hybrid') {
+        lastUsedTracker.updateOrchestrator();
+      }
     } else {
       await updateHookStatus(statusFile, hookName, 'error', Date.now(), result.stderr, result.exitCode);
     }

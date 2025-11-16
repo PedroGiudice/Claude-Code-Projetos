@@ -8,14 +8,17 @@
  * - Contexto do projeto (diretório, branch Git)
  * - Prompt Enhancer metrics com learning adaptativo
  *
- * Design v2: Layout aprimorado com liquid spinner e separações visuais
+ * Design v3: Spinner clássico de CLI (dots) com last-used tracking
  */
 
 const fs = require('fs').promises;
 const path = require('path');
 
-// Import liquid spinner
-const liquidSpinner = require('./lib/liquid-spinner.js');
+// Import CLI spinner (clássico de terminal)
+const cliSpinner = require('./lib/cli-spinner.js');
+
+// Import last-used tracker
+const lastUsedTracker = require('./lib/last-used-tracker.js');
 
 // ANSI Colors
 const colors = {
@@ -278,7 +281,7 @@ function generateHeader(model, workspace, git, cost, tokens) {
   const totalTokens = tokens?.total ? formatTokens(tokens.total) : '0k';
 
   // Spinner para indicar sistema ativo
-  const spinner = liquidSpinner.getCurrentFrame();
+  const spinner = cliSpinner.getCurrentFrame();
 
   const header = `${colors.bold}${colors.cyan}${spinner}LEGAL-BRANIAC${colors.reset} ${colors.dim}┊${colors.reset} ` +
                  `${colors.yellow}${modelName}${colors.reset} ${colors.dim}┊${colors.reset} ` +
@@ -305,6 +308,9 @@ function generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents) {
   const hooksSuccess = hooksArray.filter(h => h.status === 'success').length;
   const hooksError = hooksArray.filter(h => h.status === 'error').length;
 
+  // Obter dados de last-used
+  const lastUsed = lastUsedTracker.getAllLastUsed();
+
   const lines = [];
 
   // Separador de seção
@@ -312,23 +318,43 @@ function generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents) {
 
   // Spinner colorido: vermelho se houver erros, verde caso contrário
   const systemSpinner = hooksError > 0
-    ? `${colors.red}${liquidSpinner.getCurrentFrame()}${colors.reset}`
-    : `${colors.green}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    ? `${colors.red}${cliSpinner.getCurrentFrame()}${colors.reset}`
+    : `${colors.green}${cliSpinner.getCurrentFrame()}${colors.reset}`;
 
   lines.push(`${colors.bold}${colors.white}${systemSpinner} SYSTEM${colors.reset}`);
 
-  // Agentes
+  // Agentes com last-used
   let agentInfo = `${colors.dim}├─${colors.reset} 🤖 Agents: ${colors.green}${agentCount}${colors.reset} available`;
   if (activeAgents && activeAgents.length > 0) {
     const activeNames = activeAgents.map(a => truncate(a.name, 15)).join(', ');
     agentInfo += ` ${colors.dim}•${colors.reset} ${colors.yellow}${activeAgents.length} active${colors.reset} ${colors.dim}(${activeNames})${colors.reset}`;
   }
+  // Encontrar agente mais recentemente usado
+  const recentAgent = Object.entries(lastUsed.agents)
+    .sort((a, b) => {
+      const timeA = a[1] === 'never' ? 0 : 1;
+      const timeB = b[1] === 'never' ? 0 : 1;
+      return timeB - timeA;
+    })[0];
+  if (recentAgent && recentAgent[1] !== 'never') {
+    agentInfo += ` ${colors.dim}• last: ${truncate(recentAgent[0], 12)} (${recentAgent[1]})${colors.reset}`;
+  }
   lines.push(agentInfo);
 
-  // Skills
-  lines.push(`${colors.dim}├─${colors.reset} 📦 Skills: ${colors.green}${skillCount}${colors.reset} loaded`);
+  // Skills com last-used
+  let skillInfo = `${colors.dim}├─${colors.reset} 📦 Skills: ${colors.green}${skillCount}${colors.reset} loaded`;
+  const recentSkill = Object.entries(lastUsed.skills)
+    .sort((a, b) => {
+      const timeA = a[1] === 'never' ? 0 : 1;
+      const timeB = b[1] === 'never' ? 0 : 1;
+      return timeB - timeA;
+    })[0];
+  if (recentSkill && recentSkill[1] !== 'never') {
+    skillInfo += ` ${colors.dim}• last: ${truncate(recentSkill[0], 12)} (${recentSkill[1]})${colors.reset}`;
+  }
+  lines.push(skillInfo);
 
-  // Remover spinner individual dos hooks - já está no header da seção
+  // Hooks com last-used
   let hookInfo = `${colors.dim}└─${colors.reset} 🔧 Hooks: ${colors.green}${hookCount}${colors.reset} configured`;
 
   if (hooksArray.length > 0) {
@@ -339,6 +365,16 @@ function generateSystemInfo(agents, skills, hooks, hooksStatus, activeAgents) {
     } else {
       hookInfo += ` ${colors.dim}•${colors.reset} ${colors.yellow}${hooksSuccess}/${hooksArray.length} ok${colors.reset}`;
     }
+  }
+  // Encontrar hook mais recentemente usado
+  const recentHook = Object.entries(lastUsed.hooks)
+    .sort((a, b) => {
+      const timeA = a[1] === 'never' ? 0 : 1;
+      const timeB = b[1] === 'never' ? 0 : 1;
+      return timeB - timeA;
+    })[0];
+  if (recentHook && recentHook[1] !== 'never') {
+    hookInfo += ` ${colors.dim}• last: ${truncate(recentHook[0], 12)} (${recentHook[1]})${colors.reset}`;
   }
   lines.push(hookInfo);
 
@@ -381,13 +417,13 @@ function generatePromptEnhancerStatus(qualityData, vocabulary, confidence) {
   // Spinner colorido: cyan se ativo e processando, dim se desabilitado
   let enhancerSpinner;
   if (!enabled) {
-    enhancerSpinner = `${colors.dim}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    enhancerSpinner = `${colors.dim}${cliSpinner.getCurrentFrame()}${colors.reset}`;
   } else if (avg >= 70) {
-    enhancerSpinner = `${colors.green}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    enhancerSpinner = `${colors.green}${cliSpinner.getCurrentFrame()}${colors.reset}`;
   } else if (avg < 40) {
-    enhancerSpinner = `${colors.red}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    enhancerSpinner = `${colors.red}${cliSpinner.getCurrentFrame()}${colors.reset}`;
   } else {
-    enhancerSpinner = `${colors.cyan}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    enhancerSpinner = `${colors.cyan}${cliSpinner.getCurrentFrame()}${colors.reset}`;
   }
 
   const statusIndicator = enabled ? `${colors.green}●${colors.reset}` : `${colors.dim}○${colors.reset}`;
@@ -423,23 +459,14 @@ function generateBrainiacStatus(hooksStatus) {
   const statusColor = isSuccess ? colors.green : colors.red;
   const statusIcon = isSuccess ? '✓' : '✗';
 
-  // Formatar tempo desde última execução
-  let timeAgo = '';
-  if (status.timestamp) {
-    const secondsAgo = Math.floor((Date.now() - status.timestamp) / 1000);
-    if (secondsAgo < 60) {
-      timeAgo = `${secondsAgo}s`;
-    } else if (secondsAgo < 3600) {
-      timeAgo = `${Math.floor(secondsAgo / 60)}m`;
-    } else {
-      timeAgo = `${Math.floor(secondsAgo / 3600)}h`;
-    }
-  }
+  // Obter last-used do tracker (mais confiável que hooksStatus.timestamp)
+  const lastUsed = lastUsedTracker.getAllLastUsed();
+  const timeAgo = lastUsed.orchestrator !== 'never' ? lastUsed.orchestrator : '';
 
   // Spinner colorido: vermelho se erro, verde se sucesso
   const orchestratorSpinner = !isSuccess
-    ? `${colors.red}${liquidSpinner.getCurrentFrame()}${colors.reset}`
-    : `${colors.green}${liquidSpinner.getCurrentFrame()}${colors.reset}`;
+    ? `${colors.red}${cliSpinner.getCurrentFrame()}${colors.reset}`
+    : `${colors.green}${cliSpinner.getCurrentFrame()}${colors.reset}`;
 
   const lines = [];
   lines.push(`${colors.dim}${'─'.repeat(80)}${colors.reset}`);
@@ -448,7 +475,7 @@ function generateBrainiacStatus(hooksStatus) {
   let statusLine = `${colors.dim}└─${colors.reset} Status: ${statusColor}${statusIcon} ${status.status}${colors.reset}`;
 
   if (timeAgo) {
-    statusLine += ` ${colors.dim}• ${timeAgo} ago${colors.reset}`;
+    statusLine += ` ${colors.dim}• last: ${timeAgo}${colors.reset}`;
   }
 
   // Adicionar mensagem de erro se houver
