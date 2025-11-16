@@ -1,67 +1,16 @@
 {
-  "_comment": "Configuração HÍBRIDA de hooks - Solução para Windows CLI subprocess polling issue",
-  "_docs": "https://github.com/DennisLiuCk/cc-toolkit/commit/09ab8674200a7bf9e31b0090f39ed12cbc3f6f5d",
-  "_strategy": "Use SessionStart para Web/Linux, UserPromptSubmit para Windows CLI. Hooks híbridos previnem execução repetida via run-once guard.",
+  "_comment": "Configuração CENTRALIZADA - Legal-Braniac único decisor",
+  "_docs": "Ver .claude/hooks/MIGRATION.md para detalhes da arquitetura centralizada",
+  "_strategy": "SessionStart carrega Legal-Braniac (1x/sessão), UserPromptSubmit coleta contexto e delega todas decisões",
 
   "statusLine": {
     "type": "command",
-    "command": "node .claude/statusline/professional-statusline.js",
+    "command": "node .claude/statusline/unified-statusline.js",
     "padding": 0,
-    "_note": "Professional statusline - liquid spinner, vibrant colors, skills tracking, MCP monitoring, context %"
+    "_note": "Unified statusline v2.0 - professional design + VibbinLogging integration + responsive layout"
   },
 
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/superpowers-activator.js",
-            "_note": "Auto-ativa skills do superpowers baseado em contexto (brainstorming, debugging, TDD) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/session-context-hybrid.js",
-            "_note": "Injeta contexto do projeto (agentes, skills, arquitetura) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/invoke-legal-braniac-hybrid.js",
-            "_note": "Orquestrador mestre - auto-descobre agentes e skills (wrapped para tracking)"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/venv-check.js",
-            "_note": "Valida se venv está ativo (RULE_006) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/git-status-watcher.js",
-            "_note": "Avisa se último commit há >1h (previne perda de trabalho) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/data-layer-validator.js",
-            "_note": "Valida separação CODE/ENV/DATA (previne DISASTER_HISTORY) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/dependency-drift-checker.js",
-            "_note": "Detecta requirements.txt desatualizados (>30 dias) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/corporate-detector.js",
-            "_note": "Detecta ambiente corporativo Windows (GPOs, EPERM) [WRAPPED]"
-          },
-          {
-            "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/aesthetic-enforcer.js",
-            "_note": "Enforcement ABSOLUTO de regras estéticas - BLOCKER violations impedem commit [WRAPPED]"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "_comment": "Hooks executados no início de cada sessão Claude Code",
@@ -69,48 +18,31 @@
           {
             "type": "command",
             "command": ".claude/hooks/venv-auto-activate.sh",
-            "_note": "Ativa venv do projeto automaticamente (valida existência, informa usuário)",
-            "_limitation": "Bash tool não mantém estado - cada comando ainda precisa de 'source .venv/bin/activate &&'"
+            "_note": "Ativa venv + cria session-start.json para statusline tracking"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/legal-braniac-loader.js",
+            "_note": "Auto-discovery de agentes/skills + criar legal-braniac-session.json (estado persistente)"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "_comment": "ÚNICO hook - delega TODAS decisões para Legal-Braniac",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/context-collector.js",
+            "_note": "Legal-Braniac Decision Engine: validations + skill detection + agent orchestration + aesthetic enforcement [WRAPPED]"
           }
         ]
       }
     ]
   },
 
-  "_alternative_windows_cli": {
-    "_comment": "Se precisar suportar Windows CLI, copie esta configuração para .claude/settings.json",
-    "hooks": {
-      "UserPromptSubmit": [
-        {
-          "hooks": [
-            {
-              "type": "command",
-              "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/skill-activation-prompt.sh"
-            },
-            {
-              "type": "command",
-              "command": "node .claude/hooks/session-context-hybrid.js",
-              "_note": "Executa apenas na 1ª vez via run-once guard"
-            },
-            {
-              "type": "command",
-              "command": "node .claude/hooks/invoke-legal-braniac-hybrid.js",
-              "_note": "Executa apenas na 1ª vez via run-once guard"
-            }
-          ]
-        }
-      ],
-      "SessionStart": [
-        {
-          "_comment": "Apenas hooks que não dependem de subprocess (rápidos e síncronos)",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "node .claude/hooks/venv-check.js"
-            }
-          ]
-        }
-      ]
-    }
-  }
+  "_deprecated_hooks_moved_to": ".claude/hooks/_deprecated/",
+  "_migration_date": "2025-11-16",
+  "_breaking_change": "9 hooks UserPromptSubmit consolidados em 1 (context-collector.js). Ver MIGRATION.md para rollback."
 }

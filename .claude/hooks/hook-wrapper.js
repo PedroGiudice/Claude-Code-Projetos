@@ -43,7 +43,7 @@ async function main() {
     await updateHookStatus(statusFile, hookName, 'running', Date.now());
 
     // Executar o hook original
-    const result = await executeHook(hookPath);
+    const result = await executeHook(hookPath, projectDir);
 
     // Registrar resultado
     if (result.exitCode === 0) {
@@ -69,7 +69,7 @@ async function main() {
 /**
  * Executa o hook original e captura output
  */
-async function executeHook(hookPath) {
+async function executeHook(hookPath, projectDir) {
   return new Promise((resolve) => {
     let stdout = '';
     let stderr = '';
@@ -77,7 +77,8 @@ async function executeHook(hookPath) {
     // Executar hook como subprocesso
     const child = spawn('node', [hookPath], {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env
+      env: process.env,
+      cwd: projectDir  // CRITICAL: Execute from project root, not .claude/hooks/
     });
 
     // Capturar stdout

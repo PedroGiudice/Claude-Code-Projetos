@@ -144,6 +144,150 @@ function getVibeLoggingMetrics() {
   }
 }
 
+/**
+ * Get vibe score object with detailed info
+ *
+ * Returns:
+ * - null: vibe-log not installed or data stale
+ * - { state: 'loading', ... }: analysis in progress
+ * - { score, emoji, suggestion, quality }: complete analysis
+ */
+function getVibeScore() {
+  const analysis = getLatestAnalysis();
+
+  if (!analysis) {
+    return null;
+  }
+
+  if (analysis.state === 'loading') {
+    return {
+      state: 'loading',
+      message: analysis.message || 'Analyzing...'
+    };
+  }
+
+  if (typeof analysis.score !== 'number') {
+    return null;
+  }
+
+  return {
+    score: analysis.score,
+    emoji: analysis.contextualEmoji || getScoreEmoji(analysis.score),
+    suggestion: analysis.suggestion || '',
+    quality: analysis.quality || 'unknown'
+  };
+}
+
+/**
+ * Get full coaching suggestion (Gordon Ramsay style)
+ *
+ * Returns complete coaching message for Line 3 display
+ * Format: "💡 Gordon: \"Ship by FRIDAY or you're fired! Add tests NOW!\""
+ */
+function getCoachingSuggestion() {
+  const analysis = getLatestAnalysis();
+
+  if (!analysis) {
+    return '💡 Gordon: "Install vibe-log for coaching! npm install -g vibe-log-cli"';
+  }
+
+  if (analysis.state === 'loading') {
+    const msg = analysis.message || 'Analyzing your prompt quality...';
+    return `⏳ Gordon: "${msg}"`;
+  }
+
+  // Use actionableSteps if available (Gordon's aggressive coaching)
+  if (analysis.actionableSteps) {
+    return `💡 Gordon: "${analysis.actionableSteps}"`;
+  }
+
+  // Fallback to regular suggestion
+  if (analysis.suggestion) {
+    return `💡 Suggestion: "${analysis.suggestion}"`;
+  }
+
+  return '💡 Gordon: "Good work! Keep this momentum going!"';
+}
+
+/**
+ * Get token usage stats
+ *
+ * Reads from ~/.vibe-log/hooks-stats.json
+ * Returns { used, total, percentage } or null if unavailable
+ */
+function getTokenUsage() {
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  const statsPath = path.join(homeDir, '.vibe-log', 'hooks-stats.json');
+
+  try {
+    if (!fs.existsSync(statsPath)) {
+      return null;
+    }
+
+    const content = fs.readFileSync(statsPath, 'utf8');
+    const stats = JSON.parse(content);
+
+    // Expected format: { tokens_used: 92000, tokens_total: 200000 }
+    if (typeof stats.tokens_used === 'number' && typeof stats.tokens_total === 'number') {
+      const percentage = Math.round((stats.tokens_used / stats.tokens_total) * 100);
+      return {
+        used: stats.tokens_used,
+        total: stats.tokens_total,
+        percentage: percentage
+      };
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Get session duration formatted as human-readable string
+ *
+ * Reads from ~/.vibe-log/config.json (session_start_time)
+ * Returns "2h15m" or null if unavailable
+ */
+function getSessionDuration() {
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  const configPath = path.join(homeDir, '.vibe-log', 'config.json');
+
+  try {
+    if (!fs.existsSync(configPath)) {
+      return null;
+    }
+
+    const content = fs.readFileSync(configPath, 'utf8');
+    const config = JSON.parse(content);
+
+    if (!config.session_start_time) {
+      return null;
+    }
+
+    // Calculate duration
+    const startTime = new Date(config.session_start_time).getTime();
+    const now = Date.now();
+    const durationMs = now - startTime;
+
+    // Format as "XhYYm"
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+      return `${hours}h${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  } catch (error) {
+    return null;
+  }
+}
+
 module.exports = {
-  getVibeLoggingMetrics
+  getVibeLoggingMetrics,
+  getVibeScore,
+  getCoachingSuggestion,
+  getTokenUsage,
+  getSessionDuration
 };

@@ -10,8 +10,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+agentes/*/lib/
+agentes/*/lib64/
 parts/
 sdist/
 var/
@@ -64,6 +66,7 @@ claude_plugins/
 # Claude Code Runtime Files (session state, temporary tracking)
 .claude/*-session.json
 .claude/legal-braniac-session.json
+.claude/legal-braniac-active.json
 
 # Node.js (for Claude Code plugins)
 node_modules/
