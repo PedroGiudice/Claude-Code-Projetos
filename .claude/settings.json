@@ -53,6 +53,11 @@
             "type": "command",
             "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/corporate-detector.js",
             "_note": "Detecta ambiente corporativo Windows (GPOs, EPERM) [WRAPPED]"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/aesthetic-enforcer.js",
+            "_note": "Enforcement ABSOLUTO de regras estéticas - BLOCKER violations impedem commit [WRAPPED]"
           }
         ]
       }
