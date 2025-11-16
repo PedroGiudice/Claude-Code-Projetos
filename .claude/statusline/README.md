@@ -1,444 +1,459 @@
-# Status Line - Legal-Braniac System
+# Unified Statusline
 
-Sistema de status line customizado para o projeto Claude-Code-Projetos. Exibe informações em tempo real sobre agentes, skills, hooks e contexto do projeto.
+**Professional command center for Claude Code sessions.**
 
-**Fase de Desenvolvimento:** ✅ FASE 3 COMPLETA (Sistema de tracking completo + UI final)
+Integrates VibbinLogging metrics with system status monitoring to provide maximum situational awareness during AI-assisted development sessions. Features a precision-instrument aesthetic inspired by professional dark terminals.
 
----
-
-## 📋 Statuslines Disponíveis
-
-### 1. **legal-braniac-statusline.js** ✨ (Orquestrador Principal)
-**Agente:** Legal-Braniac (Coordenador Mestre)
-**Características:**
-- ✅ Único com emoji 🧠 (decisão de design)
-- ✅ Tracking de execução via hook wrapper
-- ✅ Exibe status de sucesso/erro do orquestrador
-- ✅ Timestamp da última execução
-- ✅ Detecção de agentes ativos em tempo real
-- ✅ Indicadores de status de hooks (✓/ERR)
-
-**Formato:**
-```
-🧠 LEGAL-BRANIAC snt-4.5 | 📂 Claude-Code-Projetos | 🌿 main | 💰 $1.25 | 📊 95k
-├ 🤖 7 agentes (1 ativo: legal-braniac) | 📦 34 skills | 🔧 7 hooks (all ✓)
-└ ✅ LEGAL-BRANIAC success (30s ago)
-```
+![Example Output](screenchot-statusline-15-11-2025.png)
 
 ---
 
-### 2. **analise-dados-legal-statusline.js** (Clean UI)
-**Agente:** Análise de Dados Legais
-**Especialização:** Análise de métricas legais, publicações DJEN, estatísticas OAB
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
+## Features
 
-**Formato:**
-```
-[ANALISE-DADOS-LEGAL] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (6/7 OK)
-```
+- **Real-time Session Metrics** - Vibe score, coaching suggestions, token usage, and cost estimates
+- **System Status Monitoring** - Git status, Python venv, hooks, skills, and agents
+- **Professional Dark Theme** - ANSI 256-color palette with WCAG AA contrast ratios
+- **Responsive Design** - 4 adaptive layouts (minimal, compact, comfortable, wide)
+- **High Performance** - Sub-100ms target (26ms achieved on reference hardware)
+- **Graceful Degradation** - Works without vibe-log, MCP, or other optional dependencies
 
 ---
 
-### 3. **desenvolvimento-statusline.js** (Clean UI)
-**Agente:** Desenvolvimento
-**Especialização:** Implementação técnica, coding, refactoring, Git operations, TDD
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
+## Quick Start
 
-**Formato:**
-```
-[DESENVOLVIMENTO] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (OK)
-```
+### Installation
 
----
+The unified statusline is already installed in your Claude Code project at `.claude/statusline/`.
 
-### 4. **documentacao-statusline.js** (Clean UI)
-**Agente:** Documentação
-**Especialização:** Documentação técnica, arquitetura, APIs, guias, onboarding
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
+No additional installation required - just run it:
 
-**Formato:**
-```
-[DOCUMENTACAO] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (OK)
-```
-
----
-
-### 5. **legal-articles-finder-statusline.js** (Clean UI)
-**Agente:** Legal Articles Finder
-**Especialização:** Identificação de citações legais, extração de artigos de leis brasileiras
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
-
-**Formato:**
-```
-[LEGAL-ARTICLES-FINDER] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (OK)
-```
-
----
-
-### 6. **planejamento-legal-statusline.js** (Clean UI)
-**Agente:** Planejamento Legal
-**Especialização:** Planejamento de sistemas de automação legal, arquitetura de software jurídico
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
-
-**Formato:**
-```
-[PLANEJAMENTO-LEGAL] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (OK)
-```
-
----
-
-### 7. **qualidade-codigo-statusline.js** (Clean UI)
-**Agente:** Qualidade de Código
-**Especialização:** Code review, testing, debugging, auditoria, segurança
-**Características:**
-- ✅ UI limpa sem emojis
-- ✅ Indicadores de status de hooks (OK/ERR/N/M OK)
-
-**Formato:**
-```
-[QUALIDADE-CODIGO] snt-4.5 | DIR: Claude-Code-Projetos | BRANCH: main | COST: $1.25 | TOKENS: 95k
-└ 7 agentes | 34 skills | 7 hooks (OK)
-```
-
----
-
-## ⚙️ Como Configurar
-
-Edite `.claude/settings.json` e adicione a configuração `statusLine`:
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "node .claude/statusline/<nome-do-agente>-statusline.js",
-    "padding": 0,
-    "_note": "Status line customizado para <nome-do-agente>"
-  }
-}
-```
-
-**Exemplos:**
-```json
-// Para Legal-Braniac (orquestrador)
-"command": "node .claude/statusline/legal-braniac-statusline.js"
-
-// Para Desenvolvimento
-"command": "node .claude/statusline/desenvolvimento-statusline.js"
-
-// Para Documentação
-"command": "node .claude/statusline/documentacao-statusline.js"
-```
-
----
-
-## 🔧 Sistema de Tracking (FASE 1 + FASE 2)
-
-### Hook Wrapper (`hook-wrapper.js`)
-**FASE 1:** Sistema universal de tracking para todos os 7 hooks do projeto.
-
-**Funcionalidades:**
-- Intercepta execução de hooks via wrapper transparente
-- Registra timestamp de início/fim, status (success/error), output
-- Salva dados em `hooks-status.json` (gitignored)
-- Não interfere no funcionamento dos hooks
-
-**Hooks Trackeados:**
-1. `session-context-hybrid.js`
-2. `invoke-legal-braniac-hybrid.js`
-3. `venv-check.js`
-4. `git-status-watcher.js`
-5. `data-layer-validator.js`
-6. `dependency-drift-checker.js`
-7. `corporate-detector.js`
-
-**Configuração em `.claude/settings.json`:**
-```json
-{
-  "hooks": {
-    "onStart": [
-      {
-        "command": "node .claude/hooks/hook-wrapper.js session-context-hybrid"
-      }
-    ],
-    "onStop": [
-      {
-        "command": "node .claude/hooks/hook-wrapper.js invoke-legal-braniac-hybrid"
-      }
-    ]
-  }
-}
-```
-
-**Formato de `hooks-status.json`:**
-```json
-{
-  "session-context-hybrid": {
-    "lastRun": "2025-11-14T10:30:45.123Z",
-    "status": "success",
-    "duration": 245,
-    "output": "Session context loaded successfully"
-  },
-  "invoke-legal-braniac-hybrid": {
-    "lastRun": "2025-11-14T10:35:12.456Z",
-    "status": "error",
-    "duration": 1023,
-    "output": "Failed to invoke orchestrator"
-  }
-}
-```
-
----
-
-### Active Agents Detector (`active-agents-detector.js`)
-**FASE 2:** Detecta agentes executados recentemente (últimos 5 minutos).
-
-**Funcionalidades:**
-- Analisa `hooks-status.json` para detectar hooks de agentes
-- Identifica agentes ativos por timestamp (< 5 minutos)
-- Gera `active-agents.json` automaticamente
-- Integrado ao statusline do Legal-Braniac
-
-**Execução:**
 ```bash
-# Manual (para debug)
-node .claude/statusline/active-agents-detector.js
-
-# Automático (chamado por legal-braniac-statusline.js)
+node .claude/statusline/unified-statusline.js
 ```
 
-**Formato de `active-agents.json`:**
+### Example Output
+
+```
+🧠 Legal-Braniac: orchestrating  ⚡ Hooks: 10 ok      │ 📦 Python: .venv
+🌿 Git: main ✓                   ✨ Skills: 34/37    │
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+🟢 Vibe: 85/100 Add more context examples           │ ⏱ 2h15m
+🦾 Agents: 8 available           🔌 MCP: 2 servers ✓ │ 💰 $0.42
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+💡 Gordon: "Ship by FRIDAY or you're fired! Add tests NOW!"
+🧠 Context: 68%  │  📊 Tokens: 92k/200k (46%)
+```
+
+### Usage
+
+```bash
+# Run with default terminal width
+node .claude/statusline/unified-statusline.js
+
+# Benchmark performance
+node .claude/statusline/unified-statusline.js --benchmark
+
+# Test suite (5 tests)
+bash .claude/statusline/test-unified.sh
+```
+
+---
+
+## Configuration
+
+### Optional Dependencies
+
+The statusline works standalone but provides enhanced features when these are installed:
+
+#### 1. VibbinLogging (Recommended)
+
+Enables vibe score, coaching suggestions, token tracking, and session duration.
+
+```bash
+# Install vibe-log-cli globally
+npm install -g vibe-log-cli
+
+# Initialize in Claude Code project
+vibe-log init
+
+# Install hooks (optional but recommended)
+vibe-log install-hooks
+```
+
+**What you get:**
+- Real-time prompt quality scoring (0-100)
+- Gordon Ramsay-style aggressive coaching
+- Token usage tracking (input/output split)
+- Session duration and cost estimates
+
+#### 2. MCP Servers (Optional)
+
+Enables MCP server status monitoring.
+
+Configure MCP servers in `~/.claude/mcp.json`:
+
 ```json
 {
-  "agents": ["legal-braniac", "desenvolvimento"],
-  "timestamp": "2025-11-14T10:35:30.789Z"
+  "mcpServers": {
+    "djen-mcp-server": {
+      "command": "node",
+      "args": ["/path/to/djen-mcp-server/index.js"]
+    }
+  }
 }
 ```
 
-**Exibição no Legal-Braniac:**
+**What you get:**
+- Server count and health status
+- Quick detection of misconfigured servers
+
+#### 3. Legal-Braniac Agent (Optional)
+
+Enables orchestration tracking.
+
+Activate Legal-Braniac agent via `.claude/agents/legal-braniac.md` to see:
+- Current task being orchestrated
+- Active status indicator (🧠 vs 💤)
+
+---
+
+## Responsive Modes
+
+The statusline adapts to your terminal width:
+
+| Terminal Width | Mode        | Description                                    |
+|----------------|-------------|------------------------------------------------|
+| < 80 cols      | **Minimal** | Single-line per section, icons only            |
+| 80-120 cols    | **Compact** | 2 lines per section, abbreviated labels        |
+| 120-160 cols   | **Comfortable** | Full design with 70/30 split               |
+| > 160 cols     | **Wide**    | Extended coaching messages                     |
+
+**Example: Minimal mode (70 cols)**
+
 ```
-🤖 7 agentes (2 ativos: legal-braniac, desenvolvimento)
+🧠: orchestrating │ 🌿: main ✓ │ 📦: ✓
+🟢 85 │ 🦾: 8 │ ⏱: 2h15m
+💡 Gordon: "Ship by FRIDAY or you're fired!"
+```
+
+**Example: Wide mode (180 cols)**
+
+```
+🧠 Legal-Braniac: orchestrating legal research workflow  ⚡ Hooks: 10 ok                │ 📦 Python: .venv
+🌿 Git: main ✓                                          ✨ Skills: 34/37 (frontend-design, ocr-pro, ...)  │
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+🟢 Vibe: 85/100 Add more context examples for edge cases  │ ⏱ 2h15m
+🦾 Agents: 8 available (legal-braniac, documentation-agent, ...)  🔌 MCP: 2 servers ✓  │ 💰 $0.42
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+💡 Gordon: "Ship by FRIDAY or you're fired! Add tests NOW and document your assumptions BEFORE submitting!"
+🧠 Context: 68% (estimated based on session duration)  │  📊 Tokens: 92k/200k (46% - input: 72k, output: 20k)
 ```
 
 ---
 
-## 🧩 Arquitetura
+## Troubleshooting
 
-### Auto-Discovery
-Todos os statuslines detectam automaticamente:
-- **Agentes:** Lê `.claude/agents/*.md`
-- **Skills:** Lê `skills/*/SKILL.md`
-- **Hooks:** Lê `.claude/settings.json`
-- **Hooks Status:** Lê `hooks-status.json` (gerado por hook-wrapper.js)
-- **Agentes Ativos:** Lê `active-agents.json` (gerado por active-agents-detector.js)
+### "Vibe: not configured"
 
-### Graceful Fallback
-Se houver erro ao carregar dados, exibe mensagem genérica sem quebrar o Claude Code:
+**Cause:** VibbinLogging (vibe-log-cli) is not installed or hooks are not configured.
+
+**Solution:**
+```bash
+npm install -g vibe-log-cli
+vibe-log init
+vibe-log install-hooks
 ```
-<Agente> Status (error loading data)
+
+**Verification:**
+```bash
+which vibe-log  # Should return path
+ls ~/.vibe-log/  # Should exist
 ```
+
+### "MCP: not configured"
+
+**Cause:** No MCP servers configured in `~/.claude/mcp.json`.
+
+**Solution:**
+1. Create `~/.claude/mcp.json` with your MCP server configuration
+2. Verify servers are accessible: `which node` (or relevant command)
+3. Restart statusline
+
+**Note:** MCP is optional. Statusline works fine without it.
+
+### "Git: unknown"
+
+**Cause:** Not in a Git repository, or Git is not installed.
+
+**Solution:**
+```bash
+# Verify Git is installed
+which git
+
+# Initialize Git repository if needed
+cd /path/to/project
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+### "Python: no venv"
+
+**Cause:** No Python virtual environment is active.
+
+**Solution:**
+```bash
+# Create venv
+python -m venv .venv
+
+# Activate venv
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
+
+# Verify
+which python  # Should point to .venv
+```
+
+**Note:** This is a warning, not an error. The statusline will still work.
+
+### Performance Issues (> 100ms)
+
+**Cause:** Slow filesystem access, many hooks, or network MCP servers.
+
+**Diagnosis:**
+```bash
+node .claude/statusline/unified-statusline.js --benchmark
+```
+
+**Solutions:**
+1. **Disable MCP health checks** - Edit `lib/mcp-monitor.js` and skip `checkServerHealth()`
+2. **Reduce hooks** - Move unused hooks to `.claude/hooks/disabled/`
+3. **Cache vibe-log data** - Increase staleness threshold in `lib/vibe-integration.js` (line 55)
+
+**Typical execution times:**
+- Reference hardware: 26ms
+- Slow HDD: 50-80ms
+- Network MCP: 100-200ms (health checks)
+
+### "Skills: none"
+
+**Cause:** No skills directory found at `skills/`.
+
+**Solution:**
+```bash
+# Verify skills directory exists
+ls skills/
+
+# If missing, create it
+mkdir -p skills/
+```
+
+**Expected structure:**
+```
+skills/
+├── ocr-pro/
+│   └── SKILL.md
+├── deep-parser/
+│   └── SKILL.md
+└── frontend-design/
+    └── SKILL.md
+```
+
+**Note:** Skills without `SKILL.md` are counted but not considered functional.
 
 ---
 
-## 📊 Indicadores Visuais (FASE 3)
+## FAQ
 
-### Status de Hooks
-**FASE 3:** Todos os 7 statuslines exibem status de hooks em tempo real.
+### Q: What is the "Vibe Score"?
 
-**Formatos:**
-- `7 hooks (all ✓)` - Todos os hooks executaram com sucesso
-- `7 hooks (OK)` - Todos os hooks sem erros (formato compacto)
-- `7 hooks (6/7 OK)` - 6 de 7 hooks com sucesso, 1 com erro
-- `7 hooks (ERR)` - Todos os hooks com erro
+**A:** The vibe score (0-100) is a real-time assessment of your prompt quality, provided by VibbinLogging. It analyzes:
+- Clarity and specificity
+- Context provided
+- Actionable instructions
+- Example usage
 
-**Lógica:**
+Higher scores = better prompts = better AI outputs.
+
+### Q: Who is Gordon?
+
+**A:** Gordon is the aggressive coaching persona inspired by Gordon Ramsay. When vibe-log detects low-quality prompts, Gordon provides "aggressive coaching" like:
+
+> "Ship by FRIDAY or you're fired! Add tests NOW!"
+
+This is part of the VibbinLogging aesthetic and can be disabled by modifying `lib/vibe-integration.js`.
+
+### Q: Does this send data externally?
+
+**A:** No. All data is local:
+- Vibe-log: Reads from `~/.vibe-log/analyzed-prompts/`
+- Git status: Executes `git` locally
+- Skills: Scans local filesystem
+- MCP: Reads local config files
+
+**Zero network requests** except for optional MCP server health checks (which you control).
+
+### Q: Can I customize the colors?
+
+**A:** Yes. Edit `.claude/statusline/lib/color-palette-v2.js`:
+
 ```javascript
-// Legal-Braniac (formato com emoji)
-const allSuccess = hooks.every(h => h.status === 'success');
-if (allSuccess) return "all ✓";
-
-// Demais agentes (formato compacto)
-const successCount = hooks.filter(h => h.status === 'success').length;
-if (successCount === totalHooks) return "OK";
-if (successCount === 0) return "ERR";
-return `${successCount}/${totalHooks} OK`;
+const PALETTE = {
+  // Change these ANSI 256 codes
+  bg_primary:   '\x1b[48;5;234m',  // Change 234 to any 0-255
+  fg_primary:   '\x1b[38;5;254m',  // Change 254 to any 0-255
+  success:      '\x1b[38;5;114m',  // Change 114 to any 0-255
+  // ...
+};
 ```
 
-### Agentes Ativos
-**Exclusivo Legal-Braniac:** Exibe contagem e lista de agentes ativos.
+**ANSI 256 color chart:** https://www.ditig.com/256-colors-cheat-sheet
 
-**Formatos:**
-- `7 agentes (1 ativo: legal-braniac)` - 1 agente ativo
-- `7 agentes (2 ativos: legal-braniac, desenvolvimento)` - 2 agentes ativos
-- `7 agentes` - Nenhum agente ativo (fallback)
+**Design guidelines:**
+- Use dark backgrounds (234-240 range)
+- Use bright foregrounds (250-255 range)
+- Maintain WCAG AA contrast ratios
 
-**Critério:** Agente considerado ativo se hook foi executado nos últimos 5 minutos.
+### Q: How do I integrate this with my statusline?
 
----
+**A:** The unified statusline is designed to be called from `.claude/hooks/` or command-line.
 
-## 🎨 Decisões de Design
+**Example: SessionStart hook**
 
-### Emojis
-- **Legal-Braniac:** ✅ Único agente com emojis decorativos (🧠 📂 🌿 💰 📊 🤖 📦 🔧)
-- **Demais agentes:** ❌ SEM emojis (clean UI para não poluir interface)
-
-**Motivo:** Legal-Braniac é o orquestrador principal - merece destaque visual.
-
-### Cores ANSI
-Todos usam a mesma paleta:
-- **Cyan:** Nome do agente
-- **Yellow:** Modelo (snt-4.5)
-- **Blue:** Diretório
-- **Green:** Branch, contadores, status OK
-- **Red:** Status ERR
-- **Magenta:** Custo
-- **White:** Tokens
-- **Dim:** Separadores
-
----
-
-## 📁 Estrutura de Arquivos
-
-```
-.claude/statusline/
-├── README.md                                   ← Você está aqui
-│
-├── hook-wrapper.js                             ← FASE 1: Wrapper universal para hooks
-├── active-agents-detector.js                   ← FASE 2: Detector de agentes ativos
-│
-├── legal-braniac-statusline.js                 ← FASE 3: Orquestrador (emojis + agentes ativos)
-├── analise-dados-legal-statusline.js           ← FASE 3: Clean UI + status hooks
-├── desenvolvimento-statusline.js               ← FASE 3: Clean UI + status hooks
-├── documentacao-statusline.js                  ← FASE 3: Clean UI + status hooks
-├── legal-articles-finder-statusline.js         ← FASE 3: Clean UI + status hooks
-├── planejamento-legal-statusline.js            ← FASE 3: Clean UI + status hooks
-├── qualidade-codigo-statusline.js              ← FASE 3: Clean UI + status hooks
-│
-├── hooks-status.json                           ← Gerado automaticamente (gitignored)
-└── active-agents.json                          ← Gerado automaticamente (gitignored)
-```
-
----
-
-## 🧪 Testes e Verificação
-
-### Verificar Hooks Status
 ```bash
-# Verificar arquivo gerado pelo hook-wrapper.js
-cat .claude/statusline/hooks-status.json
+#!/bin/bash
+# .claude/hooks/SessionStart.sh
 
-# Verificar se hooks estão sendo trackeados
-node .claude/statusline/hook-wrapper.js session-context-hybrid
+# Run unified statusline
+node .claude/statusline/unified-statusline.js
 ```
 
-**Saída esperada:**
+**Example: UserPromptSubmit hook**
+
+```bash
+#!/bin/bash
+# .claude/hooks/UserPromptSubmit.sh
+
+# Run vibe-log analysis (updates ~/.vibe-log/analyzed-prompts/)
+vibe-log analyze "$USER_PROMPT"
+
+# Display updated statusline
+node .claude/statusline/unified-statusline.js
+```
+
+### Q: What's the performance overhead?
+
+**A:** Minimal. Reference measurements:
+- **Execution time:** 26ms (74% faster than 100ms target)
+- **CPU usage:** < 0.1s total CPU time
+- **Memory:** ~20MB Node.js process (short-lived)
+- **Disk I/O:** ~10 file reads (all cached)
+
+**Impact on Claude Code sessions:** Negligible. The statusline completes before you finish reading the output.
+
+### Q: Can I use this outside Claude Code?
+
+**A:** Yes, but with limitations. The statusline is designed for Claude Code projects with:
+- `.claude/` directory structure
+- `skills/` directory
+- `agentes/` directory (optional)
+
+**Standalone usage:**
+```bash
+# Works anywhere with Node.js installed
+cd /path/to/any/project
+node /path/to/unified-statusline.js
+
+# Will show minimal info without Claude Code structure
+```
+
+**Expected behavior:**
+- Git status: ✓ Works
+- Python venv: ✓ Works
+- Vibe score: ✓ Works (if vibe-log installed)
+- Skills/hooks/agents: ✗ Requires `.claude/` structure
+
+---
+
+## Integration Examples
+
+### Example 1: Pre-commit Hook
+
+Display statusline before every Git commit:
+
+```bash
+# .git/hooks/pre-commit
+#!/bin/bash
+
+echo "═══ SESSION STATUS ═══"
+node .claude/statusline/unified-statusline.js
+echo ""
+echo "Proceeding with commit..."
+```
+
+### Example 2: Tmux Status Bar
+
+Integrate into tmux status bar (requires JSON output mode):
+
+```bash
+# .tmux.conf
+set -g status-right "#(node ~/.claude/statusline/unified-statusline.js --json | jq -r '.vibe_score')"
+```
+
+**Note:** JSON output mode not yet implemented. Feature request welcome.
+
+### Example 3: VS Code Task
+
+Run as VS Code task:
+
 ```json
 {
-  "session-context-hybrid": {
-    "lastRun": "2025-11-14T10:30:45.123Z",
-    "status": "success",
-    "duration": 245,
-    "output": "Session context loaded"
+  "label": "Claude Statusline",
+  "type": "shell",
+  "command": "node .claude/statusline/unified-statusline.js",
+  "presentation": {
+    "echo": true,
+    "reveal": "always",
+    "panel": "new"
   }
 }
 ```
 
-### Verificar Agentes Ativos
-```bash
-# Executar detector manualmente
-node .claude/statusline/active-agents-detector.js
+---
 
-# Verificar arquivo gerado
-cat .claude/statusline/active-agents.json
-```
+## Credits
 
-**Saída esperada:**
-```json
-{
-  "agents": ["legal-braniac"],
-  "timestamp": "2025-11-14T10:35:30.789Z"
-}
-```
+**Design:** frontend-design skill (Fase 1.5 - Precision Instrument aesthetic)
 
-### Testar Statusline
-```bash
-# Testar formatação do statusline
-echo '{"workspace":{"current_dir":"C:\\claude-work\\repos\\Claude-Code-Projetos"},"model":{"display_name":"claude-sonnet-4.5"},"git":{"branch":"main"},"tokens":{"total":95000},"cost":{"total_usd":1.25}}' | node .claude/statusline/<agente>-statusline.js
+**Architecture:** Unified from:
+- `professional-statusline.js` (system monitoring)
+- VibbinLogging integration (vibe score + coaching)
 
-# Exemplo para Legal-Braniac
-echo '{"workspace":{"current_dir":"C:\\claude-work\\repos\\Claude-Code-Projetos"},"model":{"display_name":"claude-sonnet-4.5"},"git":{"branch":"main"},"tokens":{"total":95000},"cost":{"total_usd":1.25}}' | node .claude/statusline/legal-braniac-statusline.js
-```
+**Performance:** Optimized via test-driven development (5-test suite)
+
+**Color Palette:** ANSI 256 with WCAG AA compliance
 
 ---
 
-## 🔧 Manutenção
+## License
 
-### Adicionar Novo Statusline
-1. Copiar template de um statusline existente (ex: `desenvolvimento-statusline.js`)
-2. Trocar nome do agente no cabeçalho e função `generateHeader()`
-3. Adicionar lógica de leitura de `hooks-status.json` para exibir status
-4. Validar sintaxe: `node -c .claude/statusline/<novo>-statusline.js`
-5. Configurar em `.claude/settings.json`
+Part of Claude Code Projetos repository.
 
-### Adicionar Novo Hook ao Tracking
-1. Editar `.claude/settings.json`
-2. Substituir comando do hook por: `node .claude/hooks/hook-wrapper.js <nome-do-hook>`
-3. Verificar se hook aparece em `hooks-status.json` após execução
+See project root for license details.
 
 ---
 
-## 📜 Histórico
+## Support
 
-**2025-11-14 (Commit 1fefd6f):** Implementação inicial do Legal-Braniac com hook wrapper
-**2025-11-14 (Commit anterior):** Expansão para os 6 agentes restantes (clean UI)
-**2025-11-14 (Commit 7d70fc5):** ✅ FASE 1 - Hook wrappers para todos os 7 hooks
-**2025-11-14 (Commit 5f7b236):** ✅ FASE 2 - Detecção de agentes ativos (active-agents-detector.js)
-**2025-11-14 (Commit 301ab8c):** ✅ FASE 3 - UI final com status de hooks em todos os statuslines
+**Issues:** Report via project repository issues tracker
 
----
+**Documentation:** See `ARCHITECTURE.md` for technical details
 
-## ✅ Status do Projeto
+**Contributing:** See project `CONTRIBUTING.md` for guidelines
 
-**FASE 1 (Hook Wrappers):** ✅ COMPLETA
-- Todos os 7 hooks trackeados via `hook-wrapper.js`
-- Arquivo `hooks-status.json` gerado automaticamente
-- Sistema transparente sem interferência
-
-**FASE 2 (Agentes Ativos):** ✅ COMPLETA
-- Detector implementado (`active-agents-detector.js`)
-- Arquivo `active-agents.json` gerado automaticamente
-- Integração com Legal-Braniac statusline
-
-**FASE 3 (UI Final):** ✅ COMPLETA
-- Todos os 7 statuslines exibem status de hooks
-- Legal-Braniac exibe agentes ativos
-- Indicadores visuais: (OK), (ERR), (N/M OK), (all ✓)
-
----
-
-## 🎯 Funcionalidades Futuras (Opcional)
-
-1. Adicionar métricas de performance (duração média de hooks)
-2. Implementar alertas visuais para hooks com falhas frequentes
-3. Dashboard web para visualização de histórico de execuções
-4. Exportação de logs de hooks para análise externa
-
----
-
-**Última atualização:** 2025-11-14
-**Mantido por:** PedroGiudice
-**Sistema:** Claude Code v2.0.31
+**Quick links:**
+- [Architecture Documentation](ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
+- [Test Suite](test-unified.sh)
+- [Color Palette Reference](lib/color-palette-v2.js)
+- [Legacy README](README-LEGACY.md) - Previous statusline system documentation

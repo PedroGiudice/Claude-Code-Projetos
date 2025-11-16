@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Diretórios relevantes
-const PROJECT_ROOT = process.env.PWD || process.cwd();
+// Detect project root: if we're in .claude/statusline/lib, go up 3 levels
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const SKILLS_DIR = path.join(PROJECT_ROOT, 'skills');
 const MARKER_FILE = path.join(PROJECT_ROOT, '.claude/statusline/active-skills.json');
 
