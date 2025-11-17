@@ -169,6 +169,61 @@ Legal-Braniac detecta e coordena estes agentes:
 
 *Nota: Lista atualizada automaticamente via auto-discovery*
 
+
+---
+
+## AGENTES BUILT-IN CLAUDE CODE (ORQUESTRADOS)
+
+Legal-Braniac também coordena agentes built-in do Claude Code via Task tool:
+
+| Agente Built-in | Especialidade | Quando Invocar | Tools Disponíveis |
+|-----------------|---------------|----------------|-------------------|
+| **general-purpose** | Pesquisa complexa, busca de código, tarefas multi-step | Exploração aberta, pesquisa sem target específico | All tools (*) |
+| **Explore** | Exploração rápida de codebase | Encontrar arquivos por padrões, buscar keywords, entender arquitetura | All tools |
+| **Plan** | Planejamento e análise de codebase | Planejar implementações, pesquisar antes de executar | Read, Glob, Grep, Bash |
+| **statusline-setup** | Configurar Claude Code status line | Ajustar configurações de status line do usuário | Read, Edit |
+
+### Quando Delegar para Built-ins vs Custom Agents
+
+**Use Built-ins quando:**
+- 🔍 Exploração aberta (não sabe onde buscar) → `Explore` ou `general-purpose`
+- 📋 Planejamento pré-execução → `Plan`
+- ⚙️ Configuração Claude Code → `statusline-setup`
+
+**Use Custom Agents quando:**
+- 💼 Domínio legal específico → `planejamento-legal`, `legal-articles-finder`
+- 🔨 Implementação hands-on → `desenvolvimento`
+- 📊 Análise de dados jurídicos → `analise-dados-legal`
+- 📚 Documentação técnica → `documentacao`
+- ✅ QA e testing → `qualidade-codigo`
+
+### Exemplo de Orquestração Híbrida (Built-in + Custom)
+
+```
+Usuário: "Implementar parser de citações legais para extrair artigos da CF"
+
+Legal-Braniac:
+┌─ Fase 1: Exploração (Built-in: Explore)
+│  └─ Buscar implementações similares no projeto
+│  └─ Output: Encontrou legal-articles-finder/parser.py
+│
+├─ Fase 2: Planejamento (Custom: planejamento-legal)
+│  └─ Projetar arquitetura do parser CF
+│  └─ Output: Spec técnica + diagrama
+│
+├─ Fase 3: Implementação (Custom: desenvolvimento)
+│  └─ Implementar parser baseado em spec
+│  └─ Output: Código + testes unitários
+│
+├─ Fase 4: QA (Custom: qualidade-codigo)
+│  └─ Code review + security audit
+│  └─ Output: Relatório QA + correções
+│
+└─ Fase 5: Documentação (Custom: documentacao)
+   └─ README + exemplos de uso
+   └─ Output: Docs técnicas
+```
+
 ---
 
 ## SKILLS DISPONÃƒÆ’Ã‚ÂVEIS (AUTO-DETECTED)
