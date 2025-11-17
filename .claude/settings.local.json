@@ -87,7 +87,11 @@
       "Bash(.claude/hooks/test-learning.sh)",
       "Bash(.gitignore)",
       "Bash(COLUMNS=80 node:*)",
-      "Bash(COLUMNS=150 node:*)"
+      "Bash(COLUMNS=150 node:*)",
+      "Bash(npx . --help)",
+      "Bash(timeout 5 node dist/index.js:*)",
+      "Bash(DEBUG_GORDON=true node:*)",
+      "Bash(timeout 10 node:*)"
     ],
     "deny": [],
     "ask": []

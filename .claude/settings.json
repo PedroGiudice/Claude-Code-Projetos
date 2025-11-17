@@ -59,7 +59,7 @@
     ],
     "UserPromptSubmit": [
       {
-        "_comment": "Hook chain: prompt-enhancer → context-collector (Legal-Braniac Decision Engine)",
+        "_comment": "Hook chain: prompt-enhancer → context-collector → vibe-analyze-prompt (Gordon AI Coach)",
         "hooks": [
           {
             "type": "command",
@@ -70,6 +70,11 @@
             "type": "command",
             "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/context-collector.js",
             "_note": "Legal-Braniac Decision Engine: validations + skill detection + agent orchestration + aesthetic enforcement [WRAPPED]"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/vibe-analyze-prompt.js",
+            "_note": "Gordon AI Coach: Real-time prompt quality analysis via Claude SDK (background, non-blocking) [WRAPPED]"
           }
         ]
       }

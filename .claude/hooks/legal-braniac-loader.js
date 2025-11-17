@@ -91,11 +91,81 @@ async function discoverSkills(projectDir) {
 }
 
 // ============================================================================
+// HOOKS PARSING
+// ============================================================================
+
+async function parseHooksFromSettings(projectDir) {
+  try {
+    const settingsPath = path.join(projectDir, '.claude', 'settings.json');
+    const content = await fs.readFile(settingsPath, 'utf8');
+    const settings = JSON.parse(content);
+
+    const hooks = {};
+
+    if (settings.hooks) {
+      // Count hooks by trigger type
+      for (const [triggerType, hookConfigs] of Object.entries(settings.hooks)) {
+        if (!Array.isArray(hookConfigs)) continue;
+
+        for (const config of hookConfigs) {
+          if (config.hooks && Array.isArray(config.hooks)) {
+            for (const hook of config.hooks) {
+              if (hook.command) {
+                let hookName;
+
+                // Extract hook name from command
+                // Handle both direct commands and hook-wrapper.js wrapped commands
+                const commandParts = hook.command.split(/\s+/);
+
+                // Check if it's an npx command (like "npx vibe-log-cli")
+                if (commandParts[0] === 'npx' && commandParts.length > 1) {
+                  hookName = commandParts[1]; // e.g., "vibe-log-cli"
+                } else {
+                  // Find the actual script (last .js or .sh file in command)
+                  const scriptPaths = commandParts.filter(p => p.includes('.js') || p.includes('.sh'));
+                  const scriptPath = scriptPaths[scriptPaths.length - 1]; // Get last one (the actual hook, not wrapper)
+
+                  if (scriptPath) {
+                    hookName = path.basename(scriptPath, path.extname(scriptPath));
+                  }
+                }
+
+                if (hookName) {
+                  if (!hooks[hookName]) {
+                    hooks[hookName] = {
+                      triggers: [],
+                      command: hook.command,
+                      note: hook._note || ''
+                    };
+                  }
+
+                  if (!hooks[hookName].triggers.includes(triggerType)) {
+                    hooks[hookName].triggers.push(triggerType);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return hooks;
+  } catch (error) {
+    console.error(`[WARN] Erro ao parsear hooks de settings.json: ${error.message}`);
+    return {};
+  }
+}
+
+// ============================================================================
 // SESSION STATE CREATION
 // ============================================================================
 
 async function createSessionState(projectDir, agentes, skills) {
   const now = Date.now();
+
+  // Parse hooks from settings.json
+  const hooks = await parseHooksFromSettings(projectDir);
 
   const sessionState = {
     sessionId: randomUUID(),
@@ -110,7 +180,7 @@ async function createSessionState(projectDir, agentes, skills) {
       available: Object.keys(skills),
       details: skills
     },
-    hooks: {}, // Will be populated by settings.json parsing
+    hooks: hooks, // Populated from settings.json
     validations: {
       enabled: ['venv', 'git-status', 'data-layer', 'deps', 'corporate'],
       thresholds: {
@@ -881,6 +951,11 @@ async function main() {
       `${virtualAgentFactory.virtualAgents.size} virtual agents, ` +
       `${Object.keys(skills).length} skills`
     );
+
+    // Debug hooks parsing
+    const hooksFromSettings = await parseHooksFromSettings(projectDir);
+    console.error(`[DEBUG] Hooks parseados de settings.json: ${Object.keys(hooksFromSettings).length}`);
+    console.error(`[DEBUG] Hooks encontrados: ${Object.keys(hooksFromSettings).join(', ')}`);
 
     // Criar session state persistente (incluindo virtual agents)
     const sessionState = await createSessionState(projectDir, allAgentes, skills);
