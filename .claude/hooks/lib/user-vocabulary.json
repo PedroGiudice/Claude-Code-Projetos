@@ -1,9 +1,9 @@
 {
   "terms": {
     "api": {
-      "count": 5,
+      "count": 6,
       "firstSeen": 1763279353742,
-      "lastSeen": 1763279353974,
+      "lastSeen": 1763279938667,
       "matchedPatterns": [
         "api-integration",
         "api-integration",
@@ -23,6 +23,12 @@
         "api-integration",
         "api-integration"
       ]
+    },
+    "rest": {
+      "count": 1,
+      "firstSeen": 1763279938667,
+      "lastSeen": 1763279938667,
+      "matchedPatterns": []
     }
   },
   "customPatterns": [

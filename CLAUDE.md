@@ -517,3 +517,5 @@ See `WSL_SETUP.md` and `CHANGELOG.md` for details.
 - add executive summary of key findings
 - add
 - add
+- add to memory
+- add

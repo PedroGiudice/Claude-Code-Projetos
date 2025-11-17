@@ -27,6 +27,18 @@
           "successful": true
         }
       ]
+    },
+    "mass-data-collection": {
+      "totalMatches": 1,
+      "successfulTranslations": 1,
+      "confidenceScore": 100,
+      "lastUpdated": 1763279945675,
+      "history": [
+        {
+          "timestamp": 1763279945675,
+          "successful": true
+        }
+      ]
     }
   }
 }

@@ -79,7 +79,12 @@
       "Bash(tee:*)",
       "Bash(bash test-unified.sh:*)",
       "Bash(vibe-log)",
-      "Bash(npx vibe-log-cli:*)"
+      "Bash(npx vibe-log-cli:*)",
+      "Bash(npx vibe-log-cli send --silent --hook sessionstart)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(./.claude/hooks/test-prompt-enhancer.sh:*)",
+      "Bash(/home/cmr-auto/claude-work/repos/Claude-Code-Projetos/.claude/hooks/test-prompt-enhancer.sh)",
+      "Bash(.claude/hooks/test-learning.sh)"
     ],
     "deny": [],
     "ask": []
