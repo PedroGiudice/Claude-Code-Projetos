@@ -1,32 +1,47 @@
 #!/usr/bin/env node
 /**
- * Professional Statusline - Horizontal layout with colors
+ * Professional Statusline v6.0 - Flowing Aesthetic Design
  *
- * Layout: [LEFT aligned info] ────────── [RIGHT aligned info]
+ * Layout: [LEFT aligned info] ··· [RIGHT aligned info]
  *
- * LEFT:  ▸ Gordon | Legal-Braniac (●) | Session: 1h23m
- * RIGHT: 7 agents | 38 skills | 4 hooks | venv: ● | git: main*
+ * LEFT:  ▸ Gordon  ◆  Legal-Braniac ● 8m  ◆  Session 1h23m
+ * RIGHT: ● 7 agents  ◇  ● 38 skills  ◇  ● 4 hooks  ◇  venv ●  ◇  git main*
+ *
+ * Features:
+ * - NO heavy bar separator - uses flowing ··· dots or subtle ◇ diamonds
+ * - BLINKING indicators (●) when hooks are active (< 5s ago)
+ * - Harmonious color palette: cyan, magenta, blue, green, purple, orange, pink
+ * - Clean spacing with breathing room between elements
+ * - Dynamic visual feedback without clutter
+ * - Terminal-native blinking (resource-efficient)
+ * - Elegant, flowing design that guides the eye naturally
  */
 
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// ANSI colors (works in all terminals)
+// ANSI colors - Professional palette
 const colors = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',
   dim: '\x1b[2m',
+  blink: '\x1b[5m', // Blinking text
 
-  // Foreground colors
+  // Foreground colors - Harmonious palette
   red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
+  green: '\x1b[38;5;42m',    // Brighter green
+  yellow: '\x1b[38;5;226m',  // Vibrant yellow
+  blue: '\x1b[38;5;39m',     // Bright blue
+  magenta: '\x1b[38;5;170m', // Soft magenta
+  cyan: '\x1b[38;5;51m',     // Bright cyan
   white: '\x1b[37m',
   gray: '\x1b[90m',
+  lightGray: '\x1b[38;5;246m', // Lighter gray for separators
+  orange: '\x1b[38;5;208m',    // Orange
+  purple: '\x1b[38;5;141m',    // Soft purple
+  pink: '\x1b[38;5;213m',      // Pink
+  teal: '\x1b[38;5;87m',       // Teal for accents
 
   // Background colors
   bgRed: '\x1b[41m',
@@ -35,15 +50,12 @@ const colors = {
   bgBlue: '\x1b[44m',
 };
 
-// Bash spinner frames
-const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
 /**
- * Get current spinner frame based on timestamp
+ * Get blinking indicator character
+ * Returns a colored, blinking ● when activity detected
  */
-function getSpinner() {
-  const frame = Math.floor(Date.now() / 100) % spinnerFrames.length;
-  return spinnerFrames[frame];
+function getBlinkingIndicator(color) {
+  return `${colors.blink}${color}●${colors.reset}`;
 }
 
 /**
@@ -68,7 +80,7 @@ function getVibeLogLine() {
 }
 
 /**
- * Get legal-braniac status with last-used indicator
+ * Get legal-braniac status with blinking indicator when recently used
  */
 function getLegalBraniacStatus() {
   try {
@@ -77,7 +89,7 @@ function getLegalBraniacStatus() {
     const statusFile = path.join(projectDir, '.claude', 'statusline', 'hooks-status.json');
 
     let status = '○'; // Default: inactive
-    let lastUsed = '';
+    let indicator = '';
     let isActive = false;
 
     // Check if session loaded
@@ -97,23 +109,24 @@ function getLegalBraniacStatus() {
         const secondsAgo = Math.floor((Date.now() - lastRun.getTime()) / 1000);
 
         if (secondsAgo < 5) {
-          lastUsed = ` ${getSpinner()}`; // Spinner if used <5s ago
+          // BLINKING indicator if used <5s ago
+          indicator = ` ${getBlinkingIndicator(colors.yellow)}`;
         } else if (secondsAgo < 60) {
-          lastUsed = ` ${secondsAgo}s`;
+          indicator = ` ${secondsAgo}s`;
         } else if (secondsAgo < 3600) {
           const minutesAgo = Math.floor(secondsAgo / 60);
-          lastUsed = ` ${minutesAgo}m`;
+          indicator = ` ${minutesAgo}m`;
         }
       } else if (isActive) {
-        // Active but no last-used timestamp - show spinner
-        lastUsed = ` ${getSpinner()}`;
+        // Active but no last-used timestamp - show blinking
+        indicator = ` ${getBlinkingIndicator(colors.yellow)}`;
       }
     } else if (isActive) {
-      // Active but no status file - show spinner
-      lastUsed = ` ${getSpinner()}`;
+      // Active but no status file - show blinking
+      indicator = ` ${getBlinkingIndicator(colors.yellow)}`;
     }
 
-    return `${status}${lastUsed}`;
+    return `${status}${indicator}`;
   } catch (error) {
     return '○';
   }
@@ -149,27 +162,64 @@ function getSessionDuration() {
 }
 
 /**
- * Get counts (agents, skills, hooks)
+ * Get counts (agents, skills, hooks) with activity tracking
  */
 function getCounts() {
   try {
     const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
     const sessionFile = path.join(projectDir, '.claude', 'hooks', 'legal-braniac-session.json');
+    const statusFile = path.join(projectDir, '.claude', 'statusline', 'hooks-status.json');
+
+    let agentsCount = 0;
+    let skillsCount = 0;
+    let hooksCount = 0;
+    let agentsActive = false;
+    let skillsActive = false;
+    let hooksActive = false;
 
     if (fs.existsSync(sessionFile)) {
       const data = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
 
-      return {
-        agents: data.agents?.available?.length || 0,
-        skills: data.skills?.available?.length || 0,
-        hooks: Object.keys(data.hooks || {}).length || 0
-      };
+      agentsCount = data.agents?.available?.length || 0;
+      skillsCount = data.skills?.available?.length || 0;
+      hooksCount = Object.keys(data.hooks || {}).length || 0;
     }
+
+    // Check if any hook was used recently (< 5s ago)
+    if (fs.existsSync(statusFile)) {
+      const hookStatus = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
+      const now = Date.now();
+
+      for (const hookName in hookStatus) {
+        const lastRun = new Date(hookStatus[hookName].timestamp);
+        const secondsAgo = Math.floor((now - lastRun.getTime()) / 1000);
+
+        if (secondsAgo < 5) {
+          // Determine which category is active
+          if (hookName.includes('agent') || hookName.includes('braniac')) {
+            agentsActive = true;
+          }
+          if (hookName.includes('skill')) {
+            skillsActive = true;
+          }
+          hooksActive = true;
+        }
+      }
+    }
+
+    return {
+      agents: agentsCount,
+      skills: skillsCount,
+      hooks: hooksCount,
+      agentsActive,
+      skillsActive,
+      hooksActive
+    };
   } catch (error) {
     // Fall through
   }
 
-  return { agents: 0, skills: 0, hooks: 0 };
+  return { agents: 0, skills: 0, hooks: 0, agentsActive: false, skillsActive: false, hooksActive: false };
 }
 
 /**
@@ -230,24 +280,46 @@ function main() {
     const venv = getVenvStatus();
     const git = getGitStatus();
 
-    // LEFT side
-    const left = `${colors.cyan}▸${colors.reset} ${colors.bright}${gordon}${colors.reset} ${colors.dim}|${colors.reset} ${colors.magenta}Legal-Braniac${colors.reset} ${colors.yellow}(${braniacStatus})${colors.reset} ${colors.dim}|${colors.reset} ${colors.blue}Session: ${session}${colors.reset}`;
+    // Blinking indicators for active items
+    const agentIndicator = counts.agentsActive ? `${getBlinkingIndicator(colors.green)} ` : '';
+    const skillIndicator = counts.skillsActive ? `${getBlinkingIndicator(colors.purple)} ` : '';
+    const hookIndicator = counts.hooksActive ? `${getBlinkingIndicator(colors.orange)} ` : '';
 
-    // RIGHT side
-    const right = `${colors.green}${counts.agents} agents${colors.reset} ${colors.dim}|${colors.reset} ${colors.green}${counts.skills} skills${colors.reset} ${colors.dim}|${colors.reset} ${colors.green}${counts.hooks} hooks${colors.reset} ${colors.dim}|${colors.reset} ${colors.cyan}venv: ${venv}${colors.reset} ${colors.dim}|${colors.reset} ${colors.yellow}git: ${git}${colors.reset}`;
+    // Elegant separators (different styles for variety)
+    const diamond = `${colors.lightGray}◇${colors.reset}`;
+    const dot = `${colors.lightGray}·${colors.reset}`;
 
-    // Calculate padding
+    // LEFT side - uses ◆ diamond for major sections
+    const left = `${colors.cyan}▸${colors.reset} ${colors.bright}${gordon}${colors.reset} ${colors.lightGray}◆${colors.reset} ${colors.magenta}Legal-Braniac${colors.reset} ${colors.yellow}${braniacStatus}${colors.reset} ${colors.lightGray}◆${colors.reset} ${colors.blue}Session${colors.reset} ${colors.bright}${session}${colors.reset}`;
+
+    // RIGHT side - uses ◇ hollow diamond for subsections
+    const right = `${agentIndicator}${colors.green}${counts.agents} agents${colors.reset} ${diamond} ${skillIndicator}${colors.purple}${counts.skills} skills${colors.reset} ${diamond} ${hookIndicator}${colors.orange}${counts.hooks} hooks${colors.reset} ${diamond} ${colors.cyan}venv${colors.reset} ${colors.yellow}${venv}${colors.reset} ${diamond} ${colors.pink}git${colors.reset} ${colors.teal}${git}${colors.reset}`;
+
+    // Calculate spacing - use flowing dots for middle section
     const leftStripped = left.replace(/\x1b\[[0-9;]*m/g, '');
     const rightStripped = right.replace(/\x1b\[[0-9;]*m/g, '');
-    const middleLength = Math.max(3, termWidth - leftStripped.length - rightStripped.length);
-    const middle = colors.dim + '─'.repeat(middleLength) + colors.reset;
+    const middleLength = Math.max(3, termWidth - leftStripped.length - rightStripped.length - 2);
 
-    // Output
+    // Create elegant flowing separator with dots
+    let middle;
+    if (middleLength > 20) {
+      // Long separator: use spaced dots for breathing room
+      const numDots = Math.floor(middleLength / 2);
+      middle = ' ' + `${colors.dim}${dot}${colors.reset} `.repeat(Math.max(1, numDots - 1)) + ' ';
+    } else if (middleLength > 6) {
+      // Medium separator: compact dots
+      middle = ` ${colors.dim}${dot.repeat(3)}${colors.reset} `;
+    } else {
+      // Short separator: minimal spacing
+      middle = '  ';
+    }
+
+    // Output - flowing design with no heavy bars
     console.log(left + middle + right);
 
   } catch (error) {
-    // Fallback
-    console.log(`${colors.cyan}▸${colors.reset} Claude Code ${colors.dim}|${colors.reset} ${colors.magenta}Legal-Braniac${colors.reset}`);
+    // Fallback - elegant even in error
+    console.log(`${colors.cyan}▸${colors.reset} Claude Code ${colors.lightGray}◆${colors.reset} ${colors.magenta}Legal-Braniac${colors.reset}`);
   }
 }
 
