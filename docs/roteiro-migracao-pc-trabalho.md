@@ -229,22 +229,24 @@ Copie este texto e cole no Bloco de Notas:
 
 ```ini
 [wsl2]
-memory=4GB
-processors=2
-swap=1GB
+memory=8GB
+processors=3
+swap=2GB
 localhostForwarding=true
 nestedVirtualization=false
 ```
 
 **Explicação de cada linha:**
-- `memory=4GB` - WSL pode usar no máximo 4GB de RAM
-- `processors=2` - WSL pode usar no máximo 2 núcleos de CPU
-- `swap=1GB` - WSL pode usar 1GB de memória virtual (swap)
+- `memory=8GB` - WSL pode usar no máximo 8GB de RAM (50% dos 16GB totais)
+- `processors=3` - WSL pode usar no máximo 3 núcleos de CPU (50% dos 6 núcleos)
+- `swap=2GB` - WSL pode usar 2GB de memória virtual (swap)
 - `localhostForwarding=true` - Permite acessar servidores WSL via localhost
 - `nestedVirtualization=false` - Desabilita virtualização aninhada (não precisamos)
 
-**💡 Dica:**
-Se seu PC tiver 16GB+ de RAM, você pode aumentar para `memory=6GB` ou `memory=8GB`.
+**💡 Configuração otimizada para:**
+- **CPU:** Intel i5 12400 (12th Gen) - 6 núcleos / 12 threads
+- **RAM:** 16GB total
+- **WSL usa:** 8GB RAM + 3 núcleos (50% dos recursos)
 
 ---
 
