@@ -5,7 +5,7 @@
 
   "statusLine": {
     "type": "command",
-    "command": "node .claude/statusline/professional-statusline.js",
+    "command": "cd \"$CLAUDE_PROJECT_DIR\" && node .claude/statusline/professional-statusline.js",
     "padding": 0,
     "_note": "Professional statusline v4.0 - horizontal layout with ANSI colors, bash spinner, last-used tracking"
   },
