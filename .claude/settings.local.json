@@ -84,7 +84,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(./.claude/hooks/test-prompt-enhancer.sh:*)",
       "Bash(/home/cmr-auto/claude-work/repos/Claude-Code-Projetos/.claude/hooks/test-prompt-enhancer.sh)",
-      "Bash(.claude/hooks/test-learning.sh)"
+      "Bash(.claude/hooks/test-learning.sh)",
+      "Bash(.gitignore)"
     ],
     "deny": [],
     "ask": []
