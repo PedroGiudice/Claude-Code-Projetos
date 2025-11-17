@@ -410,6 +410,425 @@ function inferAgentNameFromCapabilities(capabilities) {
 }
 
 // ============================================================================
+// ENGINE UPGRADES (Decision 2.0, Orchestration 2.0, Delegation 2.0)
+// ============================================================================
+
+/**
+ * DecisionEngine - Análise multi-dimensional e decisão adaptativa
+ */
+class DecisionEngine {
+  /**
+   * Analisar complexidade multi-dimensional da task
+   */
+  static analyzeComplexity(task, availableAgents, availableSkills) {
+    return {
+      technical: this._assessTechnicalComplexity(task),
+      legal: this._assessLegalComplexity(task),
+      temporal: this._assessTimeConstraints(task),
+      interdependency: this._assessInterdependency(task)
+    };
+  }
+
+  /**
+   * Fazer decisão adaptativa: ORCHESTRATE, DELEGATE, CREATE_VIRTUAL, ASK_USER
+   */
+  static makeDecision(task, complexity, availableAgents) {
+    const confidence = this._calculateConfidence(complexity, availableAgents);
+
+    // Baixa confiança → perguntar ao usuário
+    if (confidence < 0.5) {
+      return {
+        action: 'ASK_USER',
+        reason: 'Ambiguidade alta - necessário clarificação',
+        confidence
+      };
+    }
+
+    // Tarefa simples → legal-braniac orquestra diretamente
+    if (complexity.legal < 30 && complexity.technical < 30) {
+      return {
+        action: 'ORCHESTRATE',
+        reason: 'Tarefa simples, orquestração direta',
+        confidence
+      };
+    }
+
+    // Nenhum agente disponível → criar virtual
+    if (Object.keys(availableAgents).length === 0) {
+      return {
+        action: 'CREATE_VIRTUAL',
+        reason: 'Nenhum agente disponível',
+        confidence
+      };
+    }
+
+    // Caso normal → delegar para agentes
+    return {
+      action: 'DELEGATE',
+      reason: 'Delegação a agentes especializados',
+      confidence,
+      agents: this._selectTopAgents(task, availableAgents)
+    };
+  }
+
+  static _assessTechnicalComplexity(task) {
+    let score = 0;
+    const lower = task.toLowerCase();
+
+    // Termos técnicos aumentam complexidade
+    const technicalTerms = ['api', 'database', 'docker', 'kubernetes', 'microservice', 'pipeline'];
+    score += technicalTerms.filter(t => lower.includes(t)).length * 15;
+
+    // Múltiplas tecnologias aumentam complexidade
+    const techStack = ['python', 'node', 'react', 'django', 'flask'];
+    score += techStack.filter(t => lower.includes(t)).length * 10;
+
+    return Math.min(score, 100);
+  }
+
+  static _assessLegalComplexity(task) {
+    let score = 0;
+    const lower = task.toLowerCase();
+
+    // Termos jurídicos complexos
+    const complexTerms = ['estratégia', 'estrategia', 'recurso', 'apelação', 'apelacao'];
+    score += complexTerms.filter(t => lower.includes(t)).length * 25;
+
+    // Termos jurídicos simples
+    const simpleTerms = ['buscar', 'consultar', 'listar'];
+    score += simpleTerms.filter(t => lower.includes(t)).length * 10;
+
+    // Múltiplas instâncias jurídicas aumentam complexidade
+    const instances = ['stf', 'stj', 'trf', 'tjsp', 'tjrj'];
+    score += instances.filter(t => lower.includes(t)).length * 15;
+
+    return Math.min(score, 100);
+  }
+
+  static _assessTimeConstraints(task) {
+    const lower = task.toLowerCase();
+
+    if (lower.includes('urgente') || lower.includes('imediato')) return 'urgent';
+    if (lower.includes('prazo') || lower.includes('deadline')) return 'deadline';
+    if (lower.includes('quando possível')) return 'flexible';
+
+    return 'normal';
+  }
+
+  static _assessInterdependency(task) {
+    const steps = task.split(/\be\b|,|;/);
+    return steps.length > 1 ? steps.length : 0;
+  }
+
+  static _calculateConfidence(complexity, availableAgents) {
+    let confidence = 0.8; // Base confidence
+
+    // Reduz confiança se complexidade alta
+    if (complexity.legal > 70 || complexity.technical > 70) {
+      confidence -= 0.3;
+    }
+
+    // Reduz confiança se sem agentes especializados
+    if (Object.keys(availableAgents).length === 0) {
+      confidence -= 0.2;
+    }
+
+    // Aumenta confiança se baixa complexidade
+    if (complexity.legal < 30 && complexity.technical < 30) {
+      confidence += 0.1;
+    }
+
+    return Math.max(0, Math.min(1, confidence));
+  }
+
+  static _selectTopAgents(task, availableAgents) {
+    // TODO: Implementar ranking (será feito no Delegation Engine)
+    return Object.keys(availableAgents).slice(0, 3);
+  }
+}
+
+/**
+ * OrchestrationEngine - Dependency graph e execução paralela
+ */
+class OrchestrationEngine {
+  /**
+   * Criar grafo de dependências de tasks
+   */
+  static buildDependencyGraph(tasks) {
+    return new TaskGraph(tasks);
+  }
+
+  /**
+   * Executar tasks em paralelo respeitando dependências
+   */
+  static async executeParallel(taskGraph, delegationEngine) {
+    const results = {};
+    const batches = taskGraph.getParallelBatches();
+
+    console.error(`[DEBUG] Executando ${batches.length} batches de tasks`);
+
+    for (const batch of batches) {
+      console.error(`[DEBUG] Batch com ${batch.length} tasks paralelas`);
+
+      const promises = batch.map(task =>
+        delegationEngine.execute(task).catch(err => ({
+          task,
+          error: err,
+          success: false
+        }))
+      );
+
+      const batchResults = await Promise.all(promises);
+
+      for (const result of batchResults) {
+        results[result.task.id] = result;
+      }
+    }
+
+    return results;
+  }
+}
+
+/**
+ * TaskGraph - Grafo de dependências com validação de ciclos
+ */
+class TaskGraph {
+  constructor(tasks) {
+    this.tasks = tasks;
+    this.adjacencyList = this._buildGraph(tasks);
+    this._validateNoCycles();
+  }
+
+  _buildGraph(tasks) {
+    const graph = {};
+
+    for (const task of tasks) {
+      graph[task.id] = {
+        task,
+        dependencies: task.dependencies || [],
+        dependents: []
+      };
+    }
+
+    // Build reverse edges (dependents)
+    for (const taskId in graph) {
+      const deps = graph[taskId].dependencies;
+      for (const depId of deps) {
+        if (graph[depId]) {
+          graph[depId].dependents.push(taskId);
+        }
+      }
+    }
+
+    return graph;
+  }
+
+  _validateNoCycles() {
+    const visited = new Set();
+    const recursionStack = new Set();
+
+    const hasCycle = (nodeId) => {
+      visited.add(nodeId);
+      recursionStack.add(nodeId);
+
+      const node = this.adjacencyList[nodeId];
+      for (const depId of node.dependencies) {
+        if (!visited.has(depId)) {
+          if (hasCycle(depId)) return true;
+        } else if (recursionStack.has(depId)) {
+          return true; // Cycle detected
+        }
+      }
+
+      recursionStack.delete(nodeId);
+      return false;
+    };
+
+    for (const nodeId in this.adjacencyList) {
+      if (!visited.has(nodeId)) {
+        if (hasCycle(nodeId)) {
+          throw new Error(`Ciclo detectado no grafo de dependências: ${nodeId}`);
+        }
+      }
+    }
+  }
+
+  getParallelBatches() {
+    const batches = [];
+    const completed = new Set();
+    const inProgress = new Set();
+
+    while (completed.size < this.tasks.length) {
+      const batch = [];
+
+      for (const taskId in this.adjacencyList) {
+        if (completed.has(taskId) || inProgress.has(taskId)) continue;
+
+        const node = this.adjacencyList[taskId];
+        const depsCompleted = node.dependencies.every(depId => completed.has(depId));
+
+        if (depsCompleted) {
+          batch.push(node.task);
+          inProgress.add(taskId);
+        }
+      }
+
+      if (batch.length === 0) {
+        throw new Error('Deadlock detectado - nenhuma task pode ser executada');
+      }
+
+      batches.push(batch);
+
+      // Mark batch as completed
+      for (const task of batch) {
+        inProgress.delete(task.id);
+        completed.add(task.id);
+      }
+    }
+
+    return batches;
+  }
+}
+
+/**
+ * DelegationEngine - Ranking de agentes e retry com backoff
+ */
+class DelegationEngine {
+  constructor(availableAgents, availableSkills) {
+    this.availableAgents = availableAgents;
+    this.availableSkills = availableSkills;
+    this.agentLoadMap = new Map();
+    this.maxConcurrentPerAgent = 3;
+  }
+
+  /**
+   * Selecionar agentes com ranking
+   */
+  selectAgents(task) {
+    const candidates = this._filterCandidates(task);
+
+    if (candidates.length === 0) {
+      return { match: false, reason: 'Nenhum agente candidato' };
+    }
+
+    // Ranking por: performance histórica (50%) + load (30%) + skill match (20%)
+    const ranked = candidates.map(agentName => {
+      const agent = this.availableAgents[agentName];
+      const load = this.agentLoadMap.get(agentName) || 0;
+      const historicalSuccess = agent.successRate || 0.5;
+      const skillMatch = this._calculateSkillMatch(agent, task);
+
+      const score =
+        historicalSuccess * 0.5 +
+        (1 - load / this.maxConcurrentPerAgent) * 0.3 +
+        skillMatch * 0.2;
+
+      return { agentName, agent, score };
+    }).sort((a, b) => b.score - a.score);
+
+    return {
+      match: true,
+      agents: ranked.slice(0, 3), // Top 3
+      topAgent: ranked[0]
+    };
+  }
+
+  _filterCandidates(task) {
+    const requiredCaps = extractCapabilities(task);
+
+    return Object.keys(this.availableAgents).filter(agentName => {
+      const agent = this.availableAgents[agentName];
+
+      return requiredCaps.some(cap =>
+        agent.especialidade.toLowerCase().includes(cap.toLowerCase())
+      );
+    });
+  }
+
+  _calculateSkillMatch(agent, task) {
+    // Placeholder - match simples por keywords
+    const taskLower = task.toLowerCase();
+    const specialtyLower = agent.especialidade.toLowerCase();
+
+    const keywords = taskLower.split(/\s+/).filter(w => w.length > 3);
+    const matches = keywords.filter(kw => specialtyLower.includes(kw));
+
+    return matches.length / Math.max(keywords.length, 1);
+  }
+
+  /**
+   * Executar task com retry exponencial
+   */
+  async execute(task, maxRetries = 3) {
+    const selection = this.selectAgents(task);
+
+    if (!selection.match) {
+      throw new Error(`Nenhum agente disponível para: ${task}`);
+    }
+
+    const agent = selection.topAgent.agentName;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Incrementar load
+        this.agentLoadMap.set(agent, (this.agentLoadMap.get(agent) || 0) + 1);
+
+        // Simular delegação (TODO: integrar com Task tool)
+        console.error(`[DEBUG] Delegando "${task}" para ${agent} (tentativa ${attempt}/${maxRetries})`);
+
+        const result = await this._delegateToAgent(task, agent);
+
+        // Decrementar load
+        this.agentLoadMap.set(agent, Math.max(0, (this.agentLoadMap.get(agent) || 1) - 1));
+
+        // Atualizar success rate
+        this._updateSuccessRate(agent, true);
+
+        return result;
+      } catch (error) {
+        console.error(`[ERROR] Tentativa ${attempt} falhou: ${error.message}`);
+
+        // Decrementar load
+        this.agentLoadMap.set(agent, Math.max(0, (this.agentLoadMap.get(agent) || 1) - 1));
+
+        if (attempt === maxRetries) {
+          // Atualizar failure rate
+          this._updateSuccessRate(agent, false);
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        await this._sleep(Math.pow(2, attempt - 1) * 1000);
+      }
+    }
+  }
+
+  async _delegateToAgent(task, agentName) {
+    // TODO: Integrar com Task tool para delegação real
+    // Por ora, simular sucesso
+    return {
+      task,
+      agent: agentName,
+      result: `Simulação: ${agentName} processou "${task}"`,
+      success: true
+    };
+  }
+
+  _updateSuccessRate(agentName, success) {
+    const agent = this.availableAgents[agentName];
+    if (!agent) return;
+
+    const currentRate = agent.successRate || 0.5;
+    // Exponential moving average
+    agent.successRate = currentRate * 0.9 + (success ? 1.0 : 0.0) * 0.1;
+  }
+
+  _sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+// ============================================================================
 // MAIN
 // ============================================================================
 
