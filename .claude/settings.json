@@ -5,9 +5,9 @@
 
   "statusLine": {
     "type": "command",
-    "command": "node .claude/statusline/enhanced-statusline.js",
+    "command": "node .claude/statusline/professional-statusline.js",
     "padding": 0,
-    "_note": "Enhanced statusline v3.0 - vibe-log native (Gordon/coach) + project customizations (legal-braniac, agentes, skills, hooks, venv, git)"
+    "_note": "Professional statusline v4.0 - horizontal layout with ANSI colors, bash spinner, last-used tracking"
   },
 
   "hooks": {
@@ -17,13 +17,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/venv-auto-activate.sh",
-            "_note": "Ativa venv + cria session-start.json para statusline tracking"
+            "command": ".claude/hooks/venv-activate-global.sh",
+            "_note": "Ativa venv global do projeto para persistir durante toda a sessão"
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/legal-braniac-loader.js",
-            "_note": "Auto-discovery de agentes/skills + criar legal-braniac-session.json (estado persistente)"
+            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/legal-braniac-loader.js",
+            "_note": "Auto-discovery com last-used tracking [WRAPPED]"
           },
           {
             "type": "command",

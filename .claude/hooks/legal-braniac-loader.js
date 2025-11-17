@@ -95,11 +95,22 @@ async function discoverSkills(projectDir) {
 // ============================================================================
 
 async function createSessionState(projectDir, agentes, skills) {
+  const now = Date.now();
+
   const sessionState = {
     sessionId: randomUUID(),
-    startTime: Date.now(),
-    agentes,
-    skills,
+    sessionStart: now, // For statusline compatibility
+    startTime: now,    // Backward compatibility
+    lastUpdate: now,
+    agents: {
+      available: Object.keys(agentes),
+      details: agentes
+    },
+    skills: {
+      available: Object.keys(skills),
+      details: skills
+    },
+    hooks: {}, // Will be populated by settings.json parsing
     validations: {
       enabled: ['venv', 'git-status', 'data-layer', 'deps', 'corporate'],
       thresholds: {
@@ -109,7 +120,11 @@ async function createSessionState(projectDir, agentes, skills) {
     }
   };
 
-  const sessionPath = path.join(projectDir, '.claude', 'legal-braniac-session.json');
+  // Save to hooks directory (statusline expects it there)
+  const hooksDir = path.join(projectDir, '.claude', 'hooks');
+  await fs.mkdir(hooksDir, { recursive: true });
+
+  const sessionPath = path.join(hooksDir, 'legal-braniac-session.json');
   await fs.writeFile(sessionPath, JSON.stringify(sessionState, null, 2), 'utf8');
 
   return sessionState;

@@ -85,7 +85,9 @@
       "Bash(./.claude/hooks/test-prompt-enhancer.sh:*)",
       "Bash(/home/cmr-auto/claude-work/repos/Claude-Code-Projetos/.claude/hooks/test-prompt-enhancer.sh)",
       "Bash(.claude/hooks/test-learning.sh)",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(COLUMNS=80 node:*)",
+      "Bash(COLUMNS=150 node:*)"
     ],
     "deny": [],
     "ask": []
