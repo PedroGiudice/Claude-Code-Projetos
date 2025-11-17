@@ -210,6 +210,82 @@
         "Tipo de busca? (exata, fuzzy, full-text, facetada)",
         "Backend? (Elasticsearch, PostgreSQL FTS, in-memory)"
       ]
+    },
+    {
+      "id": "legal-document-search",
+      "intent": "(buscar|procurar|pesquisar|consultar).*(publicação|diário|processo|acórdão|jurisprudência|súmula|precedente|decisão|sentença)",
+      "architecture": "LEGAL_SEARCH_INDEXER",
+      "components": [
+        "document-fetcher (OAB/DJEN/TJ APIs)",
+        "text-extractor (PDF/OCR)",
+        "entity-recognizer (processo, parte, relator, órgão)",
+        "index-builder (Elasticsearch/PostgreSQL FTS)",
+        "query-parser (legal terms, operators)",
+        "rag-system (semantic search with embeddings)"
+      ],
+      "translation": "Busca jurídica requer:\n  1. Fetcher multi-fonte (APIs oficiais: OAB, DJEN, DataJud)\n  2. Extractor de texto (PDF native + OCR para digitalizados)\n  3. Reconhecedor de entidades processuais (número processo, partes, relator)\n  4. Indexação para busca rápida (Elasticsearch ou PostgreSQL FTS)\n  5. Parser de termos jurídicos com operadores booleanos\n  6. RAG system para busca semântica com embeddings",
+      "questions": [
+        "Fonte de dados? (DJEN, OAB, DataJud, tribunais específicos)",
+        "Tipo de documento? (publicações, acórdãos, súmulas, processos)",
+        "Busca por? (número processo, partes, relator, assunto, período)"
+      ]
+    },
+    {
+      "id": "process-monitoring",
+      "intent": "(monitorar|acompanhar|rastrear|vigiar|watch).*(processo|publicação|movimentação|andamento|tramitação)",
+      "architecture": "LEGAL_PROCESS_TRACKER",
+      "components": [
+        "process-poller (check daily DJEN/APIs)",
+        "diff-detector (compare with last known state)",
+        "notification-engine (email, webhook, SMS)",
+        "history-storage (track all movements)",
+        "alert-rules (configurable triggers)",
+        "process-parser (extract metadata from publications)"
+      ],
+      "translation": "Monitoramento processual requer:\n  1. Polling periódico de fontes oficiais (DJEN, PJe, DataJud)\n  2. Detecção de mudanças (diff com histórico armazenado)\n  3. Engine de notificações configurável (email, SMS, webhook)\n  4. Storage de histórico completo (todas movimentações)\n  5. Regras de alerta customizáveis (filtros por tipo, urgência)\n  6. Parser de publicações (extração de metadata)",
+      "questions": [
+        "Frequência de verificação? (tempo real, diário, semanal)",
+        "Canais de notificação? (email, SMS, webhook, dashboard)",
+        "Critérios de alerta? (todos andamentos, apenas críticos, palavras-chave)"
+      ]
+    },
+    {
+      "id": "legal-document-extraction",
+      "intent": "(extrair|parsear|processar|analisar).*(dados|informações|campos|entidades).*(pdf|publicação|diário|processo|petição|acórdão)",
+      "architecture": "LEGAL_DOCUMENT_PARSER",
+      "components": [
+        "pdf-reader (PyPDF2, pdfplumber)",
+        "ocr-engine (Tesseract for scanned PDFs)",
+        "pattern-matcher (regex for legal entities)",
+        "nlp-extractor (spaCy for named entities)",
+        "structured-output (JSON, database)",
+        "validation-layer (check extracted data quality)"
+      ],
+      "translation": "Extração de documentos jurídicos requer:\n  1. Reader de PDFs (texto nativo + OCR para digitalizados)\n  2. Pattern matching para entidades processuais (número, partes, data)\n  3. NLP extraction para entidades nomeadas (advogados, juízes, órgãos)\n  4. Output estruturado (JSON/DB com schema validado)\n  5. Validação de campos extraídos (formato, completude)\n  6. Classificação de tipo de documento (publicação, petição, decisão)",
+      "questions": [
+        "Tipo de documento? (publicações DJEN, petições, acórdãos, sentenças)",
+        "Campos a extrair? (número processo, partes, datas, assunto, decisão)",
+        "Volume de processamento? (dezenas, centenas, milhares por dia)"
+      ]
+    },
+    {
+      "id": "legal-strategy-planning",
+      "intent": "(desenvolver|elaborar|planejar|criar).*(estratégia|tática|plano|abordagem).*(processual|jurídica|judicial|defesa|acusação|recurso)",
+      "architecture": "LEGAL_STRATEGY_ENGINE",
+      "components": [
+        "precedent-analyzer (legal-lens RAG)",
+        "risk-assessor (probabilidade sucesso)",
+        "path-planner (procedural options tree)",
+        "argument-builder (thesis construction)",
+        "timeline-generator (deadlines tracker)",
+        "decision-support (multi-criteria analysis)"
+      ],
+      "translation": "Desenvolvimento de estratégia jurídica requer:\n  1. Analisador de precedentes (busca jurisprudência relevante via RAG)\n  2. Avaliador de risco (probabilidade de sucesso baseado em histórico)\n  3. Planejador de caminhos (árvore de opções procedurais)\n  4. Construtor de argumentação (teses jurídicas estruturadas)\n  5. Gerador de timeline (prazos processuais)\n  6. Suporte à decisão (análise multi-critério: custo, tempo, risco)",
+      "questions": [
+        "Tipo de ação? (cível, trabalhista, tributária, penal, consumidor)",
+        "Fase processual? (pré-processual, inicial, recursal)",
+        "Objetivo? (defesa, acusação, recurso, acordo)"
+      ]
     }
   ]
 }

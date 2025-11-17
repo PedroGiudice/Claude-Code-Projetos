@@ -169,6 +169,19 @@ function calculateQuality(prompt) {
   const termCount = technicalTerms.filter(term => lowerPrompt.includes(term)).length;
   score += Math.min(termCount * 5, 30);
 
+  // Legal terms score (0-25 points) - domain-specific boost
+  const legalTerms = [
+    'processo', 'publicacao', 'publicação', 'diario', 'diário', 'acordao', 'acórdão',
+    'sumula', 'súmula', 'jurisprudencia', 'jurisprudência', 'oab', 'djen',
+    'movimentacao', 'movimentação', 'tribunal', 'peticao', 'petição',
+    'contestacao', 'contestação', 'recurso', 'relator', 'comarca', 'instancia', 'instância',
+    'sentenca', 'sentença', 'decisao', 'decisão', 'tramitacao', 'tramitação',
+    'andamento', 'estrategia', 'estratégia', 'defesa', 'acusacao', 'acusação'
+  ];
+
+  const legalTermCount = legalTerms.filter(term => lowerPrompt.includes(term)).length;
+  score += Math.min(legalTermCount * 8, 25); // Higher weight for legal domain
+
   // Specificity score (0-20 points)
   const specificityPatterns = [
     /\d+/g,                           // Numbers (volume, quantities)

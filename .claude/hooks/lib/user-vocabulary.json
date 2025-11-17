@@ -29,6 +29,96 @@
       "firstSeen": 1763279938667,
       "lastSeen": 1763279938667,
       "matchedPatterns": []
+    },
+    "processo": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["process-monitoring", "legal-document-search"]
+    },
+    "publicacao": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search", "process-monitoring"]
+    },
+    "oab": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-extraction", "legal-document-search"]
+    },
+    "djen": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-extraction", "process-monitoring"]
+    },
+    "estrategia": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-strategy-planning"]
+    },
+    "jurisprudencia": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search"]
+    },
+    "acordao": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search", "legal-document-extraction"]
+    },
+    "sumula": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search"]
+    },
+    "peticao": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-extraction"]
+    },
+    "movimentacao": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["process-monitoring"]
+    },
+    "tribunal": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search"]
+    },
+    "relator": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search", "legal-document-extraction"]
+    },
+    "comarca": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search"]
+    },
+    "instancia": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search"]
+    },
+    "diario": {
+      "count": 10,
+      "firstSeen": 1731715200000,
+      "lastSeen": 1731715200000,
+      "matchedPatterns": ["legal-document-search", "legal-document-extraction"]
     }
   },
   "customPatterns": [
