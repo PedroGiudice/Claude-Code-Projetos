@@ -6,35 +6,37 @@ Sistema de automação jurídica com agentes Python para monitoramento de public
 
 Este projeto segue uma separação rígida entre três camadas:
 
-### CAMADA 1: CÓDIGO (C:\claude-work\repos\Claude-Code-Projetos\)
-- **Localização:** C:\claude-work\repos\Claude-Code-Projetos\
+### CAMADA 1: CÓDIGO (~/claude-work/repos/Claude-Code-Projetos/)
+- **Localização:** ~/claude-work/repos/Claude-Code-Projetos/ (WSL2 Ubuntu 24.04)
 - **Conteúdo:** Código-fonte Python, configurações, documentação
 - **Versionamento:** Git (obrigatório)
 - **Portabilidade:** Sincronizado via git push/pull entre máquinas
 
-### CAMADA 2: AMBIENTE (C:\claude-work\repos\Claude-Code-Projetos\agentes\*\.venv\)
-- **Localização:** Dentro de cada projeto (ex: agentes/oab-watcher/.venv/)
-- **Conteúdo:** Interpretador Python, pacotes instalados
+### CAMADA 2: AMBIENTE (agentes/*/.venv/)
+- **Localização:** Dentro de cada agente (ex: agentes/oab-watcher/.venv/)
+- **Conteúdo:** Python 3.12.3, pacotes instalados via pip
 - **Versionamento:** NUNCA (incluído em .gitignore)
 - **Portabilidade:** Recriado via requirements.txt em cada máquina
 
-### CAMADA 3: DADOS (E:\claude-code-data\)
-- **Localização:** E:\claude-code-data\ (HD externo)
+### CAMADA 3: DADOS (configurável via env vars)
+- **Localização:** Configurável (ex: /mnt/e/claude-code-data/ ou local)
 - **Conteúdo:** Downloads, logs, outputs, dados processados
 - **Versionamento:** NUNCA
-- **Portabilidade:** Apenas via transporte físico do HD
+- **Portabilidade:** Backup/restore ou transporte físico
 
-**REGRA CRÍTICA:** Código NUNCA vai para E:\. Dados NUNCA vão para Git.
+**REGRA CRÍTICA:** Código SEMPRE em Git. Ambiente SEMPRE local (.venv). Dados NUNCA em Git.
 
 ## 🧠 Legal-Braniac - Orquestrador Inteligente
 
 Este projeto possui um **orquestrador mestre** chamado **Legal-Braniac** que coordena automaticamente:
 
-- **6 agentes especializados** (planejamento, desenvolvimento, qualidade, documentação, análise de dados)
-- **34 skills** instaladas (OCR, parsing, testing, diagramming, etc)
+- **7 agentes especializados** (legal-braniac, planejamento, desenvolvimento, qualidade, documentação, análise)
+- **38 skills** instaladas (OCR, parsing, testing, diagramming, etc)
 - **Auto-discovery** (detecta novos agentes/skills automaticamente)
 - **Delegação inteligente** (a tarefa certa, para o agente certo)
 - **Execução paralela** (quando subtarefas são independentes)
+- **Virtual Agents System** (cria agentes temporários sob demanda)
+- **Learning System** (prompt enhancement com padrões legais)
 
 ### Quando Usar Legal-Braniac
 
@@ -388,3 +390,73 @@ MIT License - Veja LICENSE para detalhes.
 ## Autor
 
 PedroGiudice - 2025
+
+## 📊 Statusline & Monitoring
+
+### Enhanced Statusline v3.0
+O projeto usa **vibe-log CLI nativo** com customizações:
+
+**Linha 1 - Análise de Prompts (Legal-Braniac Personality):**
+```
+▸ Legal-Braniac: [análise contextual focada em qualidade e precisão]
+```
+
+**Linha 2 - Contexto do Projeto:**
+```
+● Legal-Braniac | 7 agentes | 38 skills | 4 hooks
+```
+
+**Linha 3 - Status Técnico:**
+```
+venv: ● | git: main* | session: 1h23m
+```
+
+**Símbolos:**
+- `▸` = indicador principal
+- `●` = ativo/ok
+- `○` = inativo/warning
+- `*` = uncommitted changes
+
+### Personalidade Legal-Braniac
+Coaching especializado em automação jurídica:
+- **Prioridade:** Qualidade > Velocidade
+- **Foco:** Fundamentação técnica e conformidade legal
+- **Características:** Precisão, validação rigorosa, testing completo
+- **Diferencial:** Adaptado para direito brasileiro (CF, CPC, CLT, etc)
+
+### Learning System (Prompt Enhancement)
+Sistema de aprendizado que traduz prompts vagos em contexto técnico:
+
+**Features:**
+- Detecta padrões de intenção (legal, scraping, API, etc)
+- Traduz para contexto arquitetural
+- Aprende vocabulário do usuário
+- Quality scoring (0-100) com boost para termos legais
+- Baixo overhead (<200ms)
+
+**Bypass:**
+- `*` = comando direto (sem enhancement)
+- `/` = slash command
+- `#` = comentário
+- `++` = force enhancement (debugging)
+
+**Arquivos:**
+- `.claude/hooks/prompt-enhancer.js` - Engine principal
+- `.claude/hooks/lib/intent-patterns.json` - Padrões de detecção
+- `.claude/hooks/lib/user-vocabulary.json` - Vocabulário aprendido
+- `.claude/statusline/prompt-quality.json` - Métricas
+
+## 🔄 VibeLog Integration
+
+**Status:** Autenticado e ativo
+
+**Hooks instalados:**
+- SessionStart: Captura início de sessão
+- PreCompact: Captura antes de compactação de contexto
+- SessionEnd: Captura fim de sessão
+
+**Dashboard:** https://app.vibe-log.dev
+- Streak tracking
+- Session analytics
+- Prompt analysis history
+
