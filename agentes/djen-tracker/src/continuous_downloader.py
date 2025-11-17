@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass, asdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Rate limiting e download de cadernos DJEN
 
@@ -96,6 +97,9 @@ class ContinuousDownloader:
 
         # Checkpoint (resumir downloads)
         self.checkpoint = self._load_checkpoint()
+
+        # Download paralelo
+        self.max_workers = config.get('download', {}).get('max_workers', 10)
 
         # Estatísticas
         self.stats = {
@@ -305,12 +309,46 @@ class ContinuousDownloader:
                 erro=str(e)
             )
 
-    def run_once(self, data: Optional[str] = None) -> Dict:
+    def _process_tribunal(self, tribunal: str, data: str) -> List[DownloadStatus]:
+        """
+        Processa um tribunal (usado por workers paralelos).
+
+        Args:
+            tribunal: Sigla do tribunal
+            data: Data (YYYY-MM-DD)
+
+        Returns:
+            Lista de DownloadStatus
+        """
+        resultados = []
+        try:
+            # Buscar cadernos disponíveis
+            cadernos = self._fetch_cadernos_disponiveis(tribunal, data)
+
+            # Baixar cada caderno
+            for caderno in cadernos:
+                status = self._download_caderno(caderno, tribunal)
+                resultados.append(status)
+
+        except Exception as e:
+            logger.error(f"[{tribunal}] Erro ao processar: {e}")
+            resultados.append(DownloadStatus(
+                tribunal=tribunal,
+                data=data,
+                meio='E',
+                status='falha',
+                erro=str(e)
+            ))
+
+        return resultados
+
+    def run_once(self, data: Optional[str] = None, parallel: bool = True) -> Dict:
         """
         Executa um ciclo de download (hoje ou data específica).
 
         Args:
             data: Data (YYYY-MM-DD) ou None para hoje
+            parallel: Se True, usa download paralelo (padrão)
 
         Returns:
             Dict com estatísticas do ciclo
@@ -325,19 +363,48 @@ class ContinuousDownloader:
         tribunais = self.tribunais_ativos
         resultados = []
 
-        logger.info(f"Buscando em {len(tribunais)} tribunais...")
+        mode_str = f"paralelo ({self.max_workers} workers)" if parallel else "sequencial"
+        logger.info(f"Buscando em {len(tribunais)} tribunais ({mode_str})...")
 
-        for tribunal in tribunais:
-            try:
-                # Buscar cadernos disponíveis
-                cadernos = self._fetch_cadernos_disponiveis(tribunal, data)
+        if parallel:
+            # Download paralelo com ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                # Submeter todas as tarefas
+                future_to_tribunal = {
+                    executor.submit(self._process_tribunal, tribunal, data): tribunal
+                    for tribunal in tribunais
+                }
 
-                # Baixar cada caderno
-                for caderno in cadernos:
-                    status = self._download_caderno(caderno, tribunal)
-                    resultados.append(status)
+                # Processar resultados conforme completam
+                for future in as_completed(future_to_tribunal):
+                    tribunal = future_to_tribunal[future]
+                    try:
+                        tribunal_resultados = future.result()
+                        resultados.extend(tribunal_resultados)
 
-                    # Atualizar estatísticas
+                        # Atualizar estatísticas
+                        for status in tribunal_resultados:
+                            self.stats['total_downloads'] += 1
+                            if status.status == 'sucesso':
+                                self.stats['sucessos'] += 1
+                                self.stats['bytes_baixados'] += status.tamanho_bytes
+                                self.stats['tempo_total'] += status.tempo_download
+                            elif status.status == 'falha':
+                                self.stats['falhas'] += 1
+                            elif status.status == 'duplicata':
+                                self.stats['duplicatas'] += 1
+
+                    except Exception as e:
+                        logger.error(f"[{tribunal}] Erro ao processar future: {e}")
+
+        else:
+            # Download sequencial (fallback)
+            for tribunal in tribunais:
+                tribunal_resultados = self._process_tribunal(tribunal, data)
+                resultados.extend(tribunal_resultados)
+
+                # Atualizar estatísticas
+                for status in tribunal_resultados:
                     self.stats['total_downloads'] += 1
                     if status.status == 'sucesso':
                         self.stats['sucessos'] += 1
@@ -347,9 +414,6 @@ class ContinuousDownloader:
                         self.stats['falhas'] += 1
                     elif status.status == 'duplicata':
                         self.stats['duplicatas'] += 1
-
-            except Exception as e:
-                logger.error(f"Erro ao processar {tribunal}: {e}")
 
         # Resumo do ciclo
         sucessos = sum(1 for r in resultados if r.status == 'sucesso')

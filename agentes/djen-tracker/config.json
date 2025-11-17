@@ -35,6 +35,7 @@
   "download": {
     "intervalo_minutos": 30,
     "max_concurrent": 3,
+    "max_workers": 10,
     "chunk_size_mb": 10,
     "retry_attempts": 3,
     "timeout_seconds": 60
