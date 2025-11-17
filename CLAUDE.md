@@ -498,13 +498,85 @@ Infrastructure deployed:
 - Ubuntu 24.04 LTS
 - Node.js v24.11.1 (nvm)
 - Claude Code 2.0.42
-- Python 3.12.3 + 5 venvs (all agentes)
+- Python 3.12.3 + 5 venvs (agentes) + 1 venv global (root)
 - npm packages (340) - mcp-servers/djen-mcp-server
 - 10 hooks validated
 
 Directory structure: `~/claude-work/repos/Claude-Code-Projetos`
 
-See `WSL_SETUP.md` and `CHANGELOG.md` for details.
+See `WSL_SETUP.md`, `QUICK-REFERENCE.md`, and `CHANGELOG.md` for details.
+
+---
+
+## WSL2 Quick Start
+
+**Comandos essenciais para desenvolvimento diário no WSL2:**
+
+### Navegação Básica
+```bash
+# Ir para projeto
+cd ~/claude-work/repos/Claude-Code-Projetos
+
+# Verificar status
+git status
+```
+
+### Ativar venv de um Agente
+```bash
+# Exemplo: oab-watcher
+cd ~/claude-work/repos/Claude-Code-Projetos/agentes/oab-watcher
+source .venv/bin/activate  # ⚠️ Linux: bin/activate (não Scripts\activate)
+
+# Verificar ativação
+which python  # Deve apontar para .venv/bin/python
+```
+
+### Ativar venv Global (Shared)
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos
+source .venv/bin/activate
+
+# Usar para: testes compartilhados, linting, type checking
+pytest
+ruff check .
+mypy .
+```
+
+### Executar Agente
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos/agentes/<agent-name>
+source .venv/bin/activate
+python main.py
+```
+
+### Git Workflow
+```bash
+# Commit e push
+git add .
+git commit -m "feat: implementa feature X"
+git push
+
+# Pull changes (outra máquina)
+git pull
+```
+
+### Hooks - Validar Manualmente
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos
+
+# Testar Legal-Braniac
+node .claude/hooks/invoke-legal-braniac-hybrid.js
+
+# Testar session context
+node .claude/hooks/session-context-hybrid.js
+```
+
+**Diferenças Windows vs WSL:**
+| Ação | Windows | WSL |
+|------|---------|-----|
+| Ativar venv | `.venv\Scripts\activate` | `source .venv/bin/activate` |
+| Path separator | `\` (backslash) | `/` (forward slash) |
+| Line endings | CRLF | LF |
 
 ---
 
