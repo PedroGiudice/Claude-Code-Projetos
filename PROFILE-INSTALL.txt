@@ -1,0 +1,59 @@
+===========================================
+POWERSHELL PROFILE - INSTALAÇÃO SIMPLES
+===========================================
+
+PASSO 1: Achar o local do arquivo
+----------------------------------
+Execute:
+    .\find-profile.ps1
+
+Anote o caminho que aparecer.
+
+
+PASSO 2: Abrir os dois arquivos
+--------------------------------
+notepad $PROFILE
+notepad powershell-profile.ps1
+
+
+PASSO 3: Copiar e colar
+------------------------
+1. No powershell-profile.ps1: Ctrl+A (selecionar tudo)
+2. Ctrl+C (copiar)
+3. No arquivo $PROFILE: Ctrl+A (selecionar tudo)
+4. Ctrl+V (colar)
+
+
+PASSO 4: Mudar APENAS esta linha (por volta da linha 39):
+----------------------------------------------------------
+ANTES:
+    $wslUser = "cmr-auto"
+
+DEPOIS (substitua pelo SEU username do WSL):
+    $wslUser = "seu-username-aqui"
+
+Como descobrir seu username WSL:
+    wsl
+    whoami
+
+
+PASSO 5: Salvar e fechar
+-------------------------
+Ctrl+S, feche o Bloco de Notas.
+
+
+PASSO 6: Aplicar
+-----------------
+No PowerShell:
+    . $PROFILE
+
+Pronto!
+
+
+TESTAR:
+-------
+    cstatus
+    scc
+    gcp
+
+===========================================
