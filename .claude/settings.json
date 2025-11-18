@@ -3,9 +3,24 @@
   "_docs": "Ver .claude/hooks/MIGRATION.md para detalhes da arquitetura centralizada",
   "_strategy": "SessionStart carrega Legal-Braniac (1x/sessão), UserPromptSubmit coleta contexto e delega todas decisões",
 
-  "_statusLine_DISABLED_FOR_VIBE_LOG": {
-    "_comment": "TEMPORARILY DISABLED to test vibe-log Gordon Co-pilot statusline",
-    "_backup": "See settings.json.backup to restore",
+  "statusLine": {
+    "type": "command",
+    "command": "cd \"$CLAUDE_PROJECT_DIR\" && node .claude/statusline/unified-statusline.js",
+    "padding": 0,
+    "_note": "Unified statusline v1.0 - Gordon Co-pilot + Legal-Braniac + Powerline visual",
+    "_version": "1.0.0",
+    "_features": [
+      "Gordon Co-pilot: Real-time prompt analysis with score-based color coding",
+      "Legal-Braniac: Agent/skill orchestration tracking",
+      "Powerline: Professional visual with ANSI 256 colors",
+      "Responsive: Adapts to terminal width (minimal, compact, comfortable, wide)",
+      "Performance: <200ms with aggressive caching"
+    ]
+  },
+
+  "_statusLine_PREVIOUS_VERSION": {
+    "_comment": "REPLACED by unified-statusline.js (2025-11-18)",
+    "_backup": "professional-statusline.js",
     "type": "command",
     "command": "cd \"$CLAUDE_PROJECT_DIR\" && node .claude/statusline/professional-statusline.js",
     "padding": 0,
