@@ -1,8 +1,8 @@
 {
-  "sessionId": "7812c43d-1435-4e30-a2b8-20ee6106cc38",
-  "sessionStart": 1763427938081,
-  "startTime": 1763427938081,
-  "lastUpdate": 1763427938081,
+  "sessionId": "4709dc8d-ebc4-445e-9e7f-5e41a326393e",
+  "sessionStart": 1763428876686,
+  "startTime": 1763428876686,
+  "lastUpdate": 1763428876686,
   "agents": {
     "available": [
       "analise-dados-legal",
@@ -248,6 +248,13 @@
       ],
       "command": "npx vibe-log-cli send --silent --hook-trigger=sessionstart --hook-version=1.0.0",
       "note": "Vibe-log: capture session on startup (auto-detect project dir, no background mode)"
+    },
+    "session-end-git-safety": {
+      "triggers": [
+        "SessionEnd"
+      ],
+      "command": "node .claude/hooks/session-end-git-safety.js",
+      "note": "Auto-saves uncommitted changes to timestamped branch if session > 2.5h"
     },
     "prompt-enhancer": {
       "triggers": [
