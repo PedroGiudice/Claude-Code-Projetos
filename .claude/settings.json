@@ -47,6 +47,16 @@
     ],
     "SessionEnd": [
       {
+        "_comment": "Git Safety: auto-commit uncommitted changes to safety branch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-end-git-safety.js",
+            "_note": "Auto-saves uncommitted changes to timestamped branch if session > 2.5h"
+          }
+        ]
+      },
+      {
         "_comment": "Vibe-log: capture on session end",
         "hooks": [
           {
