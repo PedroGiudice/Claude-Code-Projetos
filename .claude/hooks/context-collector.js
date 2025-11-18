@@ -174,7 +174,7 @@ async function main() {
 
   try {
     // Carregar session state (criado por legal-braniac-loader.js)
-    const sessionPath = path.join(projectDir, '.claude', 'legal-braniac-session.json');
+    const sessionPath = path.join(projectDir, '.claude', 'hooks', 'legal-braniac-session.json');
 
     let sessionState;
     try {

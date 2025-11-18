@@ -220,11 +220,27 @@ class VirtualAgentFactory {
   }
 
   /**
-   * Criar agente virtual baseado em task description
+   * P1.4: Criar agente virtual com Quality Gating
    */
   createVirtualAgent(taskDescription, requiredCapabilities) {
+    // P1.4: Validar inputs
+    const validationErrors = this._validateInputs(taskDescription, requiredCapabilities);
+    if (validationErrors.length > 0) {
+      console.error(`[WARN] Virtual agent creation warnings: ${validationErrors.join(', ')}`);
+
+      // Tentar melhorar capabilities automaticamente
+      if (requiredCapabilities.length === 0 || requiredCapabilities[0] === 'general-purpose') {
+        requiredCapabilities = this._inferCapabilitiesFromTask(taskDescription);
+        console.error(`[INFO] Auto-inferred capabilities: ${requiredCapabilities.join(', ')}`);
+      }
+    }
+
     const agentId = `virtual-${Date.now()}-${this._hash(taskDescription)}`;
     const agentName = this._inferAgentName(taskDescription, requiredCapabilities);
+
+    // P1.4: Validar spec gerada
+    const definition = this._generateAgentDefinition(agentName, taskDescription, requiredCapabilities);
+    const specQuality = this._assessSpecQuality(agentName, definition, requiredCapabilities);
 
     const virtualAgent = {
       id: agentId,
@@ -235,17 +251,98 @@ class VirtualAgentFactory {
       invocationCount: 0,
       successCount: 0,
       successRate: 0,
-      definition: this._generateAgentDefinition(agentName, taskDescription, requiredCapabilities)
+      definition,
+      qualityScore: specQuality.score,
+      qualityIssues: specQuality.issues
     };
 
     this.virtualAgents.set(agentId, virtualAgent);
-    console.error(`[DEBUG] Virtual agent created: ${agentName} (${agentId.substring(0, 12)}...)`);
+
+    console.error(
+      `[DEBUG] Virtual agent created: ${agentName} (${agentId.substring(0, 12)}...) ` +
+      `Quality: ${specQuality.score}/100${specQuality.issues.length > 0 ? ` (${specQuality.issues.length} issues)` : ''}`
+    );
 
     return virtualAgent;
   }
 
   /**
-   * Registrar invocação de virtual agent
+   * P1.4: Validar inputs de criação
+   */
+  _validateInputs(taskDescription, capabilities) {
+    const errors = [];
+
+    if (!taskDescription || taskDescription.length < 10) {
+      errors.push('Task description too short');
+    }
+
+    if (!capabilities || capabilities.length === 0) {
+      errors.push('No capabilities provided');
+    }
+
+    if (capabilities && capabilities.length === 1 && capabilities[0] === 'general-purpose') {
+      errors.push('Generic capability only');
+    }
+
+    return errors;
+  }
+
+  /**
+   * P1.4: Inferir capabilities de task (fallback)
+   */
+  _inferCapabilitiesFromTask(taskDescription) {
+    // Re-usar extractCapabilities global
+    return extractCapabilities(taskDescription);
+  }
+
+  /**
+   * P1.4: Avaliar qualidade da spec gerada
+   */
+  _assessSpecQuality(name, definition, capabilities) {
+    let score = 100;
+    const issues = [];
+
+    // Validar nome
+    if (name.length < 5) {
+      score -= 20;
+      issues.push('Nome muito curto');
+    }
+
+    if (name === 'general-agent' || name.endsWith('-agent-agent')) {
+      score -= 15;
+      issues.push('Nome genérico demais');
+    }
+
+    // Validar definição
+    if (definition.length < 200) {
+      score -= 25;
+      issues.push('Definição muito curta');
+    }
+
+    if (!definition.includes('## Capabilities')) {
+      score -= 20;
+      issues.push('Seção Capabilities ausente');
+    }
+
+    // Validar capabilities
+    if (capabilities.length === 0) {
+      score -= 30;
+      issues.push('Nenhuma capability definida');
+    }
+
+    if (capabilities.length === 1 && capabilities[0] === 'general-purpose') {
+      score -= 15;
+      issues.push('Apenas capability genérica');
+    }
+
+    return {
+      score: Math.max(0, score),
+      issues
+    };
+  }
+
+  /**
+   * P1.5: Registrar invocação com critérios rigorosos de promoção
    */
   recordInvocation(agentId, success = true) {
     const agent = this.virtualAgents.get(agentId);
@@ -255,12 +352,91 @@ class VirtualAgentFactory {
     if (success) agent.successCount++;
     agent.successRate = agent.successCount / agent.invocationCount;
 
-    console.error(`[DEBUG] Virtual agent ${agent.name}: ${agent.invocationCount} invocações, ${Math.round(agent.successRate * 100)}% sucesso`);
-
-    // Auto-promote se critérios atingidos
-    if (agent.invocationCount >= 2 && agent.successRate >= 0.7) {
-      this.promoteToRealAgent(agentId);
+    // P1.5: Rastrear invocações ao longo do tempo
+    if (!agent.invocationHistory) {
+      agent.invocationHistory = [];
     }
+    agent.invocationHistory.push({
+      timestamp: Date.now(),
+      success
+    });
+
+    console.error(
+      `[DEBUG] Virtual agent ${agent.name}: ${agent.invocationCount} invocações, ` +
+      `${Math.round(agent.successRate * 100)}% sucesso`
+    );
+
+    // P1.5: Critérios RIGOROSOS de auto-promoção
+    const promotionEligible = this._checkPromotionEligibility(agent);
+
+    if (promotionEligible.eligible) {
+      console.error(`[INFO] Virtual agent ${agent.name} elegível para promoção: ${promotionEligible.reason}`);
+      this.promoteToRealAgent(agentId);
+    } else if (agent.invocationCount >= 3) {
+      // Log de progresso para promoção
+      console.error(`[DEBUG] Progresso promoção ${agent.name}: ${promotionEligible.reason}`);
+    }
+  }
+
+  /**
+   * P1.5: Verificar elegibilidade rigorosa para promoção
+   */
+  _checkPromotionEligibility(agent) {
+    const MIN_INVOCATIONS = 5;       // Aumentado de 2
+    const MIN_SUCCESS_RATE = 0.85;   // Aumentado de 0.70
+    const MIN_QUALITY_SCORE = 70;    // Novo critério
+
+    // Critério 1: Mínimo de invocações
+    if (agent.invocationCount < MIN_INVOCATIONS) {
+      return {
+        eligible: false,
+        reason: `Apenas ${agent.invocationCount}/${MIN_INVOCATIONS} invocações`
+      };
+    }
+
+    // Critério 2: Success rate alto
+    if (agent.successRate < MIN_SUCCESS_RATE) {
+      return {
+        eligible: false,
+        reason: `Success rate ${Math.round(agent.successRate * 100)}% < ${Math.round(MIN_SUCCESS_RATE * 100)}%`
+      };
+    }
+
+    // Critério 3: Quality score da spec
+    if (agent.qualityScore && agent.qualityScore < MIN_QUALITY_SCORE) {
+      return {
+        eligible: false,
+        reason: `Quality score ${agent.qualityScore} < ${MIN_QUALITY_SCORE}`
+      };
+    }
+
+    // Critério 4: Consistência temporal (últimas 3 invocações devem ter >70% success)
+    if (agent.invocationHistory && agent.invocationHistory.length >= 3) {
+      const recent3 = agent.invocationHistory.slice(-3);
+      const recent3Success = recent3.filter(h => h.success).length / recent3.length;
+
+      if (recent3Success < 0.7) {
+        return {
+          eligible: false,
+          reason: `Últimas 3 invocações: ${Math.round(recent3Success * 100)}% < 70%`
+        };
+      }
+    }
+
+    // Critério 5: Não ter sido criado há menos de 1 hora (evitar promoção prematura)
+    const age = Date.now() - agent.createdAt;
+    const MIN_AGE = 60 * 60 * 1000; // 1 hora
+    if (age < MIN_AGE) {
+      return {
+        eligible: false,
+        reason: `Criado há ${Math.round(age / 60000)}min < 60min`
+      };
+    }
+
+    return {
+      eligible: true,
+      reason: `${agent.invocationCount} invocações, ${Math.round(agent.successRate * 100)}% success, quality ${agent.qualityScore || 'N/A'}`
+    };
   }
 
   /**
@@ -284,41 +460,79 @@ class VirtualAgentFactory {
   }
 
   /**
-   * Inferir nome do agente baseado na task
+   * Inferir nome do agente baseado na task (P0.4: GENÉRICO)
    */
   _inferAgentName(taskDescription, capabilities) {
     const lower = taskDescription.toLowerCase();
 
-    // Legal domain patterns
-    if (lower.includes('estratégia') || lower.includes('estrategia')) {
-      return 'legal-strategy-planner';
-    }
-    if (lower.includes('peça') || lower.includes('petição') || lower.includes('peticao')) {
-      return 'legal-document-drafter';
-    }
-    if (lower.includes('argumento') || lower.includes('tese')) {
-      return 'legal-argumentation-architect';
-    }
-    if (lower.includes('monitorar') || lower.includes('acompanhar')) {
-      return 'process-monitor';
+    // P0.4: Pattern matching genérico baseado em verbos + domínios
+    const patterns = [
+      { verbs: ['estratégia', 'estrategia', 'planejar', 'plan'], suffix: 'strategy-planner' },
+      { verbs: ['monitorar', 'acompanhar', 'watch', 'monitor'], suffix: 'monitor' },
+      { verbs: ['analisar', 'analyze', 'analyse', 'review'], suffix: 'analyst' },
+      { verbs: ['implementar', 'desenvolver', 'create', 'implement'], suffix: 'developer' },
+      { verbs: ['documentar', 'document', 'write docs'], suffix: 'documenter' },
+      { verbs: ['testar', 'test', 'qa', 'quality'], suffix: 'tester' }
+    ];
+
+    // Tentar match com padrões genéricos
+    for (const pattern of patterns) {
+      if (pattern.verbs.some(v => lower.includes(v))) {
+        // Extrair domínio (primeira capability ou palavra-chave)
+        const domain = this._extractDomain(lower, capabilities);
+        return `${domain}-${pattern.suffix}`;
+      }
     }
 
-    // Generic fallback
+    // Fallback: usar primeira capability
     const firstCap = capabilities[0] || 'general';
     return `${firstCap.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-agent`;
   }
 
   /**
-   * Gerar definição do agente (formato .md)
+   * P0.4: Extrair domínio da tarefa (GENÉRICO)
+   */
+  _extractDomain(text, capabilities) {
+    // Tentar extrair de capabilities primeiro
+    if (capabilities && capabilities.length > 0) {
+      const firstCap = capabilities[0].split('-')[0]; // e.g., "legal-analysis" → "legal"
+      if (firstCap && firstCap.length > 3) return firstCap;
+    }
+
+    // Heurística: primeira palavra substantiva > 4 chars
+    const words = text.split(/\s+/);
+    const actionWords = ['create', 'analyze', 'implement', 'review', 'test', 'develop',
+                         'criar', 'analisar', 'implementar', 'revisar', 'testar', 'desenvolver'];
+
+    for (const word of words) {
+      if (word.length > 4 && !actionWords.includes(word.toLowerCase())) {
+        return word.replace(/[^a-z0-9]/gi, '').toLowerCase();
+      }
+    }
+
+    return 'general';
+  }
+
+  /**
+   * Gerar definição do agente (formato .md) - P0.4: GENÉRICO
    */
   _generateAgentDefinition(name, taskDescription, capabilities) {
     const timestamp = new Date().toISOString();
+    const domain = this._extractDomain(taskDescription.toLowerCase(), capabilities);
 
-    return `# ${name}
+    return `---
+name: ${name}
+description: Auto-generated agent for ${domain} tasks
+created: ${timestamp}
+type: virtual-promoted
+---
+
+# ${name}
 
 **Tipo**: Agente Virtual Promovido
+**Domínio**: ${domain}
 **Criado**: ${timestamp}
-**Origem**: Auto-gerado pelo Legal-Braniac
+**Origem**: Auto-gerado pelo Legal-Braniac v2.0
 
 ## Descrição
 
@@ -326,32 +540,93 @@ Agente criado automaticamente para atender à task:
 
 > ${taskDescription}
 
+Este agente foi promovido após demonstrar 2+ invocações bem-sucedidas (>70% success rate).
+
 ## Capabilities
 
-${capabilities.map(cap => `- ${cap}`).join('\n')}
+${capabilities.map(cap => `- **${cap}**: Capacidade inferida da task original`).join('\n')}
 
 ## Especialização
 
-Este agente foi promovido após demonstrar 2+ invocações bem-sucedidas.
+${this._generateSpecializationText(domain, capabilities)}
 
 ## Tools/Skills Recomendadas
 
-${this._recommendSkills(capabilities).map(skill => `- ${skill}`).join('\n')}
+${this._recommendSkills(capabilities).map(skill => `- \`${skill}\`: ${this._getSkillDescription(skill)}`).join('\n')}
 
 ## Uso
 
 Este agente deve ser invocado para tasks similares a:
+
 - ${taskDescription}
+- Tarefas relacionadas a: ${capabilities.join(', ')}
+
+## Critérios de Invocação
+
+O Legal-Braniac invocará este agente quando detectar:
+
+${capabilities.map(cap => `- Keywords: ${this._getCapabilityKeywords(cap).join(', ')}`).join('\n')}
 
 ## Histórico
 
-- Criado como virtual agent
-- Promovido após validação em sessão de uso real
+- **Criado**: Como virtual agent (session-scoped)
+- **Promovido**: Após validação em uso real
+- **Auto-gerado**: Template genérico v2.0
 
 ---
 
-**Nota**: Este arquivo foi gerado automaticamente. Revise e ajuste conforme necessário.
+**Nota**: Este arquivo foi gerado automaticamente pelo Legal-Braniac.
+Revise e ajuste conforme necessário para refinar a especialização.
 `;
+  }
+
+  /**
+   * P0.4: Gerar texto de especialização genérico
+   */
+  _generateSpecializationText(domain, capabilities) {
+    return `Este agente é especializado em tarefas de **${domain}**, focando em:
+
+${capabilities.map((cap, i) => `${i + 1}. **${cap}**: Aplicação prática desta capacidade no contexto de ${domain}`).join('\n')}
+
+O agente foi treinado (via auto-geração) para lidar com tarefas que requerem estas capabilities específicas.`;
+  }
+
+  /**
+   * P0.4: Obter descrição genérica de skill
+   */
+  _getSkillDescription(skillName) {
+    const descriptions = {
+      'strategy-planner': 'Planejamento estratégico e arquitetura de soluções',
+      'decision-tree-builder': 'Construção de árvores de decisão',
+      'petition-drafter': 'Redação de petições e documentos formais',
+      'legal-docx-formatter': 'Formatação de documentos legais',
+      'legal-lens': 'Análise profunda de textos',
+      'legal-articles-finder': 'Busca e extração de referências',
+      'monitor-notify': 'Monitoramento e notificações'
+    };
+
+    return descriptions[skillName] || 'Ferramenta auxiliar para esta capability';
+  }
+
+  /**
+   * P0.4: Obter keywords para uma capability
+   */
+  _getCapabilityKeywords(capability) {
+    const keywordMap = {
+      'strategic-planning': ['estratégia', 'strategy', 'planejar', 'plan'],
+      'risk-assessment': ['risco', 'risk', 'avaliar', 'assess'],
+      'document-drafting': ['documento', 'document', 'redigir', 'draft'],
+      'legal-writing': ['legal', 'jurídico', 'peça', 'petição'],
+      'legal-analysis': ['análise', 'analysis', 'analisar', 'analyze'],
+      'case-research': ['pesquisa', 'research', 'caso', 'case'],
+      'process-monitoring': ['monitorar', 'monitor', 'acompanhar', 'watch'],
+      'alert-system': ['alerta', 'alert', 'notificar', 'notify'],
+      'argumentation': ['argumento', 'argument', 'tese', 'thesis'],
+      'thesis-construction': ['construir tese', 'build thesis', 'argumentar'],
+      'general-purpose': ['geral', 'general', 'genérico', 'generic']
+    };
+
+    return keywordMap[capability] || [capability.replace(/-/g, ' ')];
   }
 
   /**
@@ -388,21 +663,36 @@ Este agente deve ser invocado para tasks similares a:
   }
 
   /**
-   * Salvar estado de virtual agents
+   * P0.6: Salvar estado de virtual agents (File-Based Persistence)
    */
   async saveState() {
-    const state = {
-      virtualAgents: Array.from(this.virtualAgents.values()),
-      timestamp: Date.now(),
-      session: process.env.CLAUDE_SESSION_ID || 'unknown'
-    };
+    try {
+      const state = {
+        version: '2.0',
+        virtualAgents: Array.from(this.virtualAgents.values()),
+        timestamp: Date.now(),
+        ttl: 24 * 60 * 60 * 1000, // 24h
+        session: process.env.CLAUDE_SESSION_ID || 'unknown',
+        metadata: {
+          totalAgents: this.virtualAgents.size,
+          promotionCandidates: this._getPromotionCandidates().length
+        }
+      };
 
-    const statePath = path.join(this.sessionDir, 'virtual-agents-state.json');
-    await fs.writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
+      // Criar diretório se não existir
+      await fs.mkdir(this.sessionDir, { recursive: true });
+
+      const statePath = path.join(this.sessionDir, 'virtual-agents-state.json');
+      await fs.writeFile(statePath, JSON.stringify(state, null, 2), 'utf8');
+
+      console.error(`[DEBUG] Estado salvo: ${this.virtualAgents.size} virtual agents`);
+    } catch (error) {
+      console.error(`[ERROR] Falha ao salvar estado: ${error.message}`);
+    }
   }
 
   /**
-   * Carregar estado de sessão anterior (se recente)
+   * P0.6: Carregar estado de sessão anterior (se recente)
    */
   async loadState() {
     const statePath = path.join(this.sessionDir, 'virtual-agents-state.json');
@@ -411,16 +701,67 @@ Este agente deve ser invocado para tasks similares a:
       const content = await fs.readFile(statePath, 'utf8');
       const state = JSON.parse(content);
 
-      // Carregar apenas se sessão foi nas últimas 24h
-      if (Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-        state.virtualAgents.forEach(agent => {
-          this.virtualAgents.set(agent.id, agent);
-        });
-        console.error(`[DEBUG] Carregados ${state.virtualAgents.length} virtual agents de sessão anterior`);
+      // Validar versão
+      if (!state.version || state.version !== '2.0') {
+        console.error('[WARN] Estado de versão incompatível - ignorando');
+        return;
       }
-    } catch {
+
+      // Verificar TTL
+      const age = Date.now() - state.timestamp;
+      if (age > state.ttl) {
+        console.error(`[DEBUG] Estado expirado (${Math.round(age / 3600000)}h > 24h) - ignorando`);
+        await this._archiveState(statePath);
+        return;
+      }
+
+      // Restaurar virtual agents
+      state.virtualAgents.forEach(agent => {
+        this.virtualAgents.set(agent.id, agent);
+      });
+
+      console.error(`[DEBUG] Estado restaurado: ${state.virtualAgents.length} virtual agents (${Math.round(age / 60000)}min atrás)`);
+
+      // Checar candidatos a promoção
+      const candidates = this._getPromotionCandidates();
+      if (candidates.length > 0) {
+        console.error(`[INFO] ${candidates.length} virtual agent(s) elegível(is) para promoção`);
+      }
+
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.error(`[WARN] Erro ao carregar estado: ${error.message}`);
+      }
       // Sem estado anterior - ok
     }
+  }
+
+  /**
+   * P0.6: Arquivar estado expirado
+   */
+  async _archiveState(statePath) {
+    try {
+      const archivePath = statePath.replace('.json', `-archived-${Date.now()}.json`);
+      await fs.rename(statePath, archivePath);
+      console.error(`[DEBUG] Estado expirado arquivado: ${path.basename(archivePath)}`);
+    } catch {
+      // Falha ao arquivar - não crítico
+    }
+  }
+
+  /**
+   * P0.6: Obter candidatos a promoção
+   */
+  _getPromotionCandidates() {
+    const candidates = [];
+
+    for (const [id, agent] of this.virtualAgents.entries()) {
+      if (agent.invocationCount >= 2 && agent.successRate >= 0.7) {
+        candidates.push({ id, agent });
+      }
+    }
+
+    return candidates;
   }
 }
 
@@ -452,33 +793,94 @@ function detectAgentGap(task, availableAgents) {
 }
 
 /**
- * Extrair capabilities necessárias do task (NLU-based)
+ * P0.5: Extrair capabilities necessárias do task (NLU-based GENÉRICO)
  */
 function extractCapabilities(task) {
   const keywords = {
+    // Planejamento e Estratégia
     'estratégia': ['strategic-planning', 'risk-assessment'],
     'estrategia': ['strategic-planning', 'risk-assessment'],
+    'planejar': ['strategic-planning'],
+    'plan': ['strategic-planning'],
+    'arquitetura': ['architectural-design', 'system-planning'],
+    'architecture': ['architectural-design', 'system-planning'],
+
+    // Desenvolvimento
+    'implementar': ['implementation', 'coding'],
+    'implement': ['implementation', 'coding'],
+    'desenvolver': ['development', 'coding'],
+    'develop': ['development', 'coding'],
+    'código': ['coding', 'programming'],
+    'code': ['coding', 'programming'],
+    'refatorar': ['refactoring', 'code-improvement'],
+    'refactor': ['refactoring', 'code-improvement'],
+
+    // Análise
+    'analisar': ['analysis', 'investigation'],
+    'analyze': ['analysis', 'investigation'],
+    'análise': ['analysis', 'investigation'],
+    'analysis': ['analysis', 'investigation'],
+    'revisar': ['review', 'audit'],
+    'review': ['review', 'audit'],
+
+    // Testes e QA
+    'testar': ['testing', 'quality-assurance'],
+    'test': ['testing', 'quality-assurance'],
+    'qa': ['quality-assurance', 'testing'],
+    'quality': ['quality-assurance'],
+
+    // Documentação
+    'documentar': ['documentation', 'technical-writing'],
+    'document': ['documentation', 'technical-writing'],
+    'docs': ['documentation'],
+    'readme': ['documentation', 'user-guide'],
+
+    // Monitoramento
+    'monitorar': ['monitoring', 'tracking'],
+    'monitor': ['monitoring', 'tracking'],
+    'acompanhar': ['tracking', 'monitoring'],
+    'watch': ['monitoring'],
+
+    // Domínio Legal (mantido para backward compatibility)
     'peça': ['document-drafting', 'legal-writing'],
     'petição': ['document-drafting', 'legal-writing'],
     'peticao': ['document-drafting', 'legal-writing'],
-    'análise': ['legal-analysis', 'case-research'],
-    'analise': ['legal-analysis', 'case-research'],
-    'monitorar': ['process-monitoring', 'alert-system'],
-    'acompanhar': ['process-monitoring', 'alert-system'],
     'argumento': ['argumentation', 'thesis-construction'],
-    'tese': ['argumentation', 'thesis-construction']
+    'tese': ['argumentation', 'thesis-construction'],
+    'jurídico': ['legal-analysis'],
+    'juridico': ['legal-analysis']
   };
 
-  const capabilities = [];
+  const capabilities = new Set();
   const lowerTask = task.toLowerCase();
 
+  // Primeira passada: match exato de keywords
   for (const [term, caps] of Object.entries(keywords)) {
     if (lowerTask.includes(term)) {
-      capabilities.push(...caps);
+      caps.forEach(cap => capabilities.add(cap));
     }
   }
 
-  return capabilities.length > 0 ? capabilities : ['general-purpose'];
+  // Segunda passada: inferência baseada em verbos (se nenhuma capability encontrada)
+  if (capabilities.size === 0) {
+    const actionVerbs = {
+      create: 'creation',
+      build: 'building',
+      setup: 'configuration',
+      configure: 'configuration',
+      deploy: 'deployment',
+      integrate: 'integration',
+      optimize: 'optimization'
+    };
+
+    for (const [verb, capability] of Object.entries(actionVerbs)) {
+      if (lowerTask.includes(verb)) {
+        capabilities.add(capability);
+      }
+    }
+  }
+
+  return capabilities.size > 0 ? Array.from(capabilities) : ['general-purpose'];
 }
 
 /**
@@ -503,38 +905,49 @@ function inferAgentNameFromCapabilities(capabilities) {
  */
 class DecisionEngine {
   /**
-   * Analisar complexidade multi-dimensional da task
+   * P1.1: Analisar complexidade multi-dimensional da task (com confidence)
    */
   static analyzeComplexity(task, availableAgents, availableSkills) {
-    return {
+    const dimensions = {
       technical: this._assessTechnicalComplexity(task),
       legal: this._assessLegalComplexity(task),
       temporal: this._assessTimeConstraints(task),
       interdependency: this._assessInterdependency(task)
     };
+
+    // P1.1: Calcular confidence baseado em variância das dimensões
+    const confidence = this._calculateConfidenceFromDimensions(dimensions);
+
+    return {
+      ...dimensions,
+      confidence,
+      complexity: (dimensions.technical + dimensions.legal + dimensions.interdependency) / 3
+    };
   }
 
   /**
-   * Fazer decisão adaptativa: ORCHESTRATE, DELEGATE, CREATE_VIRTUAL, ASK_USER
+   * P1.1: Fazer decisão adaptativa com confidence scoring
    */
   static makeDecision(task, complexity, availableAgents) {
-    const confidence = this._calculateConfidence(complexity, availableAgents);
+    const confidence = complexity.confidence || this._calculateConfidence(complexity, availableAgents);
 
-    // Baixa confiança → perguntar ao usuário
+    // P1.1: Baixa confiança → perguntar ao usuário
     if (confidence < 0.5) {
       return {
         action: 'ASK_USER',
-        reason: 'Ambiguidade alta - necessário clarificação',
-        confidence
+        reason: `Ambiguidade alta (confidence: ${(confidence * 100).toFixed(0)}%) - necessário clarificação`,
+        confidence,
+        complexity: complexity.complexity || 50
       };
     }
 
     // Tarefa simples → legal-braniac orquestra diretamente
-    if (complexity.legal < 30 && complexity.technical < 30) {
+    if (complexity.complexity < 30) {
       return {
         action: 'ORCHESTRATE',
         reason: 'Tarefa simples, orquestração direta',
-        confidence
+        confidence,
+        complexity: complexity.complexity
       };
     }
 
@@ -543,7 +956,8 @@ class DecisionEngine {
       return {
         action: 'CREATE_VIRTUAL',
         reason: 'Nenhum agente disponível',
-        confidence
+        confidence,
+        complexity: complexity.complexity
       };
     }
 
@@ -552,57 +966,136 @@ class DecisionEngine {
       action: 'DELEGATE',
       reason: 'Delegação a agentes especializados',
       confidence,
+      complexity: complexity.complexity,
       agents: this._selectTopAgents(task, availableAgents)
     };
   }
 
+  /**
+   * P1.1: Calcular confidence baseado em variância de dimensões
+   */
+  static _calculateConfidenceFromDimensions(dimensions) {
+    const values = [dimensions.technical, dimensions.legal, dimensions.interdependency];
+    const mean = values.reduce((a, b) => a + b) / values.length;
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+
+    // Baixa variância = alta confiança (dimensões consistentes)
+    // Variância máxima = 100² = 10000 (dimensões em extremos opostos)
+    // Normalizar: confidence = 1 - (variance / 10000)
+    const rawConfidence = Math.max(0, 1 - (variance / 10000));
+
+    // Boost confidence se temporal indica urgência (decisão clara)
+    const temporalBoost = dimensions.temporal > 60 ? 0.1 : 0;
+
+    return Math.min(1, rawConfidence + temporalBoost);
+  }
+
+  /**
+   * P0.1: Avaliar complexidade técnica (GENÉRICO)
+   */
   static _assessTechnicalComplexity(task) {
     let score = 0;
     const lower = task.toLowerCase();
 
-    // Termos técnicos aumentam complexidade
-    const technicalTerms = ['api', 'database', 'docker', 'kubernetes', 'microservice', 'pipeline'];
-    score += technicalTerms.filter(t => lower.includes(t)).length * 15;
+    // Termos técnicos - infraestrutura (peso 8)
+    const infraTerms = ['api', 'database', 'docker', 'kubernetes', 'microservice', 'pipeline', 'cache', 'distributed'];
+    score += infraTerms.filter(t => lower.includes(t)).length * 15;
 
-    // Múltiplas tecnologias aumentam complexidade
-    const techStack = ['python', 'node', 'react', 'django', 'flask'];
+    // Termos técnicos - linguagens/frameworks (peso 5)
+    const techStack = ['python', 'node', 'react', 'django', 'flask', 'typescript', 'java', 'c++'];
     score += techStack.filter(t => lower.includes(t)).length * 10;
+
+    // Termos técnicos - padrões/arquitetura (peso 10)
+    const patterns = ['rag', 'embedding', 'neural', 'machine learning', 'ai', 'pattern', 'design pattern'];
+    score += patterns.filter(t => lower.includes(t)).length * 20;
+
+    // Complexidade de implementação (palavras-chave)
+    const complexActions = ['implementar sistema', 'criar arquitetura', 'desenvolver plataforma'];
+    if (complexActions.some(a => lower.includes(a))) score += 30;
 
     return Math.min(score, 100);
   }
 
+  /**
+   * P0.1: Avaliar complexidade de domínio (GENÉRICO - substitui legal complexity)
+   */
   static _assessLegalComplexity(task) {
+    // Renomeado internamente mas mantido nome para backward compatibility
+    return this._assessDomainComplexity(task);
+  }
+
+  /**
+   * P0.1: Avaliar complexidade de domínio (NOVO - GENÉRICO)
+   */
+  static _assessDomainComplexity(task) {
     let score = 0;
     const lower = task.toLowerCase();
 
-    // Termos jurídicos complexos
-    const complexTerms = ['estratégia', 'estrategia', 'recurso', 'apelação', 'apelacao'];
-    score += complexTerms.filter(t => lower.includes(t)).length * 25;
+    // Domínio Legal (peso 8)
+    const legalComplex = ['estratégia', 'estrategia', 'recurso', 'apelação', 'apelacao', 'tese', 'argumento'];
+    score += legalComplex.filter(t => lower.includes(t)).length * 25;
 
-    // Termos jurídicos simples
-    const simpleTerms = ['buscar', 'consultar', 'listar'];
-    score += simpleTerms.filter(t => lower.includes(t)).length * 10;
+    const legalSimple = ['buscar', 'consultar', 'listar', 'publicação', 'publicacao'];
+    score += legalSimple.filter(t => lower.includes(t)).length * 10;
 
-    // Múltiplas instâncias jurídicas aumentam complexidade
-    const instances = ['stf', 'stj', 'trf', 'tjsp', 'tjrj'];
-    score += instances.filter(t => lower.includes(t)).length * 15;
+    // Domínio de Dados (peso 7)
+    const dataTerms = ['análise de dados', 'data analysis', 'analytics', 'visualization', 'dashboard'];
+    score += dataTerms.filter(t => lower.includes(t)).length * 20;
+
+    // Domínio de Negócio (peso 6)
+    const businessTerms = ['processo de negócio', 'business process', 'workflow', 'automation'];
+    score += businessTerms.filter(t => lower.includes(t)).length * 15;
+
+    // Domínio Acadêmico/Pesquisa (peso 7)
+    const researchTerms = ['pesquisa', 'research', 'estudo', 'investigação', 'investigation'];
+    score += researchTerms.filter(t => lower.includes(t)).length * 18;
 
     return Math.min(score, 100);
   }
 
+  /**
+   * P0.1: Avaliar restrições temporais (GENÉRICO)
+   */
   static _assessTimeConstraints(task) {
     const lower = task.toLowerCase();
 
-    if (lower.includes('urgente') || lower.includes('imediato')) return 'urgent';
-    if (lower.includes('prazo') || lower.includes('deadline')) return 'deadline';
-    if (lower.includes('quando possível')) return 'flexible';
+    // Urgência alta (score 80)
+    if (lower.includes('urgente') || lower.includes('imediato') || lower.includes('asap') || lower.includes('agora')) {
+      return 80;
+    }
 
-    return 'normal';
+    // Deadline específico (score 60)
+    if (lower.includes('prazo') || lower.includes('deadline') || lower.includes('até')) {
+      return 60;
+    }
+
+    // Flexível (score 20)
+    if (lower.includes('quando possível') || lower.includes('quando tiver tempo') || lower.includes('eventualmente')) {
+      return 20;
+    }
+
+    // Normal (score 40)
+    return 40;
   }
 
+  /**
+   * P0.1: Avaliar interdependência entre tarefas (GENÉRICO)
+   */
   static _assessInterdependency(task) {
+    const lower = task.toLowerCase();
+
+    // Indicadores de sequência (peso alto)
+    const sequenceIndicators = ['e depois', 'em seguida', 'então', 'após', 'depois de', 'before', 'after', 'then'];
+    const hasSequence = sequenceIndicators.some(ind => lower.includes(ind));
+    if (hasSequence) return 70;
+
+    // Múltiplas ações conectadas (peso médio)
     const steps = task.split(/\be\b|,|;/);
-    return steps.length > 1 ? steps.length : 0;
+    if (steps.length > 3) return 60;
+    if (steps.length > 2) return 40;
+
+    // Tarefa simples (baixa interdependência)
+    return 20;
   }
 
   static _calculateConfidence(complexity, availableAgents) {
@@ -633,9 +1126,111 @@ class DecisionEngine {
 }
 
 /**
- * OrchestrationEngine - Dependency graph e execução paralela
+ * OrchestrationEngine - Dependency graph, decomposição e execução paralela
  */
 class OrchestrationEngine {
+  /**
+   * P0.3: Decompor task em subtarefas (GENÉRICO)
+   */
+  static decomposeTask(task) {
+    const lower = task.toLowerCase();
+    const subtasks = [];
+
+    // Estratégia 1: Detectar "e" conectando ações paralelas
+    const parts = task.split(/\s+e\s+/i);
+    if (parts.length > 1) {
+      // Verificar se são realmente ações independentes
+      const actionVerbs = ['criar', 'implementar', 'analisar', 'testar', 'documentar', 'revisar',
+                          'create', 'implement', 'analyze', 'test', 'document', 'review'];
+
+      const hasMultipleActions = parts.filter(p =>
+        actionVerbs.some(verb => p.toLowerCase().includes(verb))
+      ).length > 1;
+
+      if (hasMultipleActions) {
+        return parts.map((p, i) => ({
+          id: `task-${i}`,
+          description: p.trim(),
+          parallel: true,
+          dependencies: []
+        }));
+      }
+    }
+
+    // Estratégia 2: Detectar sequência temporal
+    const sequenceKeywords = ['então', 'depois', 'em seguida', 'after', 'then'];
+    const hasSequence = sequenceKeywords.some(kw => lower.includes(kw));
+
+    if (hasSequence) {
+      // Dividir por marcadores de sequência
+      let remaining = task;
+      let taskId = 0;
+
+      for (const keyword of sequenceKeywords) {
+        const regex = new RegExp(`\\s*${keyword}\\s*`, 'i');
+        const split = remaining.split(regex);
+
+        if (split.length > 1) {
+          for (let i = 0; i < split.length; i++) {
+            if (split[i].trim()) {
+              subtasks.push({
+                id: `task-${taskId}`,
+                description: split[i].trim(),
+                parallel: false,
+                dependencies: i > 0 ? [`task-${taskId - 1}`] : [],
+                order: taskId
+              });
+              taskId++;
+            }
+          }
+          break;
+        }
+      }
+
+      if (subtasks.length > 0) return subtasks;
+    }
+
+    // Estratégia 3: Detectar pontos e vírgulas (lista de tarefas)
+    const listParts = task.split(/[;,]\s*/);
+    if (listParts.length > 2) {
+      // Verificar se são tarefas distintas
+      const distinctTasks = listParts.filter(p => {
+        const words = p.split(/\s+/);
+        return words.length > 2; // Evitar fragmentos muito pequenos
+      });
+
+      if (distinctTasks.length > 1) {
+        return distinctTasks.map((p, i) => ({
+          id: `task-${i}`,
+          description: p.trim(),
+          parallel: true, // Assume paralelo por padrão
+          dependencies: []
+        }));
+      }
+    }
+
+    // Estratégia 4: Tarefa complexa baseada em complexidade
+    const complexity = DecisionEngine.analyzeComplexity(task, {}, {});
+    const avgComplexity = (complexity.technical + complexity.legal + complexity.interdependency) / 3;
+
+    if (avgComplexity > 60) {
+      // Decompor em fases padrão de desenvolvimento
+      return [
+        { id: 'task-0', description: `Planejar: ${task}`, parallel: false, dependencies: [] },
+        { id: 'task-1', description: `Implementar: ${task}`, parallel: false, dependencies: ['task-0'] },
+        { id: 'task-2', description: `Validar: ${task}`, parallel: false, dependencies: ['task-1'] }
+      ];
+    }
+
+    // Fallback: Tarefa simples (não decompor)
+    return [{
+      id: 'task-0',
+      description: task,
+      parallel: false,
+      dependencies: []
+    }];
+  }
+
   /**
    * Criar grafo de dependências de tasks
    */
@@ -644,33 +1239,74 @@ class OrchestrationEngine {
   }
 
   /**
-   * Executar tasks em paralelo respeitando dependências
+   * P1.2: Executar tasks em paralelo com métricas de performance
    */
-  static async executeParallel(taskGraph, delegationEngine) {
+  static async executeParallel(taskGraph, delegationEngine, virtualAgentFactory = null) {
     const results = {};
     const batches = taskGraph.getParallelBatches();
+    const startTime = Date.now();
 
     console.error(`[DEBUG] Executando ${batches.length} batches de tasks`);
 
-    for (const batch of batches) {
-      console.error(`[DEBUG] Batch com ${batch.length} tasks paralelas`);
+    for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+      const batch = batches[batchIdx];
+      const batchStartTime = Date.now();
 
+      console.error(`[DEBUG] Batch ${batchIdx + 1}/${batches.length} com ${batch.length} tasks paralelas`);
+
+      // P1.2: Executar batch em paralelo com virtualAgentFactory
       const promises = batch.map(task =>
-        delegationEngine.execute(task).catch(err => ({
-          task,
-          error: err,
-          success: false
-        }))
+        delegationEngine.execute(task.description || task, 3, virtualAgentFactory)
+          .then(result => ({
+            task,
+            result,
+            success: true,
+            duration: Date.now() - batchStartTime
+          }))
+          .catch(err => ({
+            task,
+            error: err.message,
+            success: false,
+            duration: Date.now() - batchStartTime
+          }))
       );
 
       const batchResults = await Promise.all(promises);
+      const batchDuration = Date.now() - batchStartTime;
 
+      // Consolidar resultados
       for (const result of batchResults) {
         results[result.task.id] = result;
       }
+
+      // P1.2: Métricas de batch
+      const successCount = batchResults.filter(r => r.success).length;
+      console.error(
+        `[DEBUG] Batch ${batchIdx + 1} completo: ${successCount}/${batch.length} success, ` +
+        `${batchDuration}ms total, ${Math.round(batchDuration / batch.length)}ms avg`
+      );
     }
 
-    return results;
+    const totalDuration = Date.now() - startTime;
+    const totalTasks = Object.keys(results).length;
+    const successTasks = Object.values(results).filter(r => r.success).length;
+
+    console.error(
+      `[INFO] Execução paralela completa: ${successTasks}/${totalTasks} tasks success, ` +
+      `${totalDuration}ms total (${Math.round(totalDuration / totalTasks)}ms/task avg)`
+    );
+
+    return {
+      results,
+      metrics: {
+        totalTasks,
+        successTasks,
+        failureTasks: totalTasks - successTasks,
+        totalDuration,
+        avgDurationPerTask: Math.round(totalDuration / totalTasks),
+        batches: batches.length
+      }
+    };
   }
 }
 
@@ -787,29 +1423,40 @@ class DelegationEngine {
   }
 
   /**
-   * Selecionar agentes com ranking
+   * P0.5: Selecionar agentes com Hybrid Matching Algorithm
    */
   selectAgents(task) {
     const candidates = this._filterCandidates(task);
 
     if (candidates.length === 0) {
-      return { match: false, reason: 'Nenhum agente candidato' };
+      return { match: false, reason: 'Nenhum agente candidato (gap detectado)' };
     }
 
-    // Ranking por: performance histórica (50%) + load (30%) + skill match (20%)
+    // P0.5: Hybrid Ranking - performance (40%) + capability match (30%) + load (20%) + keyword match (10%)
     const ranked = candidates.map(agentName => {
       const agent = this.availableAgents[agentName];
       const load = this.agentLoadMap.get(agentName) || 0;
       const historicalSuccess = agent.successRate || 0.5;
-      const skillMatch = this._calculateSkillMatch(agent, task);
+      const capabilityMatch = this._calculateCapabilityMatch(agent, task);
+      const keywordMatch = this._calculateKeywordMatch(agent, task);
 
       const score =
-        historicalSuccess * 0.5 +
-        (1 - load / this.maxConcurrentPerAgent) * 0.3 +
-        skillMatch * 0.2;
+        historicalSuccess * 0.4 +        // Performance histórica
+        capabilityMatch * 0.3 +          // Match de capabilities
+        (1 - load / this.maxConcurrentPerAgent) * 0.2 +  // Load balancing
+        keywordMatch * 0.1;              // Keywords adicionais
 
-      return { agentName, agent, score };
+      return { agentName, agent, score, details: { historicalSuccess, capabilityMatch, load, keywordMatch } };
     }).sort((a, b) => b.score - a.score);
+
+    // P0.5: Threshold de 40 pontos - abaixo disso, considera gap
+    if (ranked[0].score < 0.4) {
+      return {
+        match: false,
+        reason: `Score insuficiente (${(ranked[0].score * 100).toFixed(0)}% < 40%) - gap detectado`,
+        bestCandidate: ranked[0]
+      };
+    }
 
     return {
       match: true,
@@ -818,48 +1465,109 @@ class DelegationEngine {
     };
   }
 
+  /**
+   * P0.5: Filtrar candidatos com threshold mínimo
+   */
   _filterCandidates(task) {
     const requiredCaps = extractCapabilities(task);
 
     return Object.keys(this.availableAgents).filter(agentName => {
       const agent = this.availableAgents[agentName];
 
-      return requiredCaps.some(cap =>
+      // Match por capabilities OU por keywords (hybrid approach)
+      const capMatch = requiredCaps.some(cap =>
         agent.especialidade.toLowerCase().includes(cap.toLowerCase())
       );
+
+      const keywordMatch = this._hasKeywordOverlap(agent.especialidade, task);
+
+      return capMatch || keywordMatch;
     });
   }
 
-  _calculateSkillMatch(agent, task) {
-    // Placeholder - match simples por keywords
+  /**
+   * P0.5: Calcular match de capabilities (0-1)
+   */
+  _calculateCapabilityMatch(agent, task) {
+    const requiredCaps = extractCapabilities(task);
+    const specialtyLower = agent.especialidade.toLowerCase();
+
+    const matchedCaps = requiredCaps.filter(cap =>
+      specialtyLower.includes(cap.toLowerCase())
+    );
+
+    return matchedCaps.length / Math.max(requiredCaps.length, 1);
+  }
+
+  /**
+   * P0.5: Calcular match de keywords (0-1)
+   */
+  _calculateKeywordMatch(agent, task) {
     const taskLower = task.toLowerCase();
     const specialtyLower = agent.especialidade.toLowerCase();
 
-    const keywords = taskLower.split(/\s+/).filter(w => w.length > 3);
+    // Extrair keywords significativas (> 3 chars, excluindo stop words)
+    const stopWords = ['the', 'and', 'for', 'with', 'que', 'para', 'com', 'uma', 'um'];
+    const keywords = taskLower.split(/\s+/)
+      .filter(w => w.length > 3 && !stopWords.includes(w));
+
     const matches = keywords.filter(kw => specialtyLower.includes(kw));
 
     return matches.length / Math.max(keywords.length, 1);
   }
 
   /**
-   * Executar task com retry exponencial
+   * P0.5: Verificar se há overlap de keywords (threshold 20%)
    */
-  async execute(task, maxRetries = 3) {
+  _hasKeywordOverlap(specialty, task) {
+    const taskLower = task.toLowerCase();
+    const specialtyLower = specialty.toLowerCase();
+
+    const taskWords = taskLower.split(/\s+/).filter(w => w.length > 3);
+    const specialtyWords = specialtyLower.split(/\s+/).filter(w => w.length > 3);
+
+    const overlap = taskWords.filter(tw => specialtyWords.includes(tw));
+
+    return overlap.length / Math.max(taskWords.length, 1) >= 0.2;
+  }
+
+  /**
+   * Executar task com retry exponencial
+   * P0.2: Integrado com VirtualAgentFactory para gap detection
+   */
+  async execute(task, maxRetries = 3, virtualAgentFactory = null) {
     const selection = this.selectAgents(task);
 
-    if (!selection.match) {
+    let agent = selection.match ? selection.topAgent.agentName : null;
+    let isVirtualAgent = false;
+
+    // P0.2: GAP DETECTION - Se nenhum agente disponível, criar virtual
+    if (!selection.match && virtualAgentFactory) {
+      console.error(`[DEBUG] Gap detectado para task: "${task}"`);
+      const requiredCaps = extractCapabilities(task);
+      const virtualAgent = virtualAgentFactory.createVirtualAgent(task, requiredCaps);
+
+      // Adicionar virtual agent ao availableAgents temporariamente
+      this.availableAgents[virtualAgent.name] = {
+        especialidade: `[VIRTUAL] ${requiredCaps.join(', ')}`,
+        successRate: 0.5,
+        virtualId: virtualAgent.id
+      };
+
+      agent = virtualAgent.name;
+      isVirtualAgent = true;
+
+      console.error(`[DEBUG] Virtual agent criado: ${virtualAgent.name}`);
+    } else if (!selection.match) {
       throw new Error(`Nenhum agente disponível para: ${task}`);
     }
-
-    const agent = selection.topAgent.agentName;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Incrementar load
         this.agentLoadMap.set(agent, (this.agentLoadMap.get(agent) || 0) + 1);
 
-        // Simular delegação (TODO: integrar com Task tool)
-        console.error(`[DEBUG] Delegando "${task}" para ${agent} (tentativa ${attempt}/${maxRetries})`);
+        console.error(`[DEBUG] Delegando "${task}" para ${agent} (tentativa ${attempt}/${maxRetries})${isVirtualAgent ? ' [VIRTUAL]' : ''}`);
 
         const result = await this._delegateToAgent(task, agent);
 
@@ -868,6 +1576,13 @@ class DelegationEngine {
 
         // Atualizar success rate
         this._updateSuccessRate(agent, true);
+
+        // P0.2: Registrar invocação em virtual agent
+        if (isVirtualAgent && virtualAgentFactory) {
+          const virtualId = this.availableAgents[agent].virtualId;
+          virtualAgentFactory.recordInvocation(virtualId, true);
+          await virtualAgentFactory.saveState();
+        }
 
         return result;
       } catch (error) {
@@ -879,6 +1594,14 @@ class DelegationEngine {
         if (attempt === maxRetries) {
           // Atualizar failure rate
           this._updateSuccessRate(agent, false);
+
+          // P0.2: Registrar falha em virtual agent
+          if (isVirtualAgent && virtualAgentFactory) {
+            const virtualId = this.availableAgents[agent].virtualId;
+            virtualAgentFactory.recordInvocation(virtualId, false);
+            await virtualAgentFactory.saveState();
+          }
+
           throw error;
         }
 

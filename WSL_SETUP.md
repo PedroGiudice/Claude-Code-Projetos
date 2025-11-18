@@ -1,7 +1,7 @@
 # WSL Setup - Claude Code Projetos
 
 **Versão:** 1.0
-**Data:** 2025-11-15
+**Status:** ✅ COMPLETO (2025-11-17)
 **Ambiente:** Ubuntu 24.04 LTS (WSL2)
 
 ---
@@ -323,20 +323,23 @@ Add-MpPreference -ExclusionPath "$env:USERPROFILE\AppData\Local\Packages\Canonic
 
 ---
 
-## ✅ Checklist Pós-Setup
+## ✅ Checklist Pós-Setup (VALIDADO)
 
 Após configurar WSL, validar:
 
-- [ ] Estrutura em `~/claude-work/repos/Claude-Code-Projetos`
-- [ ] `git status` limpo
-- [ ] Node.js v24+ instalado (`node --version`)
-- [ ] Claude Code instalado (`claude --version`)
-- [ ] Hooks funcionando (`node .claude/hooks/invoke-legal-braniac-hybrid.js`)
-- [ ] Pelo menos 1 venv Python ativável
-- [ ] npm packages MCP server instalados
-- [ ] Git push/pull funcionando sem erro
+- [x] Estrutura em `~/claude-work/repos/Claude-Code-Projetos` ✅
+- [x] `git status` limpo ✅
+- [x] Node.js v24+ instalado (`node --version`) - v24.11.1 ✅
+- [x] Claude Code instalado (`claude --version`) - 2.0.42 ✅
+- [x] Hooks funcionando (`node .claude/hooks/invoke-legal-braniac-hybrid.js`) ✅
+- [x] Pelo menos 1 venv Python ativável (5 venvs criados) ✅
+- [x] npm packages MCP server instalados (340 packages) ✅
+- [x] Git push/pull funcionando sem erro ✅
+- [x] **NOVO:** venv global no root (.venv) - Python 3.12.3 ✅
+
+**Migração WSL2: 100% COMPLETA** 🎉
 
 ---
 
-**Última atualização:** 2025-11-15
-**Responsável:** Migração Sprint 2 - WSL2 Setup
+**Última atualização:** 2025-11-17
+**Responsável:** Migração Sprint 2 - WSL2 Setup (FINALIZADA)
