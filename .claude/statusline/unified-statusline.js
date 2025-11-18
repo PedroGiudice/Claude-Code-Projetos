@@ -195,6 +195,11 @@ function getGordonAnalysis() {
 
     const analysis = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
 
+    // Check if loading state (vibe-log format)
+    if (analysis.status === 'loading') {
+      return { isLoading: true };
+    }
+
     // Check staleness (>5 minutes = stale)
     const timestamp = new Date(analysis.timestamp);
     const age = Date.now() - timestamp.getTime();
