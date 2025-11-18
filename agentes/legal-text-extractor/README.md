@@ -33,4 +33,12 @@ pytest tests/
 ## Status
 
 - ✅ Fase 1: Core de limpeza (75+ padrões)
-- 🚧 Fase 2: OCR + Separação de seções (em andamento)
+- ✅ **Fase 2 - Milestone 1: SDK Integration (COMPLETO)**
+  - Rate limiting automático (20 req/min)
+  - Retry logic com exponential backoff
+  - Prompt engineering com few-shot examples
+  - JSON parsing com validação Pydantic
+  - Extração de seções com fuzzy matching
+- 🚧 Fase 2 - Milestone 2: Learning System (próximo)
+- ⏸️ Fase 2 - Milestone 3: Self-Improvement
+- ⏸️ Fase 2 - Milestone 4: End-to-End Testing
