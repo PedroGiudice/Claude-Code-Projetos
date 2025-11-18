@@ -19,6 +19,10 @@ from tenacity import (
 )
 
 from .schemas import ClaudeAnalysisResponse, SectionMetadata
+from ..learning.prompt_versioner import PromptVersioner
+from ..learning.ab_tester import ABTester
+from ..learning.storage import LearningStorage
+from ..learning.schemas import ExtractionResult, ExtractedSection, SectionType
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -60,7 +64,10 @@ class SectionAnalyzer:
         api_key: Optional[str] = None,
         max_retries: int = 3,
         retry_delay: float = 2.0,
-        model: str = "claude-sonnet-4-20250514"
+        model: str = "claude-sonnet-4-20250514",
+        enable_learning: bool = True,
+        enable_ab_testing: bool = False,
+        ab_test_id: Optional[str] = None
     ):
         """
         Inicializa o analisador de seções.
@@ -70,6 +77,9 @@ class SectionAnalyzer:
             max_retries: Número máximo de tentativas em caso de erro
             retry_delay: Delay base entre retries (em segundos)
             model: Modelo Claude a ser usado
+            enable_learning: Se True, salva resultados para learning system
+            enable_ab_testing: Se True, participa de teste A/B
+            ab_test_id: ID do teste A/B (se enable_ab_testing=True)
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
@@ -87,17 +97,34 @@ class SectionAnalyzer:
         self._last_request_time: Optional[float] = None
         self._min_request_interval = 60.0 / self.RATE_LIMIT_RPM  # 3 seconds
 
+        # Learning system integration
+        self.enable_learning = enable_learning
+        self.enable_ab_testing = enable_ab_testing
+        self.ab_test_id = ab_test_id
+
+        if enable_learning:
+            self.versioner = PromptVersioner()
+            self.storage = LearningStorage()
+            logger.info("Learning system enabled")
+
+        if enable_ab_testing:
+            if not ab_test_id:
+                raise ValueError("ab_test_id required when enable_ab_testing=True")
+            self.ab_tester = ABTester()
+            logger.info(f"A/B testing enabled: test_id={ab_test_id}")
+
         # Load prompt template on initialization
         self._prompt_template = self._load_prompt_template()
 
         logger.info(
             f"SectionAnalyzer initialized: model={model}, "
-            f"max_retries={max_retries}, rate_limit={self.RATE_LIMIT_RPM} rpm"
+            f"max_retries={max_retries}, rate_limit={self.RATE_LIMIT_RPM} rpm, "
+            f"learning={enable_learning}, ab_testing={enable_ab_testing}"
         )
 
     def _load_prompt_template(self) -> str:
         """
-        Carrega template de prompt do arquivo.
+        Carrega template de prompt do arquivo ou versioner.
 
         Returns:
             Template string com placeholder {text}
@@ -105,14 +132,52 @@ class SectionAnalyzer:
         Raises:
             FileNotFoundError: Se template não encontrado
         """
+        # Se learning system habilitado, tentar carregar de versioner
+        if self.enable_learning:
+            try:
+                prompt_version = self._get_prompt_version()
+                if prompt_version:
+                    logger.info(
+                        f"Using versioned prompt: {prompt_version.version_id} "
+                        f"(status={prompt_version.status})"
+                    )
+                    return prompt_version.content
+            except Exception as e:
+                logger.warning(f"Failed to load versioned prompt: {e}, falling back to file")
+
+        # Fallback: carregar de arquivo
         if not self.SECTION_SEPARATOR_TEMPLATE.exists():
             raise FileNotFoundError(
                 f"Prompt template não encontrado: {self.SECTION_SEPARATOR_TEMPLATE}"
             )
 
         template = self.SECTION_SEPARATOR_TEMPLATE.read_text(encoding='utf-8')
-        logger.debug(f"Prompt template carregado: {len(template)} chars")
+        logger.debug(f"Prompt template carregado de arquivo: {len(template)} chars")
         return template
+
+    def _get_prompt_version(self) -> Optional:
+        """
+        Obtém versão do prompt a usar (considerando A/B testing).
+
+        Returns:
+            PromptVersion ou None
+        """
+        if not self.enable_learning:
+            return None
+
+        # Se A/B testing habilitado e há documento atual, usar versão do teste
+        if self.enable_ab_testing and self.ab_test_id:
+            # Nota: document_id deve ser definido antes de chamar analyze()
+            if hasattr(self, '_current_document_id') and self._current_document_id:
+                version_id = self.ab_tester.get_version_for_document(
+                    self.ab_test_id,
+                    self._current_document_id
+                )
+                if version_id:
+                    return self.versioner.load_version(version_id)
+
+        # Fallback: versão ativa
+        return self.versioner.get_active_version()
 
     def _rate_limit(self) -> None:
         """
@@ -269,12 +334,17 @@ class SectionAnalyzer:
         content = full_text[start_pos:end_pos]
         return content, start_pos, end_pos
 
-    def analyze(self, text: str) -> list[Section]:
+    def analyze(
+        self,
+        text: str,
+        document_id: Optional[str] = None
+    ) -> list[Section]:
         """
         Analisa texto e identifica seções de peças processuais.
 
         Args:
             text: Texto limpo do documento (já processado por cleaner)
+            document_id: ID único do documento (para learning/A/B testing)
 
         Returns:
             Lista de Section identificadas, ordenadas por posição
@@ -286,18 +356,38 @@ class SectionAnalyzer:
         if not text or not text.strip():
             raise ValueError("Texto vazio fornecido para análise")
 
-        logger.info(f"Analyzing document: {len(text)} chars")
+        # Gerar document_id se não fornecido
+        if document_id is None:
+            import hashlib
+            from datetime import datetime
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            text_hash = hashlib.md5(text.encode()).hexdigest()[:8]
+            document_id = f"doc_{timestamp}_{text_hash}"
 
-        # 1. Construir prompt a partir do template
+        # Armazenar para uso em _get_prompt_version()
+        self._current_document_id = document_id
+
+        logger.info(f"Analyzing document {document_id}: {len(text)} chars")
+
+        # 1. Obter versão do prompt (pode ser de A/B test)
+        prompt_version_id = "v1"  # default
+        if self.enable_learning:
+            prompt_version = self._get_prompt_version()
+            if prompt_version:
+                prompt_version_id = prompt_version.version_id
+                # Atualizar template se mudou
+                self._prompt_template = prompt_version.content
+
+        # 2. Construir prompt a partir do template
         prompt = self._prompt_template.format(text=text)
 
-        # 2. Chamar Claude API
+        # 3. Chamar Claude API
         response = self._call_claude_with_retry(prompt)
 
-        # 3. Parse JSON response
+        # 4. Parse JSON response
         parsed = self._parse_claude_response(response)
 
-        # 4. Converter metadados para Section objects
+        # 5. Converter metadados para Section objects
         sections: list[Section] = []
 
         for section_meta in parsed.sections:
@@ -312,8 +402,95 @@ class SectionAnalyzer:
             )
             sections.append(section)
 
-        # 5. Ordenar por posição no documento
+        # 6. Ordenar por posição no documento
         sections.sort(key=lambda s: s.start_pos)
+
+        # 7. Log extraction result para learning system
+        if self.enable_learning:
+            self._log_extraction_result(
+                document_id=document_id,
+                text=text,
+                sections=sections,
+                prompt_version=prompt_version_id
+            )
 
         logger.info(f"Analysis complete: {len(sections)} sections identified")
         return sections
+
+    def _log_extraction_result(
+        self,
+        document_id: str,
+        text: str,
+        sections: list[Section],
+        prompt_version: str
+    ) -> None:
+        """
+        Salva resultado da extração para learning system.
+
+        Args:
+            document_id: ID do documento
+            text: Texto analisado
+            sections: Seções extraídas
+            prompt_version: Versão do prompt usada
+        """
+        try:
+            # Converter Section para ExtractedSection
+            extracted_sections = [
+                ExtractedSection(
+                    type=self._map_section_type(s.type),
+                    content=s.content,
+                    start_pos=s.start_pos,
+                    end_pos=s.end_pos,
+                    confidence=s.confidence
+                )
+                for s in sections
+            ]
+
+            # Criar ExtractionResult
+            extraction_result = ExtractionResult(
+                document_id=document_id,
+                predicted_sections=extracted_sections,
+                document_length=len(text),
+                prompt_version=prompt_version,
+                model=self.model
+            )
+
+            # Salvar
+            self.storage.save_extraction_result(extraction_result)
+
+            # Se A/B testing habilitado, registrar no teste
+            if self.enable_ab_testing and self.ab_test_id:
+                self.ab_tester.record_result(
+                    test_id=self.ab_test_id,
+                    document_id=document_id,
+                    extraction_result=extraction_result
+                )
+
+            logger.debug(f"Extraction result logged: {document_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to log extraction result: {e}")
+
+    def _map_section_type(self, type_str: str) -> SectionType:
+        """
+        Mapeia string de tipo para SectionType enum.
+
+        Args:
+            type_str: String de tipo (ex: "petição inicial")
+
+        Returns:
+            SectionType correspondente
+        """
+        # Normalizar: remover acentos, lowercase, substituir espaços por _
+        import unicodedata
+        normalized = unicodedata.normalize('NFKD', type_str)
+        normalized = normalized.encode('ASCII', 'ignore').decode('ASCII')
+        normalized = normalized.lower().replace(' ', '_')
+
+        # Tentar mapear para enum
+        try:
+            return SectionType(normalized)
+        except ValueError:
+            # Fallback: OUTRO
+            logger.warning(f"Unknown section type '{type_str}', using OUTRO")
+            return SectionType.OUTRO
