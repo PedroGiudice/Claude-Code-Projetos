@@ -178,3 +178,6 @@ Captura de tela*.png
 
 # Monitoring system
 .claude/monitoring/tracking.db
+
+# Statusline cache (performance optimization)
+.claude/cache/
