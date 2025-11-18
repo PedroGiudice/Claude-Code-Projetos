@@ -3,7 +3,9 @@
   "_docs": "Ver .claude/hooks/MIGRATION.md para detalhes da arquitetura centralizada",
   "_strategy": "SessionStart carrega Legal-Braniac (1x/sessão), UserPromptSubmit coleta contexto e delega todas decisões",
 
-  "statusLine": {
+  "_statusLine_DISABLED_FOR_VIBE_LOG": {
+    "_comment": "TEMPORARILY DISABLED to test vibe-log Gordon Co-pilot statusline",
+    "_backup": "See settings.json.backup to restore",
     "type": "command",
     "command": "cd \"$CLAUDE_PROJECT_DIR\" && node .claude/statusline/professional-statusline.js",
     "padding": 0,
