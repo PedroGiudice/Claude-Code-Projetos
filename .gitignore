@@ -65,7 +65,7 @@ claude_plugins/
 
 # Claude Code Runtime Files (session state, temporary tracking)
 .claude/*-session.json
-.claude/legal-braniac-session.json
+.claude/hooks/legal-braniac-session.json
 .claude/legal-braniac-active.json
 .claude/settings.local.json
 
