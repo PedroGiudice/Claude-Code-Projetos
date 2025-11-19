@@ -679,3 +679,4 @@ Use bcrypt for password hashing. Include login, register, and logout endpoints."
 **Last updated:** 2025-11-18
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** `~/claude-work/repos/Claude-Code-Projetos` (WSL2)
+- add
