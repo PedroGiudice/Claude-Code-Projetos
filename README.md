@@ -27,19 +27,19 @@ Este projeto segue uma separação rígida entre três camadas (**ver DISASTER_H
 - **Localização:** `~/claude-work/repos/Claude-Code-Projetos/`
 - **Conteúdo:** Código-fonte Python/Node.js, configurações, documentação
 - **Versionamento:** Git (obrigatório)
-- **Portabilidade:** Sincronizado via `git push`/`git pull` entre máquinas
+- **Sincronização:** Via `git push`/`git pull`
 
 ### CAMADA 2: AMBIENTE
 - **Localização:** `agentes/*/.venv/` (dentro de cada agente)
 - **Conteúdo:** Python interpreter, pacotes instalados via pip
 - **Versionamento:** NUNCA (incluído em `.gitignore`)
-- **Portabilidade:** Recriado via `requirements.txt` em cada máquina
+- **Recriação:** Via `requirements.txt` quando necessário
 
 ### CAMADA 3: DADOS
 - **Localização:** Configurável via env vars (padrão: `~/claude-code-data/`)
 - **Conteúdo:** Downloads, logs, outputs, dados processados
 - **Versionamento:** NUNCA
-- **Portabilidade:** Backup/restore ou transporte físico
+- **Backup:** Via backup/restore ou transporte físico
 
 **REGRA CRÍTICA:** Código SEMPRE em Git. Ambiente SEMPRE local (.venv). Dados NUNCA em Git.
 
@@ -316,17 +316,17 @@ which python  # Deve apontar para agentes/oab-watcher/.venv/bin/python
 pip list      # Deve mostrar apenas pacotes do projeto
 ```
 
-### Setup em Nova Máquina
+### Setup Rápido (Clone Existente)
 
 ```bash
-# 1. Clone do Git
+# 1. Clone do repositório
 git clone <repository-url> ~/claude-work/repos/Claude-Code-Projetos
 cd ~/claude-work/repos/Claude-Code-Projetos
 
 # 2. Crie estrutura de dados (se necessário)
 mkdir -p ~/claude-code-data/agentes/{oab-watcher,djen-tracker,legal-lens}/{downloads,logs,outputs}
 
-# 3. Recrie ambientes virtuais (apenas dos agentes que usar)
+# 3. Configure ambiente virtual do agente que usar
 cd agentes/oab-watcher
 python3 -m venv .venv
 source .venv/bin/activate
@@ -473,14 +473,13 @@ git push
 ### Workflow Git
 
 ```bash
-# Ao fim do trabalho
+# Workflow padrão
 cd ~/claude-work/repos/Claude-Code-Projetos
+git pull  # Início do trabalho
+# ... fazer mudanças ...
 git add .
 git commit -m "feat: implementa feature X"
-git push
-
-# Ao iniciar em outra máquina
-git pull
+git push  # Fim do trabalho
 ```
 
 ---
@@ -633,7 +632,7 @@ cat ~/.vibe-log/hooks.log | tail -50
 2. **NUNCA coloque dados grandes no Git** - Dados vão para `~/claude-code-data/`
 3. **SEMPRE use ambiente virtual (.venv)** - Sem exceções
 4. **SEMPRE ative .venv antes de executar Python** - Evita contaminação global
-5. **SEMPRE faça git commit ao fim do dia** - Sincronização entre máquinas
+5. **SEMPRE faça git commit ao fim do trabalho** - Manter código versionado e sincronizado
 6. **NUNCA use caminhos absolutos hardcoded** - Use `path_utils.py` ou env vars
 7. **NUNCA commite .venv/ no Git** - Verifique `.gitignore`
 8. **SEMPRE retorne ao diretório raiz** após `cd` - Evita quebrar hooks (ver CLAUDE.md)
