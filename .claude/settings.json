@@ -83,8 +83,8 @@
           },
           {
             "type": "command",
-            "command": "node .claude/hooks/hook-wrapper.js .claude/hooks/prompt-enhancer.js",
-            "_note": "Prompt Enhancer: detect intent patterns, translate to technical context, quality scoring [WRAPPED]"
+            "command": "python3 .claude/hooks/improve-prompt.py",
+            "_note": "Prompt Improver (severity1): Evaluates prompt clarity and asks clarifying questions when vague"
           },
           {
             "type": "command",
