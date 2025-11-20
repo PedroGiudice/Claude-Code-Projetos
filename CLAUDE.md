@@ -32,6 +32,87 @@ This project enforces strict separation between three layers. **Violating this s
 
 ---
 
+## Working Directory Management (Critical)
+
+**CRITICAL:** When executing Bash commands via tools, the `pwd` (working directory) **persists across commands** and affects hook execution on subsequent user prompts.
+
+### The Problem
+
+User hooks (UserPromptSubmit, SessionStart, etc.) execute with paths relative to the **current `pwd`**. If Claude leaves `pwd` in a subdirectory, the next user prompt triggers hooks with the wrong working directory, causing failures:
+
+```bash
+# Claude executes:
+cd skills  # pwd changes to .../skills/
+
+# User submits next prompt
+# Hooks try to execute:
+.claude/hooks/hook-wrapper.js
+# → Expands to: .../skills/.claude/hooks/hook-wrapper.js ❌ NOT FOUND
+```
+
+**Real incident (2025-11-19):** After `cd skills` to list skills, hooks failed with:
+- `.claude/monitoring/hooks/*.sh: not found`
+- `Cannot find module '.../skills/.claude/hooks/hook-wrapper.js'`
+
+### Mandatory Practices
+
+When executing Bash commands that change directories:
+
+1. **PREFER relative paths** (avoid `cd` entirely):
+   ```bash
+   # ✅ GOOD
+   ls skills/
+   find skills -name "SKILL.md"
+   cat agentes/oab-watcher/main.py
+
+   # ❌ AVOID
+   cd skills
+   ls
+   # ← pwd stays in skills/
+   ```
+
+2. **If `cd` is necessary**, use **subshells** for single operations:
+   ```bash
+   # ✅ GOOD - pwd returns to original automatically
+   (cd skills && ls -la)
+
+   # ❌ AVOID - pwd stays changed
+   cd skills && ls -la
+   ```
+
+3. **For multiple operations**, return to root explicitly:
+   ```bash
+   # ✅ GOOD
+   cd skills && ls && cat pdf/SKILL.md && cd ..
+
+   # ✅ BETTER - guaranteed return even if commands fail
+   cd skills; ls; cat pdf/SKILL.md; cd ..
+   ```
+
+4. **VERIFY `pwd` before complex operations**:
+   ```bash
+   pwd  # Should show: /home/cmr-auto/claude-work/repos/Claude-Code-Projetos
+   ```
+
+5. **After ANY directory change**, confirm return to root:
+   ```bash
+   cd agentes/oab-watcher
+   # ... perform operations ...
+   cd ~/claude-work/repos/Claude-Code-Projetos  # Return to absolute root path
+   pwd  # Verify
+   ```
+
+### Why This Matters
+
+**Hooks are non-blocking** - they fail silently with warnings. This means:
+- User prompts still execute (Claude continues working)
+- Hook failures may go unnoticed
+- Context collection, monitoring, and automation break silently
+
+**Always assume the next user prompt depends on clean `pwd` state.**
+
+---
+
 ## Common Development Commands
 
 ### Setting Up a New Agent

@@ -1,5 +1,5 @@
 {
-  "description": "Auto-activation rules for 34 installed skills - Legal automation context",
+  "description": "Auto-activation rules for 35 installed skills - Legal automation context",
   "version": "1.0.0",
   "context": {
     "project": "Claude-Code-Projetos",
@@ -526,7 +526,7 @@
           "(download|fetch).*?article"
         ]
       },
-      "relatedSkills": ["youtube-transcript", "deep-parser"]
+      "relatedSkills": ["youtube-transcript", "pdf"]
     },
 
     "youtube-transcript": {
@@ -599,7 +599,7 @@
       "filePathTriggers": {
         "patterns": ["**/*.pdf"]
       },
-      "relatedSkills": ["docx", "ocr-pro"]
+      "relatedSkills": ["docx", "article-extractor"]
     },
 
     "pptx": {
@@ -696,28 +696,6 @@
       "relatedSkills": ["code-refactor"]
     },
 
-    "deep-parser": {
-      "type": "parsing",
-      "enforcement": "suggest",
-      "priority": "medium",
-      "description": "Deep parsing of complex documents and data structures",
-      "promptTriggers": {
-        "keywords": [
-          "parse",
-          "deep parse",
-          "extract data",
-          "parse document",
-          "parse structure"
-        ],
-        "intentPatterns": [
-          "(parse|extract).*?(document|data|structure)",
-          "deep.*?pars",
-          "(extract|get).*?structured.*?data"
-        ]
-      },
-      "relatedSkills": ["article-extractor", "pdf", "ocr-pro"]
-    },
-
     "file-operations": {
       "type": "filesystem",
       "enforcement": "suggest",
@@ -740,47 +718,97 @@
       "relatedSkills": ["code-refactor"]
     },
 
-    "ocr-pro": {
-      "type": "ocr",
+    "artifacts-builder": {
+      "type": "frontend",
       "enforcement": "suggest",
-      "priority": "medium",
-      "description": "Professional OCR for extracting text from images and scanned PDFs",
+      "priority": "high",
+      "description": "Create complex React artifacts with shadcn/ui, Tailwind CSS for claude.ai",
       "promptTriggers": {
         "keywords": [
-          "OCR",
-          "extract text from image",
-          "text recognition",
-          "scanned document",
-          "image to text"
+          "artifact",
+          "claude.ai artifact",
+          "react artifact",
+          "shadcn",
+          "create artifact",
+          "build artifact"
         ],
         "intentPatterns": [
-          "OCR",
-          "(extract|get).*?text.*?(image|scan|pdf)",
-          "text.*?recognition",
-          "(image|scan).*?to.*?text"
+          "(create|build|make).*?(artifact|react.*?artifact)",
+          "artifact.*?(react|shadcn|tailwind)",
+          "claude.*?artifact"
         ]
       },
-      "relatedSkills": ["pdf", "deep-parser", "sign-recognition"]
+      "relatedSkills": ["frontend-design", "webapp-testing"]
     },
 
-    "sign-recognition": {
-      "type": "ocr",
+    "frontend-design": {
+      "type": "frontend",
       "enforcement": "suggest",
-      "priority": "low",
-      "description": "Signature recognition and verification in documents",
+      "priority": "high",
+      "description": "Create distinctive, production-grade frontend interfaces with high design quality",
       "promptTriggers": {
         "keywords": [
-          "signature",
-          "sign recognition",
-          "detect signature",
-          "signature verification"
+          "frontend",
+          "UI design",
+          "web interface",
+          "web component",
+          "web page",
+          "user interface",
+          "design system"
         ],
         "intentPatterns": [
-          "(detect|recognize|verify).*?signature",
-          "signature.*?(recognition|detection|verification)"
+          "(create|build|design).*?(frontend|UI|interface|component|page)",
+          "(web|frontend).*?(design|interface|component)",
+          "design.*?(web|frontend|UI|interface)"
         ]
       },
-      "relatedSkills": ["ocr-pro", "pdf"]
+      "relatedSkills": ["artifacts-builder", "dashboard-creator"]
+    },
+
+    "prompt-enhancer": {
+      "type": "meta",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "Transform vague prompts into clear technical specifications",
+      "promptTriggers": {
+        "keywords": [
+          "enhance prompt",
+          "clarify prompt",
+          "improve prompt",
+          "prompt quality",
+          "++",
+          "enrich context"
+        ],
+        "intentPatterns": [
+          "^\\+\\+",
+          "(enhance|improve|clarify|enrich).*?prompt",
+          "prompt.*?(enhancement|quality|clarification)"
+        ]
+      },
+      "relatedSkills": ["feature-planning", "writing-plans"]
+    },
+
+    "webapp-testing": {
+      "type": "testing",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Test web applications using Playwright with browser screenshots and logs",
+      "promptTriggers": {
+        "keywords": [
+          "test webapp",
+          "playwright",
+          "browser test",
+          "web testing",
+          "frontend testing",
+          "e2e test"
+        ],
+        "intentPatterns": [
+          "(test|testing).*?(webapp|web.*?app|frontend|browser)",
+          "playwright.*?(test|testing)",
+          "e2e.*?(test|testing)"
+        ]
+      },
+      "relatedSkills": ["test-driven-development", "test-fixing"]
     },
 
     "skill-creator": {
