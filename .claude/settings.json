@@ -35,18 +35,6 @@
         ]
       }
     ],
-    "PreCompact": [
-      {
-        "_comment": "Vibe-log: capture before context compression",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx vibe-log-cli send --silent --hook-trigger=precompact --hook-version=1.0.0",
-            "_note": "Vibe-log: capture full session before compression (auto-detect project dir, no background mode)"
-          }
-        ]
-      }
-    ],
     "SessionEnd": [
       {
         "_comment": "Git Safety: auto-commit uncommitted changes to safety branch",
