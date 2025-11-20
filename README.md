@@ -484,6 +484,296 @@ git push  # Fim do trabalho
 
 ---
 
+## 📋 Git Discipline (Non-Negotiable)
+
+Este projeto requer disciplina rigorosa de Git para manter qualidade de código e histórico limpo.
+
+### 1. Commit Frequently
+
+**Regra:** Commit e push **no mínimo** ao final de cada sessão de trabalho. Idealmente, após completar cada unidade lógica de trabalho.
+
+```bash
+# ✅ BOM - Commit por feature/fix completado
+git add .
+git commit -m "feat: adiciona parser de publicações OAB"
+git push
+
+git add .
+git commit -m "test: adiciona testes para parser OAB"
+git push
+
+git add .
+git commit -m "docs: atualiza README com instruções parser"
+git push
+```
+
+```bash
+# ❌ RUIM - Acumular mudanças não commitadas
+# Trabalha 3 dias, 15 arquivos modificados
+git add .
+git commit -m "adiciona várias coisas"  # Commit gigante, difícil de revisar
+```
+
+**Por quê:**
+- ✅ Previne perda de trabalho
+- ✅ Cria histórico claro (fácil de entender e reverter)
+- ✅ Facilita code review (commits pequenos = review rápido)
+- ✅ Mantém codebase sincronizado
+
+**Convenção de commits:**
+```
+feat: nova feature
+fix: correção de bug
+docs: documentação
+test: testes
+refactor: refatoração (sem mudar comportamento)
+chore: tarefas de manutenção
+```
+
+---
+
+### 2. Branch Strategy para Features Complexas
+
+**Regra:** Features que levarão **mais de 2 sprints** (>2 semanas) DEVEM ser desenvolvidas em branches separadas.
+
+#### Features Simples (<2 sprints)
+
+```bash
+# Pode commitar direto na main (via PR)
+git checkout main
+git pull
+# ... trabalha ...
+git add .
+git commit -m "feat: adiciona validação de CPF"
+git push
+```
+
+#### Features Complexas (>2 sprints)
+
+```bash
+# Cria branch de feature
+git checkout main
+git pull
+git checkout -b feature/sistema-busca-jurisprudencia
+
+# Trabalha na feature (múltiplos commits)
+git add .
+git commit -m "feat: adiciona crawler de tribunais"
+git push -u origin feature/sistema-busca-jurisprudencia
+
+# Continua trabalhando...
+git commit -m "feat: adiciona parser de acórdãos"
+git push
+
+git commit -m "feat: adiciona indexação com embeddings"
+git push
+
+# Quando feature estiver completa e testada
+git checkout main
+git pull
+git merge feature/sistema-busca-jurisprudencia
+git push
+
+# Limpa branch
+git branch -d feature/sistema-busca-jurisprudencia
+git push origin --delete feature/sistema-busca-jurisprudencia
+```
+
+**Por quê:**
+- ✅ `main` sempre estável e deployable
+- ✅ Permite trabalho experimental sem quebrar produção
+- ✅ Facilita desenvolvimento paralelo de múltiplas features
+- ✅ Histórico claro de quando feature foi concluída
+
+---
+
+### 3. Pull Request (PR) Workflow
+
+**Regra:** Use PRs para revisão antes de merge na `main` (recomendado, especialmente em time).
+
+#### Setup GitHub Branch Protection
+
+**Para forçar PR workflow:**
+
+1. Vá para: **Settings → Branches**
+2. Clique: **Add branch protection rule**
+3. Branch name pattern: `main`
+4. Configure:
+   - ✅ **Require a pull request before merging**
+   - ✅ **Require approvals:** 1 (ou 0 se solo developer)
+   - ✅ **Dismiss stale pull request approvals when new commits are pushed**
+   - ✅ **Require conversation resolution before merging**
+   - ✅ **Require linear history** (evita merge commits confusos)
+   - ✅ **Do not allow bypassing the above settings**
+5. Salvar
+
+**Workflow com branch protection:**
+
+```bash
+# Tenta push direto na main
+git push
+# → ❌ REJEITADO: Cannot push to protected branch
+
+# Deve criar branch
+git checkout -b fix/corrige-parser-oab
+git push -u origin fix/corrige-parser-oab
+
+# Abre PR no GitHub:
+# 1. Vai para repositório no GitHub
+# 2. Clica em "Pull requests" → "New pull request"
+# 3. Base: main ← Compare: fix/corrige-parser-oab
+# 4. Preenche título e descrição
+# 5. Cria PR
+
+# Revisa próprio código no GitHub (diff visual)
+# Resolve conversas (se houver)
+# Clica "Merge pull request"
+
+# Atualiza local
+git checkout main
+git pull  # Puxa merge da PR
+git branch -d fix/corrige-parser-oab  # Limpa branch local
+```
+
+**Por quê:**
+- ✅ Força self-review (vê diff visual antes de merge)
+- ✅ Previne pushes acidentais que quebram `main`
+- ✅ Mantém histórico limpo (linear)
+- ✅ GitHub Actions pode rodar validações (CI) antes de merge
+
+---
+
+### 4. Main Branch Stability
+
+**Regra:** Branch `main` deve SEMPRE estar em estado deployable/funcional.
+
+**O que isso significa:**
+- ✅ Código compila/executa sem erros
+- ✅ Tests passam (se tiver CI configurado)
+- ✅ Não tem `TODO: fix this before merge`
+- ✅ Documentação atualizada (README, CHANGELOG)
+
+**Como garantir:**
+
+```bash
+# Antes de merge/push para main
+cd ~/claude-work/repos/Claude-Code-Projetos
+
+# 1. Testa se agentes executam
+cd agentes/oab-watcher
+source .venv/bin/activate
+python main.py  # Deve executar sem erros
+
+# 2. Roda tests (se existir)
+pytest tests/
+
+# 3. Verifica linting
+ruff check .
+ruff format --check .
+
+# 4. Se tudo OK, merge
+git checkout main
+git merge feature/minha-feature
+git push
+```
+
+**Se algo quebrar em `main`:**
+
+```bash
+# Opção 1: Fix forward (preferido)
+git checkout -b hotfix/corrige-quebra
+# ... corrige ...
+git commit -m "fix: corrige erro em parser"
+# PR rápido e merge
+
+# Opção 2: Revert (se fix demorar)
+git revert <commit-hash-que-quebrou>
+git push
+# Reverte mudança, restaura estabilidade
+# Fix depois com calma
+```
+
+---
+
+### 5. Sincronização e Conflitos
+
+**Sempre pull antes de começar trabalho:**
+
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos
+git pull  # Sincroniza com remote
+
+# Se tiver conflitos
+# ❌ Auto-merge failed; fix conflicts and then commit
+git status  # Vê arquivos conflitantes
+
+# Resolve manualmente, depois:
+git add <arquivos-resolvidos>
+git commit -m "merge: resolve conflitos com main"
+git push
+```
+
+**Prevenir conflitos:**
+- ✅ Pull frequentemente (início de cada sessão)
+- ✅ Commit/push frequentemente (fim de cada sessão)
+- ✅ Comunica com time sobre arquivos grandes sendo editados
+- ✅ Use branches para features longas (reduz conflitos)
+
+---
+
+### 6. Comandos Git Úteis
+
+```bash
+# Ver histórico de commits
+git log --oneline --graph -10
+
+# Ver diff antes de commit
+git diff
+
+# Ver diff de arquivo específico
+git diff agentes/oab-watcher/main.py
+
+# Desfazer mudanças não commitadas
+git checkout -- <arquivo>
+
+# Desfazer último commit (mas manter mudanças)
+git reset --soft HEAD~1
+
+# Ver branches
+git branch -a
+
+# Deletar branch local
+git branch -d <nome-branch>
+
+# Deletar branch remota
+git push origin --delete <nome-branch>
+
+# Ver status detalhado
+git status -vv
+```
+
+---
+
+### 7. Checklist de Fim de Sessão
+
+Antes de encerrar trabalho:
+
+- [ ] ✅ Código compila/executa sem erros
+- [ ] ✅ Tests passam (se aplicável)
+- [ ] ✅ Documentação atualizada (se mudou API/features)
+- [ ] ✅ Commit com mensagem descritiva
+- [ ] ✅ Push para remote
+- [ ] ✅ Se feature complexa, PR aberto/atualizado
+
+```bash
+# Template de fim de sessão
+git add .
+git commit -m "feat: <descrição clara>"
+git push
+```
+
+---
+
 ## Estrutura de Diretórios
 
 ```
