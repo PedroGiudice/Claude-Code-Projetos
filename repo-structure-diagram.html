@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude-Code-Projetos - Estrutura do Repositório</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .legend-icon {
+            font-size: 1.5em;
+        }
+
+        .tree {
+            position: relative;
+            padding: 20px;
+        }
+
+        .folder {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .folder:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .folder-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .folder-icon {
+            font-size: 1.5em;
+        }
+
+        .folder-name {
+            font-size: 1.1em;
+            flex: 1;
+        }
+
+        .folder-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-critical { background: #ff6b6b; color: white; }
+        .badge-high { background: #4ecdc4; color: white; }
+        .badge-medium { background: #ffe66d; color: #333; }
+        .badge-low { background: #95e1d3; color: #333; }
+        .badge-pdf { background: #e74c3c; color: white; }
+
+        .folder-description {
+            margin-top: 10px;
+            padding-left: 42px;
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .subfolder-list {
+            margin-top: 15px;
+            padding-left: 42px;
+        }
+
+        .subfolder {
+            margin: 8px 0;
+            padding: 10px;
+            background: white;
+            border-left: 3px solid #95e1d3;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subfolder-icon {
+            color: #95e1d3;
+        }
+
+        .subfolder-name {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .pdf-highlight {
+            background: #fff5f5;
+            border-left-color: #e74c3c;
+        }
+
+        .pdf-highlight:hover {
+            background: #ffe5e5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .legend {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Claude-Code-Projetos</h1>
+        <p class="subtitle">Estrutura Completa do Repositório - Automação Legal & Extração de PDFs</p>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-icon">📁</span>
+                <span>Diretório Principal</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">📄</span>
+                <span>Subdiretório</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">🔴</span>
+                <span>PDF Processing</span>
+            </div>
+        </div>
+
+        <div class="tree">
+            <!-- ROOT -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🏠</span>
+                    <span class="folder-name">Claude-Code-Projetos/</span>
+                    <span class="folder-badge badge-critical">ROOT</span>
+                </div>
+                <div class="folder-description">
+                    Repositório principal de automação legal com agentes autônomos, extração de PDFs e configuração Claude Code.
+                </div>
+            </div>
+
+            <!-- .CLAUDE -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">⚙️</span>
+                    <span class="folder-name">.claude/</span>
+                    <span class="folder-badge badge-critical">CONFIG</span>
+                </div>
+                <div class="folder-description">
+                    Configuração centralizada do Claude Code - hooks, agents, skills oficiais, statusline.
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">hooks/ - 10 hooks (legal-braniac, vibe-log, context-collector, git-safety)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">agents/ - 8 agent definitions (legal-braniac, qualidade-codigo, desenvolvimento, etc)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">skills/ - anthropic-skills (13) + superpowers (20)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">statusline/ - Professional statusline v4.0 (disabled for vibe-log test)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">monitoring/ - Multi-agent tracking system</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGENTES -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🤖</span>
+                    <span class="folder-name">agentes/</span>
+                    <span class="folder-badge badge-high">AGENTES</span>
+                </div>
+                <div class="folder-description">
+                    Agentes autônomos de monitoramento e processamento legal (long-running).
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">oab-watcher/ - Monitora Diário Oficial da OAB</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">djen-tracker/ - Monitora Diário de Justiça Eletrônico (PDF extractor)</span>
+                    </div>
+                    <div class="subfolder pdf-highlight">
+                        <span class="subfolder-icon">🔴</span>
+                        <span class="subfolder-name">legal-text-extractor/ - Extração avançada de textos legais (PDFs)</span>
+                    </div>
+                    <div class="subfolder pdf-highlight">
+                        <span class="subfolder-icon">🔴</span>
+                        <span class="subfolder-name">legal-lens/ - Análise de publicações legais (pdf_processor.py)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">legal-articles-finder/ - Identifica citações legais em documentos</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">legal-rag/ - RAG system para documentos legais</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">aesthetic-master/ - Master config UI/design</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEGAL-EXTRACTION (PDF PROJECTS) -->
+            <div class="folder pdf-highlight">
+                <div class="folder-header">
+                    <span class="folder-icon">🔴</span>
+                    <span class="folder-name">legal-extraction/</span>
+                    <span class="folder-badge badge-pdf">PDF MAIN</span>
+                </div>
+                <div class="folder-description">
+                    <strong>Projetos principais de extração de PDFs jurídicos brasileiros.</strong>
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder pdf-highlight">
+                        <span class="subfolder-icon">🔴</span>
+                        <span class="subfolder-name"><strong>pdf-extractor-cli/</strong> - CLI profissional (75+ padrões, 7 sistemas, auto-detecção)</span>
+                    </div>
+                    <div class="subfolder pdf-highlight">
+                        <span class="subfolder-icon">🔴</span>
+                        <span class="subfolder-name">verbose-correct-doodle/ - Projeto original (web UI)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SKILLS -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🎯</span>
+                    <span class="folder-name">skills/</span>
+                    <span class="folder-badge badge-high">SKILLS</span>
+                </div>
+                <div class="folder-description">
+                    36 skills funcionais (com SKILL.md) + 4 placeholders - projeto-específicas e customizadas.
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder pdf-highlight">
+                        <span class="subfolder-icon">🔴</span>
+                        <span class="subfolder-name">pdf/ - Manipulação profissional de PDFs (formulários, OCR, conversão)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">ocr-pro/ - OCR avançado para documentos</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">article-extractor/ - Extração de artigos legais</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">docx/ - Manipulação de Word (OOXML)</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">xlsx/ - Manipulação de Excel</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">pptx/ - Manipulação de PowerPoint</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">frontend-design/ - Design system & UI</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">architecture-diagram-creator/ - Diagramas de arquitetura</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">+ 28 outras skills (code-auditor, test-driven-development, etc)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMANDOS -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🛠️</span>
+                    <span class="folder-name">comandos/</span>
+                    <span class="folder-badge badge-medium">UTILS</span>
+                </div>
+                <div class="folder-description">
+                    Comandos reutilizáveis de propósito único (single-purpose tools).
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">fetch-doc/ - Download de documentos</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">extract-core/ - Extração de informação core</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">validate-id/ - Validação de CPF, CNPJ, OAB</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">parse-legal/ - Parser de textos legais</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">send-alert/ - Envio de alertas (email/webhook)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP-SERVERS -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🌐</span>
+                    <span class="folder-name">mcp-servers/</span>
+                    <span class="folder-badge badge-medium">MCP</span>
+                </div>
+                <div class="folder-description">
+                    Model Context Protocol servers para integração com Claude Desktop.
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">djen-mcp-server/ - MCP server para Diário de Justiça Eletrônico</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHARED -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">🔗</span>
+                    <span class="folder-name">shared/</span>
+                    <span class="folder-badge badge-low">SHARED</span>
+                </div>
+                <div class="folder-description">
+                    Código compartilhado entre projetos (utils, models).
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">utils/ - Path management, logging, helpers</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOCS -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">📚</span>
+                    <span class="folder-name">docs/</span>
+                    <span class="folder-badge badge-low">DOCS</span>
+                </div>
+                <div class="folder-description">
+                    Documentação, planos e memórias de sessão.
+                </div>
+                <div class="subfolder-list">
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">plans/ - Planos de desenvolvimento</span>
+                    </div>
+                    <div class="subfolder">
+                        <span class="subfolder-icon">📄</span>
+                        <span class="subfolder-name">session-memories/ - Histórico de sessões</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCRIPTS -->
+            <div class="folder">
+                <div class="folder-header">
+                    <span class="folder-icon">⚡</span>
+                    <span class="folder-name">scripts/</span>
+                    <span class="folder-badge badge-low">SCRIPTS</span>
+                </div>
+                <div class="folder-description">
+                    Scripts de automação e utilitários gerais.
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">7</div>
+                <div class="stat-label">Agentes Autônomos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">36</div>
+                <div class="stat-label">Skills Funcionais</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">10</div>
+                <div class="stat-label">Hooks Ativos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">6</div>
+                <div class="stat-label">Projetos PDF</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">8</div>
+                <div class="stat-label">Agent Definitions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Comandos Reutilizáveis</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
