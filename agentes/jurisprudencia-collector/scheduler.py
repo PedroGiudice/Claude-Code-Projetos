@@ -38,6 +38,7 @@ import logging
 import sqlite3
 import time
 import schedule
+import unicodedata
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -217,13 +218,44 @@ def registrar_download(
 
 
 # ==============================================================================
+# FUNÇÕES AUXILIARES
+# ==============================================================================
+
+def normalizar_tipo_publicacao(tipo: str) -> str:
+    """
+    Remove acentos, espaços extras e converte para lowercase para comparação.
+
+    Args:
+        tipo: Tipo de publicação (ex: 'Acórdão', 'SENTENÇA  ', '  Decisão\n')
+
+    Returns:
+        Tipo normalizado (ex: 'acordao', 'sentenca', 'decisao')
+
+    Examples:
+        >>> normalizar_tipo_publicacao('Acórdão')
+        'acordao'
+        >>> normalizar_tipo_publicacao('ACÓRDÃO  ')
+        'acordao'
+        >>> normalizar_tipo_publicacao('  acordão\n')
+        'acordao'
+    """
+    if not tipo or not isinstance(tipo, str):
+        return ""
+    # Remove acentos
+    sem_acentos = unicodedata.normalize('NFD', tipo)
+    sem_acentos = ''.join(c for c in sem_acentos if unicodedata.category(c) != 'Mn')
+    return sem_acentos.lower().strip()
+
+
+# ==============================================================================
 # PROCESSAMENTO DE PUBLICAÇÕES
 # ==============================================================================
 
 def processar_publicacoes(
     conn: sqlite3.Connection,
     publicacoes: List[PublicacaoRaw],
-    tribunal: str
+    tribunal: str,
+    tipos_desejados: List[str] = ['Acórdão']
 ) -> Dict[str, int]:
     """
     Processa publicações brutas e insere no banco.
@@ -232,18 +264,43 @@ def processar_publicacoes(
         conn: Conexão SQLite
         publicacoes: Lista de PublicacaoRaw do downloader
         tribunal: Sigla do tribunal
+        tipos_desejados: Lista de tipos de publicação a processar.
+                        Comparação é case-insensitive e ignora acentos/espaços
+                        (ex: 'Acórdão' == 'ACORDAO' == 'acordão  ').
+                        Tipos não presentes na lista são filtrados.
+                        Padrão: apenas 'Acórdão'.
+                        IMPORTANTE: Lista vazia filtra TUDO (nenhuma publicação processada).
 
     Returns:
         Dicionário com estatísticas:
             - total: Total de publicações processadas
             - novas: Publicações inseridas
             - duplicadas: Publicações já existentes
+            - filtrados: Publicações filtradas por tipo
             - erros: Publicações com erro de processamento
     """
+    # Validar entrada: lista vazia filtra tudo
+    if not tipos_desejados:
+        logger.warning(
+            f"[{tribunal}] tipos_desejados vazio - "
+            f"NENHUMA publicação será processada"
+        )
+        return {
+            'total': len(publicacoes),
+            'novas': 0,
+            'duplicadas': 0,
+            'filtrados': len(publicacoes),
+            'erros': 0
+        }
+
+    # Normalizar tipos desejados para comparação case-insensitive
+    tipos_normalizados = {normalizar_tipo_publicacao(t) for t in tipos_desejados}
+
     stats = {
         'total': len(publicacoes),
         'novas': 0,
         'duplicadas': 0,
+        'filtrados': 0,
         'erros': 0
     }
 
@@ -254,6 +311,22 @@ def processar_publicacoes(
 
             # Processar publicação
             pub_processada = processar_publicacao(raw_dict)
+
+            # Validar tipo_publicacao antes de filtrar
+            tipo_pub = pub_processada.get('tipo_publicacao')
+            if not tipo_pub or not isinstance(tipo_pub, str):
+                logger.warning(
+                    f"[{tribunal}] tipo_publicacao inválido: {tipo_pub!r} "
+                    f"(#{pub_raw.id[:8]}...)"
+                )
+                stats['erros'] += 1
+                continue
+
+            # Filtrar por tipo de publicação (comparação normalizada)
+            tipo_normalizado = normalizar_tipo_publicacao(tipo_pub)
+            if tipo_normalizado not in tipos_normalizados:
+                stats['filtrados'] += 1
+                continue
 
             # Validar
             if not validar_publicacao_processada(pub_processada):
@@ -273,7 +346,8 @@ def processar_publicacoes(
 
     logger.info(
         f"[{tribunal}] Processamento concluído: "
-        f"{stats['novas']} novas, {stats['duplicadas']} duplicadas, {stats['erros']} erros"
+        f"{stats['novas']} novas, {stats['duplicadas']} duplicadas, "
+        f"{stats['filtrados']} filtrados, {stats['erros']} erros"
     )
 
     return stats
