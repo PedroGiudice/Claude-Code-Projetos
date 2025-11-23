@@ -336,7 +336,11 @@ class DJENDownloader:
                 f"&page={page}"
             )
 
-            logger.debug(f"[{tribunal}] Página {page}/{total_pages or '?'}")
+            # Logging de progresso: DEBUG para cada página, INFO a cada 10 páginas
+            if total_pages and page % 10 == 0:
+                logger.info(f"[{tribunal}] Progresso: {page}/{total_pages} páginas ({page/total_pages*100:.0f}%)")
+            else:
+                logger.debug(f"[{tribunal}] Página {page}/{total_pages or '?'}")
 
             try:
                 # Fazer requisição
@@ -401,8 +405,13 @@ class DJENDownloader:
                     publicacoes.append(publicacao)
 
                 # Verificar se há próxima página
+                # BUGFIX: Parar também quando exceder total_pages (API pode retornar dados inconsistentes)
                 if not items or len(items) < limit:
-                    logger.debug(f"[{tribunal}] Última página atingida")
+                    logger.debug(f"[{tribunal}] Última página atingida (menos items que limit)")
+                    break
+
+                if total_pages and page >= total_pages:
+                    logger.debug(f"[{tribunal}] Total de páginas atingido ({page}/{total_pages})")
                     break
 
             except Exception as e:
