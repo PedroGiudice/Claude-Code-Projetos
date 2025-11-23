@@ -79,9 +79,8 @@ class DJENDownloader:
         self.adaptive_rate_limit = adaptive_rate_limit
 
         # Rate limiting adaptativo - janela deslizante
-        # Otimizado: 15 req/5s (180 req/min, 71% do limite da API de 21 req/5s)
-        # Buffer de segurança 29% para evitar HTTP 429
-        self.request_window_size = 15
+        # Buffer conservador: 12 req/5s (~57% do limite da API de 21 req/5s)
+        self.request_window_size = 12
         self.request_window_duration = 5.0  # segundos
         self.request_count = 0
         self.window_start = time.time()
@@ -103,10 +102,9 @@ class DJENDownloader:
         )
 
         # HTTP session
-        # OTIMIZAÇÃO P2: Headers mínimos (7% speedup - 288ms → 269ms)
-        # Apenas Accept: application/json (User-Agent usa padrão do requests)
         self.session = requests.Session()
         self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (compatible; JurisprudenciaCollector/1.0)',
             'Accept': 'application/json'
         })
 
@@ -116,10 +114,9 @@ class DJENDownloader:
 
         logger.info(f"DJENDownloader inicializado: {self.data_root}")
         if adaptive_rate_limit:
-            req_per_min = int((self.request_window_size / self.request_window_duration) * 60)
             logger.info(
                 f"Rate limiting adaptativo: {self.request_window_size} req/"
-                f"{self.request_window_duration}s ({req_per_min} req/min, janela deslizante)"
+                f"{self.request_window_duration}s (janela deslizante)"
             )
         else:
             logger.info(f"Rate limiting: {requests_per_minute} req/min")
@@ -167,8 +164,8 @@ class DJENDownloader:
         Rate limiting adaptativo baseado em janela deslizante.
 
         Controla requisições para evitar HTTP 429 da API:
-        - Limite: 15 requisições por janela de 5 segundos (180 req/min)
-        - Buffer de segurança 29%: API permite ~21, usamos 15 (71% do limite)
+        - Limite: 12 requisições por janela de 5 segundos
+        - Buffer de segurança conservador: API permite ~21, usamos 12 (57% do limite)
         - Pausa automática quando janela atinge limite
         """
         if not self.adaptive_rate_limit:
@@ -176,7 +173,8 @@ class DJENDownloader:
             self.rate_limiter.wait()
             return
 
-        # BUGFIX: Incrementar DEPOIS de verificar janela (não antes)
+        self.request_count += 1
+
         # Se atingir limite da janela (buffer de segurança)
         if self.request_count >= self.request_window_size:
             elapsed = time.time() - self.window_start
@@ -193,9 +191,6 @@ class DJENDownloader:
             # Resetar janela
             self.request_count = 0
             self.window_start = time.time()
-
-        # Incrementar contador após verificação
-        self.request_count += 1
 
     def _fazer_requisicao(
         self,
@@ -236,21 +231,14 @@ class DJENDownloader:
 
                 # Tratar rate limiting (429) com retry
                 if response.status_code == 429:
-                    # BUGFIX: Retry-After pode ser float (ex: 0.1)
-                    retry_after_str = response.headers.get('Retry-After', '2')
-                    try:
-                        retry_after = float(retry_after_str)
-                    except ValueError:
-                        retry_after = 2.0  # Fallback se header for inválido
-
+                    retry_after = int(response.headers.get('Retry-After', 2))
                     logger.warning(
                         f"HTTP 429 (Rate Limit) - "
-                        f"Aguardando {retry_after:.1f}s antes de retry {tentativa}/{self.max_retries}"
+                        f"Aguardando {retry_after}s antes de retry {tentativa}/{self.max_retries}"
                     )
                     time.sleep(retry_after)
 
                     # Resetar janela de rate limit após 429
-                    # BUGFIX: Resetar completamente janela (HTTP 429 = limite excedido)
                     if self.adaptive_rate_limit:
                         self.request_count = 0
                         self.window_start = time.time()
@@ -336,11 +324,7 @@ class DJENDownloader:
                 f"&page={page}"
             )
 
-            # Logging de progresso: DEBUG para cada página, INFO a cada 10 páginas
-            if total_pages and page % 10 == 0:
-                logger.info(f"[{tribunal}] Progresso: {page}/{total_pages} páginas ({page/total_pages*100:.0f}%)")
-            else:
-                logger.debug(f"[{tribunal}] Página {page}/{total_pages or '?'}")
+            logger.debug(f"[{tribunal}] Página {page}/{total_pages or '?'}")
 
             try:
                 # Fazer requisição
@@ -405,13 +389,8 @@ class DJENDownloader:
                     publicacoes.append(publicacao)
 
                 # Verificar se há próxima página
-                # BUGFIX: Parar também quando exceder total_pages (API pode retornar dados inconsistentes)
                 if not items or len(items) < limit:
-                    logger.debug(f"[{tribunal}] Última página atingida (menos items que limit)")
-                    break
-
-                if total_pages and page >= total_pages:
-                    logger.debug(f"[{tribunal}] Total de páginas atingido ({page}/{total_pages})")
+                    logger.debug(f"[{tribunal}] Última página atingida")
                     break
 
             except Exception as e:
