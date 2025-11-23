@@ -16,10 +16,20 @@ const SKILLS_DIR = path.join(PROJECT_DIR, 'skills');
 const CLAUDE_SKILLS_DIR = path.join(PROJECT_DIR, '.claude', 'skills');
 const RULES_PATH = path.join(PROJECT_DIR, '.claude', 'skills', 'skill-rules.json');
 
+// Stopwords expandidas
+const STOPWORDS = new Set([
+  'this', 'that', 'with', 'your', 'for', 'and', 'the', 'you', 'need', 'want', 'have',
+  'when', 'user', 'wants', 'uses', 'using', 'used', 'use', 'from', 'into', 'through',
+  'before', 'after', 'during', 'while', 'about', 'over', 'under', 'between', 'within',
+  'should', 'would', 'could', 'will', 'can', 'may', 'might', 'must', 'shall',
+  'very', 'more', 'most', 'such', 'any', 'all', 'some', 'each', 'every', 'both',
+  'creating', 'building', 'making', 'doing', 'getting', 'having', 'being'
+]);
+
 /**
- * Extrai triggers de SKILL.md (YAML frontmatter OBRIGATÓRIO)
+ * Extrai triggers da description do YAML frontmatter
  *
- * REGRA: Triggers DEVEM estar no YAML frontmatter - sem inferência automática
+ * REGRA: Usa description oficial da Anthropic para extrair keywords contextuais
  */
 async function extractTriggersFromSkill(skillPath, skillName) {
   try {
@@ -28,47 +38,75 @@ async function extractTriggersFromSkill(skillPath, skillName) {
     // YAML frontmatter é OBRIGATÓRIO
     const yamlMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
     if (!yamlMatch) {
-      throw new Error(`YAML frontmatter ausente - triggers OBRIGATÓRIOS`);
+      throw new Error(`YAML frontmatter ausente`);
     }
 
     const yaml = yamlMatch[1];
 
-    // Extrair triggers (prioridade 1)
-    const triggersMatch = yaml.match(/triggers:\s*\[(.*?)\]/);
-    if (triggersMatch) {
-      const triggers = triggersMatch[1]
-        .split(',')
-        .map(t => t.trim().replace(/['"]/g, ''))
-        .filter(t => t.length > 0);
-
-      if (triggers.length === 0) {
-        throw new Error(`triggers: [] vazio - pelo menos 1 trigger necessário`);
-      }
-
-      return triggers;
+    // Extrair description (campo oficial)
+    const descMatch = yaml.match(/description:\s*(.+?)(?:\n\w+:|$)/s);
+    if (!descMatch) {
+      throw new Error(`Sem description no YAML`);
     }
 
-    // Extrair keywords (prioridade 2 - fallback)
-    const keywordsMatch = yaml.match(/keywords:\s*\[(.*?)\]/);
-    if (keywordsMatch) {
-      const keywords = keywordsMatch[1]
-        .split(',')
-        .map(t => t.trim().replace(/['"]/g, ''))
-        .filter(t => t.length > 0);
+    const description = descMatch[1].trim();
+    const triggers = [];
 
-      if (keywords.length === 0) {
-        throw new Error(`keywords: [] vazio - pelo menos 1 keyword necessário`);
+    // 1. Skill name como trigger base
+    triggers.push(skillName.replace(/-/g, ' '));
+
+    // 2. Extrair verbos de ação principais
+    const actionVerbs = [
+      'implement', 'create', 'build', 'design', 'plan', 'write', 'develop',
+      'test', 'debug', 'fix', 'refactor', 'optimize', 'analyze', 'review',
+      'document', 'architect', 'deploy', 'monitor', 'track', 'manage'
+    ];
+
+    const descLower = description.toLowerCase();
+    for (const verb of actionVerbs) {
+      if (descLower.includes(verb)) {
+        triggers.push(verb);
       }
-
-      return keywords;
     }
 
-    // NENHUM trigger encontrado → ERRO
-    throw new Error(`Nem 'triggers' nem 'keywords' encontrados no YAML frontmatter`);
+    // 3. Extrair keywords técnicos de domínio
+    const techKeywords = [
+      'backend', 'frontend', 'api', 'database', 'microservice', 'component',
+      'route', 'controller', 'service', 'repository', 'middleware', 'hook',
+      'test', 'tdd', 'debugging', 'security', 'performance', 'architecture',
+      'documentation', 'diagram', 'flowchart', 'planning', 'refactoring',
+      'code review', 'git', 'typescript', 'react', 'express', 'prisma'
+    ];
+
+    for (const keyword of techKeywords) {
+      if (descLower.includes(keyword)) {
+        triggers.push(keyword);
+      }
+    }
+
+    // 4. Extrair substantivos relevantes da frase "Use when..."
+    const useWhenMatch = description.match(/use when (.*?)(?:\.|;|$)/i);
+    if (useWhenMatch) {
+      const phrase = useWhenMatch[1].toLowerCase();
+      const words = phrase
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !STOPWORDS.has(w) && /^[a-z]+$/.test(w));
+
+      triggers.push(...words.slice(0, 3)); // Top 3 substantivos
+    }
+
+    // Remover duplicatas e limitar a 7 triggers
+    const uniqueTriggers = Array.from(new Set(triggers)).slice(0, 7);
+
+    if (uniqueTriggers.length === 0) {
+      throw new Error(`Nenhum trigger extraído da description`);
+    }
+
+    return uniqueTriggers;
 
   } catch (error) {
     console.error(`❌ ${skillName}: ${error.message}`);
-    return null; // Retornar null = skill será IGNORADA (não adicionar ao skill-rules.json)
+    return null;
   }
 }
 

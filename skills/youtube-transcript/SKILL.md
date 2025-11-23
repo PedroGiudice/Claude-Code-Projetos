@@ -5,7 +5,7 @@ allowed-tools:
   - Bash
   - Read
   - Write
-triggers: ["youtube transcript"]---
+---
 
 # YouTube Transcript Downloader
 

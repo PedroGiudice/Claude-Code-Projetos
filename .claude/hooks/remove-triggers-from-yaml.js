@@ -29,8 +29,8 @@ async function removeTriggersFromSkill(skillPath, skillName) {
       return { skillName, status: 'skip', reason: 'Sem campo triggers' };
     }
 
-    // Remover linha triggers (incluindo quebra de linha)
-    const newYaml = yaml.replace(/^triggers:.*\n/m, '');
+    // Remover linha triggers (incluindo quebra de linha antes e depois)
+    const newYaml = yaml.replace(/\n?triggers:.*?\n?/m, '\n');
 
     // Substituir YAML no conteúdo
     const newContent = content.replace(
