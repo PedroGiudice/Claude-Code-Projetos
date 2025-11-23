@@ -149,11 +149,15 @@ function formatOutput(decisions) {
     decisions.agentOrchestration.complexity !== 'LOW'
   ) {
     const orch = decisions.agentOrchestration;
+    const directive = orch.complexity === 'HIGH'
+      ? '⚠️  ORQUESTRAÇÃO RECOMENDADA (Complexidade Alta)'
+      : '💡 Orquestração Sugerida (Manter Uniformidade)';
+
     messages.push(
-      `🧠 LEGAL-BRANIAC - ORQUESTRAÇÃO DETECTADA:\n` +
-        `Complexidade: ${orch.complexity}\n` +
-        `Subtarefas: ${orch.subtasks.length}\n\n` +
-        `PLANO:\n${orch.plan}`
+      `🧠 LEGAL-BRANIAC - ${directive}\n\n` +
+        `Para manter qualidade e uniformidade do código, considere delegar:\n\n` +
+        `${orch.plan}\n\n` +
+        `Use: Task tool com subagent_type apropriado para cada subtarefa acima.`
     );
   }
 
