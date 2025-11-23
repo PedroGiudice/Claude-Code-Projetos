@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const old = require('./lib/agent-orchestrator.js');
-const newV3 = require('./lib/agent-orchestrator-v3.js');
+const old = require('./lib/agent-orchestrator-v2-backup.js');
+const newV3 = require('./lib/agent-orchestrator.js');
 
 const testCases = [
   { prompt: 'git status', expected: 'LOW' },
