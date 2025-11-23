@@ -130,33 +130,42 @@ function formatOutput(decisions) {
   }
 
   // Skill activation (v2.0: mostra top 5 skills detectadas)
-  if (decisions.skillActivation && decisions.skillActivation.topSkills && decisions.skillActivation.topSkills.length > 0) {
+  const hasSkills = decisions.skillActivation && decisions.skillActivation.topSkills && decisions.skillActivation.topSkills.length > 0;
+  const hasOrchestration = decisions.agentOrchestration && decisions.agentOrchestration.complexity !== 'LOW';
+
+  if (hasSkills) {
     const detection = decisions.skillActivation;
     const top5List = detection.topSkills
       .map(s => `  - ${s.skillName} (${s.config.priority}) [score: ${s.finalScore}]`)
       .join('\n');
 
+    // Mensagem integrada: skills + agents (se ambos presentes)
+    const skillNote = hasOrchestration
+      ? `\n📌 Nota: Skills são auto-injetadas no contexto. Agents delegados terão acesso automaticamente.`
+      : `\n💡 Skills estão disponíveis para uso imediato.`;
+
     messages.push(
-      `🎯 SKILLS DETECTADAS (${detection.totalMatched} matched de ${detection.totalConsidered}, showing top ${detection.topSkills.length}):\n` +
-      top5List + `\n\n` +
-      `💡 Consider using these skills for optimal response quality.`
+      `🎯 SKILLS AUTO-INJETADAS (top ${detection.topSkills.length} de ${detection.totalConsidered}):\n` +
+      top5List +
+      skillNote
     );
   }
 
-  // Agent orchestration
-  if (
-    decisions.agentOrchestration &&
-    decisions.agentOrchestration.complexity !== 'LOW'
-  ) {
+  // Agent orchestration (mensagem integrada com skills)
+  if (hasOrchestration) {
     const orch = decisions.agentOrchestration;
     const directive = orch.complexity === 'HIGH'
       ? '⚠️  ORQUESTRAÇÃO RECOMENDADA (Complexidade Alta)'
       : '💡 Orquestração Sugerida (Manter Uniformidade)';
 
+    const skillIntegration = hasSkills
+      ? `\n✅ Skills detectadas acima estarão disponíveis para os agents delegados.`
+      : '';
+
     messages.push(
       `🧠 LEGAL-BRANIAC - ${directive}\n\n` +
         `Para manter qualidade e uniformidade do código, considere delegar:\n\n` +
-        `${orch.plan}\n\n` +
+        `${orch.plan}${skillIntegration}\n\n` +
         `Use: Task tool com subagent_type apropriado para cada subtarefa acima.`
     );
   }
