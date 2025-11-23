@@ -6,7 +6,7 @@ silent failures in the MCP protocol.
 """
 
 import asyncio
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
@@ -203,7 +203,7 @@ class RateLimitState(BaseModel):
     window_start: float = Field(default_factory=lambda: 0.0)
     max_requests: int = 90
     window_seconds: int = 10
-    _lock: asyncio.Lock = Field(default_factory=asyncio.Lock, exclude=True)
+    _lock: asyncio.Lock = PrivateAttr(default_factory=asyncio.Lock)
 
     async def can_make_request(self, current_time: float) -> bool:
         """Thread-safe rate limit check."""

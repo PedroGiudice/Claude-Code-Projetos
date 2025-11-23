@@ -23,7 +23,11 @@ async function discoverAgentes(projectDir) {
 
     const agentes = {};
     for (const file of files) {
-      if (!file.endsWith('.md') || file === 'legal-braniac.md') continue;
+      // Exclude documentation files (same filter as agent-auto-discovery.js)
+      if (!file.endsWith('.md')) continue;
+      if (file === 'README.md') continue;
+      if (file === 'legal-braniac.md') continue;
+      if (file.match(/^[A-Z_]+.*\.md$/)) continue; // ALL_CAPS or UPPER_CASE docs
 
       const name = file.replace('.md', '');
       const filePath = path.join(agentsDir, file);
