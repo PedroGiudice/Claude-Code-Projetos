@@ -24,18 +24,21 @@ class EnvironmentSettings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",  # Ignore unknown env vars
+        populate_by_name=True,  # Allow both field name and alias
     )
 
     trello_api_key: str = Field(
         ...,
         min_length=32,
-        description="Trello API Key from https://trello.com/power-ups/admin"
+        description="Trello API Key from https://trello.com/power-ups/admin",
+        alias="TRELLO_API_KEY"
     )
 
     trello_api_token: str = Field(
         ...,
         min_length=64,
-        description="Trello API Token with read/write permissions"
+        description="Trello API Token with read/write permissions",
+        alias="TRELLO_API_TOKEN"
     )
 
     log_level: str = Field(
