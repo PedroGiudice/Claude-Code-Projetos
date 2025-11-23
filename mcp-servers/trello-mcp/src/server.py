@@ -23,12 +23,14 @@ from mcp.types import (
 )
 from pydantic import ValidationError
 
-from .models import (
+from models import (
+    BatchCardsInput,
     CreateCardInput,
     EnvironmentSettings,
     MoveCardInput,
+    SearchCardsInput,
 )
-from .trello_client import (
+from trello_client import (
     TrelloAuthError,
     TrelloAPIError,
     TrelloClient,
@@ -171,6 +173,144 @@ TOOL_MOVE_CARD = Tool(
     },
 )
 
+TOOL_LIST_BOARDS = Tool(
+    name="trello_list_boards",
+    description="""
+    List all Trello boards accessible to the authenticated user.
+
+    This tool is essential for discovering board IDs before performing
+    other operations like fetching cards or searching.
+
+    Returns:
+    - Board ID (needed for other tools)
+    - Board name
+    - Board URL
+    - Description
+    - Status (open/closed)
+
+    **WORKFLOW TIP**: Use this first to discover which board contains
+    the data you need, then use the board_id with other tools.
+    """,
+    inputSchema={
+        "type": "object",
+        "properties": {},
+        "required": [],
+    },
+)
+
+TOOL_BATCH_GET_CARDS = Tool(
+    name="trello_batch_get_cards",
+    description="""
+    Fetch multiple cards (up to 10) in a single efficient API call.
+
+    **PERFORMANCE**: This uses Trello's Batch API, counting as 1 request
+    instead of N requests - crucial for rate limit management.
+
+    **USE CASES**:
+    - Bulk data extraction from specific cards
+    - Fetching cards you already have IDs for
+    - Efficient retrieval when you know exactly which cards you need
+
+    **LIMITATIONS**:
+    - Maximum 10 cards per batch request
+    - For 100+ cards, call this tool multiple times with different chunks
+
+    **CUSTOM FIELDS**: Set include_custom_fields=true to get structured
+    custom field values alongside card descriptions.
+    """,
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "card_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 24, "maxLength": 24},
+                "description": "List of card IDs to fetch (max 10)",
+                "minItems": 1,
+                "maxItems": 10,
+            },
+            "include_custom_fields": {
+                "type": "boolean",
+                "description": "Include custom field values (default: false)",
+                "default": False,
+            },
+            "fields": {
+                "type": "string",
+                "description": "Comma-separated fields to return",
+                "default": "id,name,desc,idList,url,labels,due,dueComplete,idMembers",
+            },
+        },
+        "required": ["card_ids"],
+    },
+)
+
+TOOL_SEARCH_CARDS = Tool(
+    name="trello_search_cards",
+    description="""
+    Search and filter cards on a board by multiple criteria.
+
+    **AVAILABLE FILTERS**:
+    - labels: Filter by label names (case-insensitive, any match)
+    - member_ids: Filter by assigned member IDs
+    - due_date_start/end: Filter cards due within a date range
+    - card_status: 'open' (default), 'closed', or 'all'
+
+    **DATA EXTRACTION TIP**: Set include_custom_fields=true to get both:
+    1. Card descriptions (text that you can parse with regex)
+    2. Custom field values (structured data)
+
+    **WORKFLOW EXAMPLE**:
+    1. Call trello_list_boards to get board_id
+    2. Call trello_search_cards with board_id and filters
+    3. Extract data from descriptions and custom fields
+
+    **PERFORMANCE NOTE**: Filtering is done client-side after fetching
+    all cards from the board. For large boards (100+ cards), this tool
+    makes 1 API call then filters locally.
+    """,
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "board_id": {
+                "type": "string",
+                "description": "Board ID to search within",
+                "minLength": 8,
+            },
+            "labels": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Filter by label names (optional)",
+            },
+            "member_ids": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Filter by assigned member IDs (optional)",
+            },
+            "due_date_start": {
+                "type": "string",
+                "description": "Cards due on/after this date (ISO 8601: '2025-11-23T00:00:00Z')",
+                "format": "date-time",
+            },
+            "due_date_end": {
+                "type": "string",
+                "description": "Cards due on/before this date (ISO 8601: '2025-12-31T23:59:59Z')",
+                "format": "date-time",
+            },
+            "card_status": {
+                "type": "string",
+                "description": "Filter by status: 'open', 'closed', or 'all'",
+                "enum": ["open", "closed", "all"],
+                "default": "open",
+            },
+            "include_custom_fields": {
+                "type": "boolean",
+                "description": "Include custom field values (default: false)",
+                "default": False,
+            },
+        },
+        "required": ["board_id"],
+    },
+)
+
 
 # ============================================================================
 # MCP Server Implementation
@@ -211,6 +351,9 @@ class TrelloMCPServer:
                 TOOL_GET_BOARD_STRUCTURE,
                 TOOL_CREATE_CARD,
                 TOOL_MOVE_CARD,
+                TOOL_LIST_BOARDS,
+                TOOL_BATCH_GET_CARDS,
+                TOOL_SEARCH_CARDS,
             ]
 
         @self.server.call_tool()
@@ -239,6 +382,12 @@ class TrelloMCPServer:
                     return await self._handle_create_card(arguments)
                 elif name == "trello_move_card":
                     return await self._handle_move_card(arguments)
+                elif name == "trello_list_boards":
+                    return await self._handle_list_boards(arguments)
+                elif name == "trello_batch_get_cards":
+                    return await self._handle_batch_get_cards(arguments)
+                elif name == "trello_search_cards":
+                    return await self._handle_search_cards(arguments)
                 else:
                     return CallToolResult(
                         content=[
@@ -393,6 +542,151 @@ Card ID: {card.id}
 Card: {card.name}
 New List ID: {card.id_list}
 URL: {card.url}
+"""
+
+        return CallToolResult(
+            content=[TextContent(type="text", text=response_text)],
+            isError=False,
+        )
+
+    async def _handle_list_boards(
+        self,
+        arguments: dict[str, Any]
+    ) -> CallToolResult:
+        """Handle list_boards tool call."""
+        assert self.trello_client is not None
+        boards = await self.trello_client.get_all_boards()
+
+        if not boards:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text="No boards found. Check your Trello account permissions."
+                )],
+                isError=False,
+            )
+
+        # Format response as readable list
+        boards_text = "\n".join(
+            f"• {board.name}\n"
+            f"  ID: {board.id}\n"
+            f"  URL: {board.url}\n"
+            f"  Status: {'🟢 Open' if not board.closed else '🔴 Closed'}\n"
+            f"  Description: {board.desc[:100] if board.desc else '(no description)'}\n"
+            for board in boards
+        )
+
+        response_text = f"""Found {len(boards)} board(s):
+
+{boards_text}
+💡 Use the board ID with other tools to fetch or search cards.
+"""
+
+        return CallToolResult(
+            content=[TextContent(type="text", text=response_text)],
+            isError=False,
+        )
+
+    async def _handle_batch_get_cards(
+        self,
+        arguments: dict[str, Any]
+    ) -> CallToolResult:
+        """Handle batch_get_cards tool call."""
+        # Validate input with Pydantic
+        input_data = BatchCardsInput(**arguments)
+
+        assert self.trello_client is not None
+        cards = await self.trello_client.batch_get_cards(input_data)
+
+        if not cards:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Warning: No cards were retrieved from batch request. "
+                         f"Check that the card IDs are valid."
+                )],
+                isError=False,
+            )
+
+        # Format response with card details
+        cards_text = "\n".join(
+            f"• {card.name}\n"
+            f"  ID: {card.id}\n"
+            f"  URL: {card.url}\n"
+            f"  List ID: {card.id_list}\n"
+            f"  Labels: {', '.join(lbl.name for lbl in card.labels) if card.labels else 'none'}\n"
+            f"  Due: {card.due if card.due else 'no due date'}\n"
+            f"  Members: {len(card.id_members)} assigned\n"
+            f"  Custom Fields: {len(card.custom_field_items)} values\n"
+            f"  Description: {card.desc[:100] if card.desc else '(no description)'}...\n"
+            for card in cards
+        )
+
+        response_text = f"""✓ Batch fetch complete: {len(cards)}/{len(input_data.card_ids)} cards retrieved
+
+{cards_text}
+"""
+
+        return CallToolResult(
+            content=[TextContent(type="text", text=response_text)],
+            isError=False,
+        )
+
+    async def _handle_search_cards(
+        self,
+        arguments: dict[str, Any]
+    ) -> CallToolResult:
+        """Handle search_cards tool call."""
+        # Validate input with Pydantic
+        input_data = SearchCardsInput(**arguments)
+
+        assert self.trello_client is not None
+        cards = await self.trello_client.search_cards(input_data)
+
+        if not cards:
+            filters_desc = []
+            if input_data.labels:
+                filters_desc.append(f"labels={input_data.labels}")
+            if input_data.member_ids:
+                filters_desc.append(f"members={input_data.member_ids}")
+            if input_data.due_date_start or input_data.due_date_end:
+                filters_desc.append(
+                    f"due_date=({input_data.due_date_start}, {input_data.due_date_end})"
+                )
+
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"No cards found matching filters: {', '.join(filters_desc)}"
+                )],
+                isError=False,
+            )
+
+        # Format response with matched cards
+        cards_text = "\n".join(
+            f"• {card.name}\n"
+            f"  ID: {card.id}\n"
+            f"  URL: {card.url}\n"
+            f"  List ID: {card.id_list}\n"
+            f"  Labels: {', '.join(lbl.name for lbl in card.labels) if card.labels else 'none'}\n"
+            f"  Due: {card.due if card.due else 'no due date'} "
+            f"{'✅' if card.due_complete else ''}\n"
+            f"  Members: {len(card.id_members)} assigned\n"
+            f"  Custom Fields: {len(card.custom_field_items)} values\n"
+            f"  Description: {card.desc[:150] if card.desc else '(no description)'}...\n"
+            for card in cards[:20]  # Limit to first 20 for readability
+        )
+
+        # Add note if there are more cards
+        more_cards_note = ""
+        if len(cards) > 20:
+            more_cards_note = f"\n... and {len(cards) - 20} more cards"
+
+        response_text = f"""✓ Search complete: {len(cards)} card(s) matched
+
+{cards_text}{more_cards_note}
+
+💡 TIP: Extract data from card descriptions using regex or parse custom field values for structured data.
 """
 
         return CallToolResult(

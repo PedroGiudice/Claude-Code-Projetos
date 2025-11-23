@@ -75,6 +75,30 @@ class TrelloLabel(BaseModel):
     }
 
 
+class CustomFieldItem(BaseModel):
+    """
+    Custom field value attached to a card.
+
+    Custom fields can have different value types:
+    - text: {"text": "some value"}
+    - number: {"number": 42}
+    - date: {"date": "2025-12-31"}
+    - checked: {"checked": "true"}
+    - option: {"option": "option_id"}
+    """
+    id: str
+    id_custom_field: str = Field(..., alias="idCustomField")
+    id_model: str = Field(..., alias="idModel")
+    model_type: str = Field(default="card", alias="modelType")
+    value: dict  # Flexible dict to handle different value types
+
+    model_config = {
+        "populate_by_name": True,
+        "strict": True,
+        "extra": "forbid",
+    }
+
+
 class TrelloCard(BaseModel):
     """Trello card model with essential fields."""
     id: str
@@ -84,6 +108,21 @@ class TrelloCard(BaseModel):
     url: str
     labels: list[TrelloLabel] = []
     due: Optional[str] = None
+    custom_field_items: list["CustomFieldItem"] = Field(
+        default=[],
+        alias="customFieldItems",
+        description="Custom field values attached to this card"
+    )
+    id_members: list[str] = Field(
+        default=[],
+        alias="idMembers",
+        description="IDs of members assigned to this card"
+    )
+    due_complete: bool = Field(
+        default=False,
+        alias="dueComplete",
+        description="Whether the due date has been marked complete"
+    )
 
     model_config = {
         "populate_by_name": True,
@@ -193,6 +232,85 @@ class MoveCardInput(BaseModel):
         max_length=24,
         description="The ID of the destination list"
     )
+
+
+class BatchCardsInput(BaseModel):
+    """
+    Input schema for batch fetching multiple cards.
+
+    Trello Batch API allows fetching up to 10 resources in a single request,
+    significantly reducing API calls and improving performance.
+    """
+    card_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=10,
+        description="List of card IDs to fetch (maximum 10 per batch)"
+    )
+    include_custom_fields: bool = Field(
+        default=False,
+        description="Include custom field values in response"
+    )
+    fields: str = Field(
+        default="id,name,desc,idList,url,labels,due,dueComplete,idMembers",
+        description="Comma-separated list of fields to return for each card"
+    )
+
+    @field_validator("card_ids")
+    @classmethod
+    def validate_card_ids(cls, v: list[str]) -> list[str]:
+        """Validate card IDs are 24 characters each."""
+        for card_id in v:
+            if len(card_id) != 24:
+                raise ValueError(f"Invalid card ID: {card_id} (must be 24 characters)")
+        return v
+
+
+class SearchCardsInput(BaseModel):
+    """
+    Input schema for searching/filtering cards on a board.
+
+    Note: Trello API has limited server-side filtering capabilities.
+    Most filtering is performed client-side after fetching all cards.
+    """
+    board_id: str = Field(
+        ...,
+        min_length=8,
+        description="Board ID to search within"
+    )
+    labels: Optional[list[str]] = Field(
+        default=None,
+        description="Filter by label names (case-insensitive, any match counts)"
+    )
+    member_ids: Optional[list[str]] = Field(
+        default=None,
+        description="Filter by assigned member IDs"
+    )
+    due_date_start: Optional[str] = Field(
+        default=None,
+        description="Filter cards due on or after this date (ISO 8601 format)"
+    )
+    due_date_end: Optional[str] = Field(
+        default=None,
+        description="Filter cards due on or before this date (ISO 8601 format)"
+    )
+    card_status: str = Field(
+        default="open",
+        description="Card status filter: 'open', 'closed', or 'all'"
+    )
+    include_custom_fields: bool = Field(
+        default=False,
+        description="Include custom field values in results"
+    )
+
+    @field_validator("card_status")
+    @classmethod
+    def validate_card_status(cls, v: str) -> str:
+        """Ensure card status is valid."""
+        allowed = {"open", "closed", "all"}
+        if v not in allowed:
+            raise ValueError(f"card_status must be one of {allowed}")
+        return v
 
 
 class RateLimitState(BaseModel):
