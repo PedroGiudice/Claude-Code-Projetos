@@ -184,3 +184,4 @@ Captura de tela*.png
 
 # Statusline cache (performance optimization)
 .claude/cache/
+.claude/hooks/lib/session-skills.json
