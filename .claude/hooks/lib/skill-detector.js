@@ -3,12 +3,72 @@
  *
  * Mudança v2.0: Lê skill-rules.json diretamente (não sessionState.skills)
  * Mudança v2.1: Word boundary matching para evitar falsos positivos
- *               Ex: "seguida" não deve matchar "ui", "teste" não deve matchar "test"
- * Implementa: Pattern matching (keywords + intentPatterns) + Top 5 ranking
+ * Mudança v2.2: FILE PATH TRIGGERS - Context-aware via arquivos modificados
+ * Implementa: Pattern matching (keywords + intentPatterns + filePaths) + Top 5 ranking
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// ============================================================================
+// v2.2: FILE PATTERN → SKILL MAPPING
+// ============================================================================
+const FILE_PATTERN_SKILLS = {
+  // Backend Python → backend-dev-guidelines
+  'backend-python': {
+    patterns: [/\.py$/, /agentes\/.*\/src\//, /engines?\//, /steps?\//, /core\//],
+    skills: ['backend-dev-guidelines']
+  },
+  // Tests → route-tester, backend-dev-guidelines
+  'testing': {
+    patterns: [/\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /tests?\//, /_test\.py$/, /test_.*\.py$/],
+    skills: ['route-tester', 'backend-dev-guidelines']
+  },
+  // Frontend → frontend-dev-guidelines
+  'frontend': {
+    patterns: [/\.tsx$/, /\.jsx$/, /components\//, /pages\//, /\.vue$/, /\.svelte$/],
+    skills: ['frontend-dev-guidelines']
+  },
+  // Sentry/Error tracking → error-tracking
+  'errors': {
+    patterns: [/sentry/, /error.*track/, /monitoring\//],
+    skills: ['error-tracking']
+  },
+  // Skills development → skill-developer
+  'skills': {
+    patterns: [/skills\/.*\.md$/, /skill-rules\.json$/, /SKILL\.md$/],
+    skills: ['skill-developer']
+  }
+};
+
+/**
+ * v2.2: Detecta skills baseado nos arquivos modificados
+ * @param {string[]} modifiedFiles - Lista de arquivos modificados
+ * @returns {Map<string, number>} Map de skill → score adicional
+ */
+function detectSkillsByFiles(modifiedFiles) {
+  const skillScores = new Map();
+
+  if (!modifiedFiles || modifiedFiles.length === 0) {
+    return skillScores;
+  }
+
+  for (const file of modifiedFiles) {
+    for (const category of Object.values(FILE_PATTERN_SKILLS)) {
+      for (const pattern of category.patterns) {
+        if (pattern.test(file)) {
+          category.skills.forEach(skill => {
+            const currentScore = skillScores.get(skill) || 0;
+            skillScores.set(skill, currentScore + 8); // 8 pontos por file match
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  return skillScores;
+}
 
 /**
  * Verifica se keyword existe como palavra completa no texto
@@ -53,20 +113,20 @@ function escapeRegex(string) {
 }
 
 /**
- * Detecta skills relevantes baseado no prompt do usuário
+ * Detecta skills relevantes baseado no prompt e arquivos modificados
  *
  * @param {string} prompt - Prompt do usuário
+ * @param {string[]} modifiedFiles - Lista de arquivos modificados (v2.2)
  * @returns {object|null} - { topSkills, totalConsidered, totalMatched } ou null
  */
-function detectSkill(prompt) {
+function detectSkill(prompt, modifiedFiles = []) {
   try {
     const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
     const rulesPath = path.join(projectDir, '.claude', 'skills', 'skill-rules.json');
 
     // Verificar se skill-rules.json existe
     if (!fs.existsSync(rulesPath)) {
-      console.error('[WARN] skill-rules.json não encontrado - skill detection desabilitada');
-      return null;
+      return null; // Silencioso - skill detection desabilitada
     }
 
     // Ler skill-rules.json
@@ -74,12 +134,15 @@ function detectSkill(prompt) {
     const rules = JSON.parse(rulesContent);
 
     if (!rules.skills) {
-      console.error('[WARN] skill-rules.json sem seção "skills"');
       return null;
     }
 
+    // v2.2: Detectar skills por file patterns PRIMEIRO
+    const fileSkillScores = detectSkillsByFiles(modifiedFiles);
+
     const promptLower = prompt.toLowerCase();
     const matched = [];
+    const matchedByFile = new Set(); // Track skills matched only by file
 
     // Iterar por todas as skills
     for (const [skillName, config] of Object.entries(rules.skills)) {
@@ -115,16 +178,33 @@ function detectSkill(prompt) {
         }
       }
 
-      // 3. FILE PATH TRIGGERS (se contexto de arquivo disponível)
-      // TODO: Implementar quando context incluir arquivos sendo editados
+      // 3. FILE PATH TRIGGERS (v2.2 - context-aware)
+      const fileScore = fileSkillScores.get(skillName) || 0;
+      if (fileScore > 0) {
+        score += fileScore;
+        matchedTriggers.push(`files: +${fileScore}pts`);
+      }
 
-      // Se skill teve algum match, adicionar ao array
+      // Se skill teve algum match (keyword, pattern, OU file), adicionar ao array
       if (score > 0) {
         matched.push({
           skillName,
           config,
           score,
           matchedTriggers
+        });
+      }
+    }
+
+    // v2.2: Adicionar skills detectadas APENAS por file (não estão no skill-rules.json)
+    for (const [skillName, fileScore] of fileSkillScores.entries()) {
+      const alreadyMatched = matched.some(m => m.skillName === skillName);
+      if (!alreadyMatched && fileScore > 0) {
+        matched.push({
+          skillName,
+          config: { priority: 'medium' }, // Default priority
+          score: fileScore,
+          matchedTriggers: [`files: +${fileScore}pts`]
         });
       }
     }

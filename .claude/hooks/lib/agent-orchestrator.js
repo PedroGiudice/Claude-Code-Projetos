@@ -1,5 +1,10 @@
 /**
- * lib/agent-orchestrator.js - Orquestração de agentes (v3.1 - Agent-Aware)
+ * lib/agent-orchestrator.js - Orquestração de agentes (v3.2 - Context-Aware)
+ *
+ * MUDANÇA v3.2: Detecção CONTEXT-AWARE usando:
+ * - Keywords no prompt (v3.1)
+ * - Arquivos modificados (git status)
+ * - Diretório atual de trabalho
  *
  * MUDANÇA v3.1: Detecta keywords para sugerir agentes ESPECÍFICOS
  * - Refatoração → code-refactor-master
@@ -9,7 +14,7 @@
  * - etc.
  *
  * FILOSOFIA: "Right Agent for the Right Task"
- * - Mapeia keywords para agentes especializados
+ * - Combina prompt keywords + file patterns + project context
  * - Fallback para desenvolvimento apenas quando não há match específico
  */
 
@@ -48,14 +53,85 @@ const AGENT_KEYWORDS = {
     'pesquisar', 'research', 'buscar informação', 'search for',
     'investigar', 'investigate'
   ],
-  'frontend-error-fixer': [
-    'frontend error', 'react error', 'build error', 'bundle error',
-    'erro de frontend', 'erro react'
+  // frontend-error-fixer: Removido da auto-detecção (será explícito)
+  'refactor-planner': [
+    'planejar refatoração', 'plan refactor', 'refactor plan',
+    'estratégia de refatoração', 'refactoring strategy'
   ]
 };
 
+// ============================================================================
+// v3.2: FILE PATTERN → AGENT MAPPING
+// ============================================================================
+const FILE_PATTERN_AGENTS = {
+  // Test files → qualidade-codigo
+  'test': {
+    patterns: [/\.test\.[jt]sx?$/, /\.spec\.[jt]sx?$/, /tests?\//, /_test\.py$/, /test_.*\.py$/],
+    agents: ['qualidade-codigo']
+  },
+  // Documentation → documentation-architect
+  'docs': {
+    patterns: [/\.md$/, /docs\//, /README/, /CHANGELOG/, /\.rst$/],
+    agents: ['documentation-architect']
+  },
+  // Hooks (JS/Node) → desenvolvimento (hooks são código interno)
+  'hooks': {
+    patterns: [/\.claude\/hooks\//, /hooks\/.*\.[jt]s$/],
+    agents: ['desenvolvimento']
+  },
+  // Frontend (React/Vue/Angular) → NÃO auto-detectar (será explícito)
+  // Removido: tarefas frontend serão explícitas no prompt
+  // Python backend → desenvolvimento
+  'python': {
+    patterns: [/\.py$/, /agentes\/.*\/src\//, /engines?\//, /steps?\//, /core\//],
+    agents: ['desenvolvimento']
+  },
+  // Config files → desenvolvimento
+  'config': {
+    patterns: [/\.json$/, /\.ya?ml$/, /\.toml$/, /\.ini$/, /\.env/],
+    agents: ['desenvolvimento']
+  },
+  // Styles → desenvolvimento (CSS/SCSS work)
+  'styles': {
+    patterns: [/\.s?css$/, /\.less$/, /styles?\//],
+    agents: ['desenvolvimento']
+  }
+};
+
+// ============================================================================
+// v3.2: PROJECT DIRECTORY → AGENT MAPPING
+// ============================================================================
+const PROJECT_AGENTS = {
+  // Legal text extractor: Python backend, OCR, PDF processing
+  'agentes/legal-text-extractor': {
+    agents: ['desenvolvimento', 'qualidade-codigo'],
+    context: 'Python backend, OCR, PDF processing'
+  },
+  // OAB watcher: Monitoring, scraping
+  'agentes/oab-watcher': {
+    agents: ['desenvolvimento', 'qualidade-codigo'],
+    context: 'Monitoring, web scraping'
+  },
+  // Skills: Skill development
+  'skills/': {
+    agents: ['desenvolvimento', 'documentation-architect'],
+    context: 'Claude Code skills development'
+  },
+  // Hooks: Internal tooling
+  '.claude/hooks': {
+    agents: ['desenvolvimento'],
+    context: 'Claude Code hooks (JS/Node)'
+  },
+  // Shared utilities
+  'shared/': {
+    agents: ['desenvolvimento', 'qualidade-codigo'],
+    context: 'Shared utilities and models'
+  }
+};
+
 /**
- * Detecta qual agente específico deve ser sugerido baseado no prompt
+ * Detecta qual agente específico deve ser sugerido baseado no prompt (keywords)
+ * @param {string} prompt - User prompt
  * @returns {string|null} Nome do agente ou null se não encontrar match
  */
 function detectSpecificAgent(prompt) {
@@ -76,6 +152,101 @@ function detectSpecificAgent(prompt) {
   }
 
   return null;
+}
+
+/**
+ * v3.2: Detecta agentes baseado nos arquivos modificados (git status)
+ * @param {string[]} modifiedFiles - Lista de arquivos modificados
+ * @returns {string[]} Array de agentes sugeridos (sem duplicatas)
+ */
+function detectAgentsByFiles(modifiedFiles) {
+  if (!modifiedFiles || modifiedFiles.length === 0) {
+    return [];
+  }
+
+  const detectedAgents = new Set();
+
+  for (const file of modifiedFiles) {
+    for (const category of Object.values(FILE_PATTERN_AGENTS)) {
+      for (const pattern of category.patterns) {
+        if (pattern.test(file)) {
+          category.agents.forEach(agent => detectedAgents.add(agent));
+          break; // Uma vez que encontrou match nesta categoria, passa para próxima
+        }
+      }
+    }
+  }
+
+  return [...detectedAgents];
+}
+
+/**
+ * v3.2: Detecta agentes baseado no diretório de trabalho atual
+ * @param {string} projectDir - Diretório do projeto
+ * @param {string[]} modifiedFiles - Lista de arquivos modificados
+ * @returns {{agents: string[], context: string|null}} Agentes e contexto do projeto
+ */
+function detectAgentsByProjectDir(projectDir, modifiedFiles) {
+  // Primeiro, tentar detectar pelo projectDir absoluto
+  for (const [pathPattern, config] of Object.entries(PROJECT_AGENTS)) {
+    if (projectDir.includes(pathPattern)) {
+      return {
+        agents: config.agents,
+        context: config.context
+      };
+    }
+  }
+
+  // Segundo, tentar detectar pelos arquivos modificados (qual subprojeto)
+  if (modifiedFiles && modifiedFiles.length > 0) {
+    for (const [pathPattern, config] of Object.entries(PROJECT_AGENTS)) {
+      const hasFileInProject = modifiedFiles.some(file => file.includes(pathPattern));
+      if (hasFileInProject) {
+        return {
+          agents: config.agents,
+          context: config.context
+        };
+      }
+    }
+  }
+
+  return { agents: [], context: null };
+}
+
+/**
+ * v3.2: Combina detecções de múltiplas fontes em lista única de agentes
+ * @param {string|null} keywordAgent - Agente detectado por keyword
+ * @param {string[]} fileAgents - Agentes detectados por arquivos
+ * @param {string[]} projectAgents - Agentes detectados por projeto
+ * @returns {string[]} Lista combinada de agentes (ordenada por prioridade)
+ */
+function combineAgentDetections(keywordAgent, fileAgents, projectAgents) {
+  // Prioridade: keyword > files > project
+  const combined = new Set();
+
+  // 1. Keyword match tem prioridade máxima
+  if (keywordAgent) {
+    combined.add(keywordAgent);
+  }
+
+  // 2. File-based detection (contextual)
+  fileAgents.forEach(agent => combined.add(agent));
+
+  // 3. Project-based detection (fallback)
+  projectAgents.forEach(agent => combined.add(agent));
+
+  // Agentes de IMPLEMENTAÇÃO (substitutos de desenvolvimento)
+  const implementationAgents = ['code-refactor-master', 'refactor-planner', 'auto-error-resolver'];
+
+  // Remover 'desenvolvimento' APENAS se houver agente de implementação específico
+  const result = [...combined];
+  const hasImplementationAgent = result.some(a => implementationAgents.includes(a));
+
+  if (hasImplementationAgent && result.includes('desenvolvimento')) {
+    return result.filter(a => a !== 'desenvolvimento');
+  }
+
+  return result;
 }
 
 async function orchestrateAgents(context, agentesConfig) {
@@ -168,12 +339,28 @@ async function orchestrateAgents(context, agentesConfig) {
   }
 
   // ============================================================================
-  // DETECÇÃO DE AGENTE ESPECÍFICO (v3.1)
+  // v3.2: DETECÇÃO CONTEXT-AWARE (keywords + files + project)
   // ============================================================================
-  const specificAgent = detectSpecificAgent(context.prompt);
+
+  // 1. Keyword-based detection (v3.1 - original)
+  const keywordAgent = detectSpecificAgent(context.prompt);
+
+  // 2. File-based detection (v3.2 - NEW)
+  const modifiedFiles = context.git?.modifiedFiles || [];
+  const fileAgents = detectAgentsByFiles(modifiedFiles);
+
+  // 3. Project-based detection (v3.2 - NEW)
+  const projectDir = context.projectDir || '';
+  const { agents: projectAgents, context: projectContext } = detectAgentsByProjectDir(projectDir, modifiedFiles);
+
+  // 4. Combine all detections
+  const combinedAgents = combineAgentDetections(keywordAgent, fileAgents, projectAgents);
+
+  // Para compatibilidade: primeiro agente é o "específico"
+  const specificAgent = combinedAgents.length > 0 ? combinedAgents[0] : null;
 
   // ============================================================================
-  // DECOMPOSIÇÃO BASEADA EM COMPLEXIDADE + AGENTE ESPECÍFICO
+  // DECOMPOSIÇÃO BASEADA EM COMPLEXIDADE + AGENTES DETECTADOS
   // ============================================================================
   const subtasks = [];
 
@@ -196,21 +383,24 @@ async function orchestrateAgents(context, agentesConfig) {
       agente: 'documentacao'
     });
   } else if (complexity === 'MEDIUM') {
-    // MUDANÇA v3.1: Se detectou agente específico, usa ELE como principal
-    if (specificAgent) {
-      subtasks.push({
-        name: getAgentTaskName(specificAgent),
-        agente: specificAgent
-      });
-      // Adiciona code review apenas se não for já um agente de qualidade
-      if (specificAgent !== 'qualidade-codigo') {
+    // v3.2: Usa agentes combinados (context-aware)
+    if (combinedAgents.length > 0) {
+      // Adiciona tarefa para cada agente detectado
+      for (const agent of combinedAgents) {
+        subtasks.push({
+          name: getAgentTaskName(agent),
+          agente: agent
+        });
+      }
+      // Adiciona code review se não estiver presente
+      if (!combinedAgents.includes('qualidade-codigo')) {
         subtasks.push({
           name: 'Code Review',
           agente: 'qualidade-codigo'
         });
       }
     } else {
-      // Fallback: comportamento original
+      // Fallback: comportamento original (sem contexto detectado)
       subtasks.push({
         name: 'Implementação',
         agente: 'desenvolvimento'
@@ -224,7 +414,14 @@ async function orchestrateAgents(context, agentesConfig) {
 
   return {
     complexity,
-    specificAgent,  // Incluir no retorno para debug
+    specificAgent,  // Manter para compatibilidade
+    combinedAgents, // v3.2: Lista completa de agentes detectados
+    detectionSources: {  // v3.2: Debug info
+      keyword: keywordAgent,
+      files: fileAgents,
+      project: projectAgents,
+      projectContext
+    },
     subtasks,
     plan: formatOrchestrationPlan(subtasks)
   };
@@ -236,13 +433,13 @@ async function orchestrateAgents(context, agentesConfig) {
 function getAgentTaskName(agent) {
   const taskNames = {
     'code-refactor-master': 'Refatoração de Código',
+    'refactor-planner': 'Planejamento de Refatoração',
     'planejamento-legal': 'Planejamento & Arquitetura',
     'plan-reviewer': 'Revisão de Plano',
     'documentation-architect': 'Documentação',
     'qualidade-codigo': 'Auditoria & Code Review',
     'auto-error-resolver': 'Resolução de Erros',
     'web-research-specialist': 'Pesquisa',
-    'frontend-error-fixer': 'Correção de Erros Frontend',
     'desenvolvimento': 'Implementação'
   };
   return taskNames[agent] || 'Execução';

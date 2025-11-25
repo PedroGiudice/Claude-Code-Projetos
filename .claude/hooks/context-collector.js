@@ -38,10 +38,7 @@ async function collectContext(projectDir, stdinData = null) {
     prompt = process.env.CLAUDE_USER_PROMPT || '';
   }
 
-  // DEBUG: Log para troubleshooting (remover após validação)
-  if (!prompt) {
-    console.error('[WARN] Prompt vazio - stdin keys:', stdinData ? Object.keys(stdinData) : 'null');
-  }
+  // Prompt vazio é esperado em alguns casos (não logar)
 
   const context = {
     timestamp: Date.now(),
@@ -113,8 +110,8 @@ async function legalBraniacDecide(context, sessionState) {
   // 1. VALIDATIONS
   decisions.validations = await runValidations(context, sessionState.validations);
 
-  // 2. SKILL DETECTION (v2.0: detectSkill agora lê skill-rules.json diretamente)
-  decisions.skillActivation = detectSkill(context.prompt);
+  // 2. SKILL DETECTION (v2.2: context-aware com file path triggers)
+  decisions.skillActivation = detectSkill(context.prompt, context.git?.modifiedFiles || []);
 
   // 3. AGENT ORCHESTRATION (só para prompts complexos)
   decisions.agentOrchestration = await orchestrateAgents(
@@ -131,78 +128,47 @@ async function legalBraniacDecide(context, sessionState) {
 }
 
 // ============================================================================
-// OUTPUT FORMATTING
+// OUTPUT FORMATTING v3 - COMPACT & CLEAN
 // ============================================================================
 
 function formatOutput(decisions) {
-  const messages = [];
+  const parts = [];
 
-  // Validations (só failures)
+  // Validations (só critical failures - 1 linha)
   const failures = decisions.validations.filter(v => !v.passed);
   if (failures.length > 0) {
-    const failureMessages = failures.map(f => f.message).join('\n');
-    messages.push(`⚠️  VALIDATIONS:\n${failureMessages}`);
+    parts.push(`⚠️ ${failures.map(f => f.message).join(' | ')}`);
   }
 
-  // Skill activation (v2.0: mostra top 5 skills detectadas)
-  const hasSkills = decisions.skillActivation && decisions.skillActivation.topSkills && decisions.skillActivation.topSkills.length > 0;
-  const hasOrchestration = decisions.agentOrchestration && decisions.agentOrchestration.complexity !== 'LOW';
+  // Skill + Agent em formato compacto unificado
+  const hasSkills = decisions.skillActivation?.topSkills?.length > 0;
+  const hasOrch = decisions.agentOrchestration && decisions.agentOrchestration.complexity !== 'LOW';
 
-  if (hasSkills) {
-    const detection = decisions.skillActivation;
-    const top5List = detection.topSkills
-      .map(s => `  - ${s.skillName} (${s.config.priority}) [score: ${s.finalScore}]`)
-      .join('\n');
+  if (hasSkills || hasOrch) {
+    const skillNames = hasSkills
+      ? decisions.skillActivation.topSkills.slice(0, 3).map(s => s.skillName)
+      : [];
 
-    // Mensagem integrada: skills + agents (se ambos presentes)
-    const skillNote = hasOrchestration
-      ? `\n📌 Nota: Skills são auto-injetadas no contexto. Agents delegados terão acesso automaticamente.`
-      : `\n💡 Skills estão disponíveis para uso imediato.`;
+    // Extrair agentes únicos de subtasks
+    const agents = hasOrch && decisions.agentOrchestration.subtasks
+      ? [...new Set(decisions.agentOrchestration.subtasks.map(st => st.agente))]
+      : [];
 
-    messages.push(
-      `🎯 SKILLS AUTO-INJETADAS (top ${detection.topSkills.length} de ${detection.totalConsidered}):\n` +
-      top5List +
-      skillNote
-    );
-  }
+    // Formato compacto: 🎯 Skills: [a, b] │ Agents: [x, y]
+    const skillPart = skillNames.length ? `Skills: [${skillNames.join(', ')}]` : '';
+    const agentPart = agents.length ? `Agents: [${agents.join(', ')}]` : '';
 
-  // Agent orchestration (mensagem integrada com skills)
-  if (hasOrchestration) {
-    const orch = decisions.agentOrchestration;
-    const directive = orch.complexity === 'HIGH'
-      ? '⚠️  ORQUESTRAÇÃO RECOMENDADA (Complexidade Alta)'
-      : '💡 Orquestração Sugerida (Manter Uniformidade)';
-
-    const skillIntegration = hasSkills
-      ? `\n✅ Skills detectadas acima estarão disponíveis para os agents delegados.`
-      : '';
-
-    messages.push(
-      `🧠 LEGAL-BRANIAC - ${directive}\n\n` +
-        `Para manter qualidade e uniformidade do código, considere delegar:\n\n` +
-        `${orch.plan}${skillIntegration}\n\n` +
-        `Use: Task tool com subagent_type apropriado para cada subtarefa acima.`
-    );
-  }
-
-  // Aesthetic enforcement
-  if (decisions.aestheticEnforcement) {
-    if (!decisions.aestheticEnforcement.passed) {
-      messages.push(
-        `🎨 AESTHETIC ENFORCEMENT FAILED:\n` +
-          decisions.aestheticEnforcement.violations.join('\n')
-      );
-    } else if (decisions.aestheticEnforcement.warning) {
-      messages.push(decisions.aestheticEnforcement.warning);
-    } else if (decisions.aestheticEnforcement.warnings) {
-      messages.push(
-        `⚠️  AESTHETIC WARNINGS:\n` +
-          decisions.aestheticEnforcement.warnings.join('\n')
-      );
+    if (skillPart || agentPart) {
+      parts.push(`🎯 ${[skillPart, agentPart].filter(Boolean).join(' │ ')}`);
     }
   }
 
-  return messages.length > 0 ? messages.join('\n\n') : '';
+  // Aesthetic (só se falhou)
+  if (decisions.aestheticEnforcement && !decisions.aestheticEnforcement.passed) {
+    parts.push(`🎨 ${decisions.aestheticEnforcement.violations.join(' | ')}`);
+  }
+
+  return parts.join('\n');
 }
 
 // ============================================================================
@@ -219,11 +185,9 @@ async function main() {
     const stdinBuffer = fs.readFileSync(0, 'utf-8');
     if (stdinBuffer.trim()) {
       stdinData = JSON.parse(stdinBuffer);
-      // DEBUG: Log keys recebidas para troubleshooting
-      console.error('[DEBUG] stdin keys:', Object.keys(stdinData).join(', '));
     }
   } catch (error) {
-    console.error('[DEBUG] stdin read error:', error.message);
+    // Silently ignore stdin read errors
   }
 
   try {
@@ -235,8 +199,7 @@ async function main() {
       const sessionContent = await fs.readFile(sessionPath, 'utf8');
       sessionState = JSON.parse(sessionContent);
     } catch (error) {
-      // Session state não existe ou corrompido - recriar on-the-fly
-      console.error('[WARN] Session state inválido - recriando...');
+      // Session state não existe ou corrompido - recriar silenciosamente
 
       execSync('node .claude/hooks/legal-braniac-loader.js', { cwd: projectDir });
 
