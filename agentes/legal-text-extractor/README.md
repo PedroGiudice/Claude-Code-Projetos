@@ -30,25 +30,48 @@ print(f"Redução: {result.reduction_pct:.1f}%")
 pytest tests/
 ```
 
+## Arquitetura
+
+Pipeline de 3 estágios algorítmicos (sem dependência de API externa):
+
+```
+PDF → [Cartógrafo] → [Saneador] → [Extrator] → Texto Limpo
+       step_01       step_02       step_03
+```
+
+1. **Cartógrafo** (`step_01_layout.py`): Detecta sistema judicial, mapeia layout
+2. **Saneador** (`step_02_vision.py`): Pré-processa imagens para OCR
+3. **Extrator** (`step_03_extract.py`): Extrai texto com bbox filtering
+
+### ImageCleaner (`src/core/image_cleaner.py`)
+
+Módulo de visão computacional (OpenCV/Numpy) para limpeza de imagens:
+
+- **Modos**: `auto`, `digital`, `scanned`
+- **Funcionalidades**:
+  - `remove_gray_watermarks()` - Remove marcas d'água cinza
+  - `clean_dirty_scan()` - Adaptive threshold para scans
+  - `remove_color_stamps()` - HSV segmentation para carimbos
+  - `remove_speckles()` - Median filter para ruído salt-and-pepper
+  - `has_speckle_noise()` - **Detecção condicional de ruído** (evita degradar texto preto)
+
+```python
+from src.core.image_cleaner import ImageCleaner, CleaningOptions
+
+cleaner = ImageCleaner()
+cleaned = cleaner.process_image(pil_image, mode="auto")
+
+# Ou com opções customizadas
+opts = CleaningOptions(watermark_threshold=190, despeckle_kernel=5)
+cleaner = ImageCleaner.from_options(opts)
+```
+
 ## Status
 
 - ✅ Fase 1: Core de limpeza (75+ padrões)
-- ✅ **Fase 2 - Milestone 1: SDK Integration (COMPLETO)**
-  - Rate limiting automático (20 req/min)
-  - Retry logic com exponential backoff
-  - Prompt engineering com few-shot examples
-  - JSON parsing com validação Pydantic
-  - Extração de seções com fuzzy matching
-- ✅ **Fase 2 - Milestone 2: Learning System (COMPLETO)**
-  - Pattern extraction de documentos validados
-  - Few-shot manager com auto-seleção de exemplos
-  - Metrics tracking (precision/recall/F1)
-  - Storage JSON persistente
-  - Performance trends e auto-decisão de melhorias
-- ✅ **Fase 2 - Milestone 3: Self-Improvement (COMPLETO)**
-  - Prompt versioning system (YAML-based)
-  - Auto-improvement com Claude meta-prompting
-  - A/B testing robusto com promote/rollback
-  - Integração completa no SectionAnalyzer
-  - 961 linhas production-ready
-- 🚧 Fase 2 - Milestone 4: End-to-End Testing (próximo)
+- ✅ **Fase 2: Pipeline Algorítmico (ATUAL)**
+  - 3 estágios algorítmicos (Cartógrafo, Saneador, Extrator)
+  - ImageCleaner com despeckle condicional
+  - Detecção automática de modo (digital/scanned)
+  - 100% preservação de texto em documentos digitais
+  - 8 testes de integração passando

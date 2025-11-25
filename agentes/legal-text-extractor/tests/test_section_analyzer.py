@@ -3,8 +3,12 @@ import pytest
 from src.analyzers.section_analyzer import SectionAnalyzer, Section
 
 
+# Skip todos os testes desta classe - SectionAnalyzer depende de API Claude
+# Decisão arquitetural: pipeline deve ser 100% local (Python/OpenCV/Tesseract)
+# Ver: docs/session-memories/session-memory-2025-11-24-legal-text-extractor-refatoracao-pipeline.md
+@pytest.mark.skip(reason="SectionAnalyzer usa Claude API - descartado por decisão arquitetural (custo proibitivo)")
 class TestSectionAnalyzer:
-    """Test suite para análise de seções"""
+    """Test suite para análise de seções (LEGACY - usa Claude API)"""
 
     @pytest.fixture
     def analyzer(self):

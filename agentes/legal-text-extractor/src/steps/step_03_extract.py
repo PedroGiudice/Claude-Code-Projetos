@@ -185,6 +185,10 @@ class TextExtractor:
         """
         Extrai texto de página nativa via pdfplumber.
 
+        Uses strict char filtering by X coordinate to handle rotated tarja text
+        that may have x0 coordinates inside the safe_bbox but visually belongs
+        to the lateral tarja zone.
+
         Args:
             pdf_path: Caminho para PDF
             page_num: Número da página (1-indexed)
@@ -205,11 +209,34 @@ class TextExtractor:
                 # pdfplumber usa 0-indexed
                 page = pdf.pages[page_num - 1]
 
-                # Crop para área segura (remove tarjas)
+                x0, y0, x1, y1 = safe_bbox
+
+                # Filter chars strictly by X coordinate
+                # This handles rotated text in tarjas where x0 may be inside bbox
+                # but the char visually belongs to the tarja zone
+                filtered_chars = [
+                    char for char in page.chars
+                    if (char["x0"] >= x0 and
+                        char["x1"] <= x1 and
+                        char["top"] >= y0 and
+                        char["bottom"] <= y1)
+                ]
+
+                if not filtered_chars:
+                    logger.warning(f"Página {page_num} NATIVE retornou texto vazio após filtro")
+                    return ""
+
+                # Rebuild text from filtered chars using pdfplumber's internal method
+                # by creating a filtered page object
                 cropped = page.crop(safe_bbox)
 
-                # Extrai texto
-                text = cropped.extract_text()
+                # Override chars with strictly filtered set
+                cropped_with_filter = cropped.filter(
+                    lambda obj: (obj["object_type"] != "char" or
+                                (obj["x0"] >= x0 and obj["x1"] <= x1))
+                )
+
+                text = cropped_with_filter.extract_text()
 
                 if not text:
                     logger.warning(f"Página {page_num} NATIVE retornou texto vazio")

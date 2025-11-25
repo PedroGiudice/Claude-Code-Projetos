@@ -152,20 +152,34 @@ class CleanerEngine:
             re.compile(r'documento\s+assinado\s+digitalmente\s+conforme\s+mp\s+n?[º°]?\s*2\.?200-2/2001', re.I),
             re.compile(r'icp-?brasil', re.I),
 
-            # URLs
+            # URLs (with and without protocol)
             re.compile(r'https?://[^\s]+\.jus\.br[^\s]*', re.I),
+            re.compile(r'[a-z]+\.[a-z]+\.jus\.br\S*', re.I),  # pje.tjsp.jus.br...
+
+            # Validation URLs and fragments (tarja lateral)
+            re.compile(r'^/validar\s*$', re.I | re.M),  # isolated /validar line
+            re.compile(r'validar\s+documento', re.I),
 
             # Validation codes (generic)
             re.compile(r'c[óo]digo\s+de\s+verifica[çc][ãa]o[:\s]+[A-Z0-9\.\-]+', re.I),
             re.compile(r'valide?\s+em[:\s]+', re.I),
+
+            # Isolated CPF in tarja context
+            re.compile(r'^CPF:\s*\d{3}\.\d{3}\.\d{3}-\d{2}\s*$', re.I | re.M),
 
             # Signature blocks
             re.compile(r'assinado\s+por[:\s]+[^\n]{5,80}', re.I),
             re.compile(r'certificado[:\s]+[A-Z0-9\-]+', re.I),
             re.compile(r'hash\s+(sha-?256|md5)[:\s]+[a-f0-9]+', re.I),
 
-            # Timestamps
+            # Timestamps (full and isolated)
             re.compile(r'data/hora[:\s]+\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}(:\d{2})?', re.I),
+            re.compile(r'^Da\s*t[aL]/H[oO]r[aA][:\s,]*$', re.I | re.M),  # corrupted "Data/Hora" from OCR
+            re.compile(r'^\d{2}/\d{2}/\d{4}\s*$', re.M),  # isolated date line
+            re.compile(r'^\d{2}:\d{2}(:\d{2})?\s*$', re.M),  # isolated time line
+
+            # Hex codes (tarja verification codes)
+            re.compile(r'^[0-9a-f]{12,32}\s*$', re.I | re.M),  # isolated hex code
         ]
 
     def detect_system(self, text: str) -> DetectionResult:

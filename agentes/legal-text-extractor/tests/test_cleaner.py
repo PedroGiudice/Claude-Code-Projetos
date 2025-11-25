@@ -19,10 +19,13 @@ class TestDocumentCleaner:
         assert "Conteúdo importante" in result.text
 
     def test_remove_footers(self, cleaner):
-        """Testa remoção de rodapés"""
-        text = "Texto\nAssinado digitalmente\nMais texto"
+        """Testa remoção de assinaturas digitais (padrão completo)"""
+        text = "Texto importante do documento\nAssinado digitalmente por: JUIZ FEDERAL FULANO DE TAL\nMais texto do documento aqui"
         result = cleaner.clean(text)
-        assert "Assinado digitalmente" not in result.text
+        # O padrão exige "assinado digitalmente por:" seguido de 5-100 chars
+        assert "JUIZ FEDERAL FULANO DE TAL" not in result.text
+        assert "Texto importante" in result.text
+        assert "Mais texto" in result.text
 
     def test_statistics(self, cleaner):
         """Testa estatísticas de limpeza"""
