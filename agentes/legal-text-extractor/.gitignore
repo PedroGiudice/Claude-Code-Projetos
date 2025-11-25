@@ -25,6 +25,7 @@ htmlcov/
 *.json
 !README.md
 !ROADMAP.md
+!Mermaid-Legal-text-extractor.md
 !requirements.txt
 
 # PDFs de teste (grandes)
