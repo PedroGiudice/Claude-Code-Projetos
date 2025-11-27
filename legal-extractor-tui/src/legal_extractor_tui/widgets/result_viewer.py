@@ -41,8 +41,8 @@ class ResultViewer(Vertical):
     ResultViewer .viewer-header {
         width: 100%;
         height: 3;
-        background: $boost;
-        border-bottom: solid $border;
+        background: $surface;
+        border-bottom: solid $primary;
         padding: 0 2;
     }
 
@@ -50,14 +50,14 @@ class ResultViewer(Vertical):
         width: 1fr;
         content-align: left middle;
         text-style: bold;
-        color: $text;
+        color: $foreground;
     }
 
     ResultViewer .viewer-source {
         width: auto;
         content-align: right middle;
-        text-style: italic;
-        color: $text-muted;
+        text-style: dim italic;
+        color: $foreground;
     }
 
     ResultViewer Markdown {
@@ -71,8 +71,8 @@ class ResultViewer(Vertical):
         width: 100%;
         height: 1fr;
         content-align: center middle;
-        color: $text-muted;
-        text-style: italic;
+        color: $foreground;
+        text-style: dim italic;
     }
     """
 

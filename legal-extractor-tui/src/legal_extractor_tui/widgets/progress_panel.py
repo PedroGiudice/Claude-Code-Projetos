@@ -44,7 +44,7 @@ class StageProgress(Container):
         width: 100%;
         layout: horizontal;
         background: $panel;
-        border: solid $border;
+        border: solid $primary;
         margin-bottom: 1;
     }
 
@@ -65,7 +65,7 @@ class StageProgress(Container):
     }
 
     StageProgress.pending {
-        border: solid $primary-background;
+        border: solid $surface;
     }
 
     StageProgress.running {
@@ -183,7 +183,7 @@ class PipelineProgress(Vertical):
         width: 100%;
         text-align: center;
         text-style: bold;
-        color: $text;
+        color: $foreground;
         margin-bottom: 1;
     }
     """

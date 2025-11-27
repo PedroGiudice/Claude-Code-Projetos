@@ -49,8 +49,8 @@ class ResultsPanel(Vertical):
     ResultsPanel .results-header {
         width: 100%;
         height: 3;
-        background: $boost;
-        border-bottom: solid $border;
+        background: $surface;
+        border-bottom: solid $primary;
         padding: 1;
     }
 
@@ -83,7 +83,7 @@ class ResultsPanel(Vertical):
         width: 100%;
         height: 1fr;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
         padding: 1;
         overflow-y: auto;
     }
@@ -108,7 +108,7 @@ class ResultsPanel(Vertical):
 
     ResultsPanel .metadata-value {
         width: 1fr;
-        color: $text;
+        color: $foreground;
     }
 
     ResultsPanel .sections-container {
@@ -123,7 +123,7 @@ class ResultsPanel(Vertical):
         padding: 1;
         margin-bottom: 1;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
     }
 
     ResultsPanel .section-title {
@@ -134,7 +134,8 @@ class ResultsPanel(Vertical):
 
     ResultsPanel .section-preview {
         width: 100%;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
         margin-top: 1;
     }
 
@@ -142,8 +143,8 @@ class ResultsPanel(Vertical):
         width: 100%;
         height: 100%;
         content-align: center middle;
-        color: $text-muted;
-        text-style: italic;
+        color: $foreground;
+        text-style: dim italic;
     }
     """
 

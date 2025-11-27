@@ -68,10 +68,11 @@ class FileSelector(Vertical):
     FileSelector .file-info {
         width: 100%;
         height: auto;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
         padding: 1;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
     }
 
     FileSelector .file-info-row {
@@ -86,7 +87,7 @@ class FileSelector(Vertical):
 
     FileSelector .file-info-value {
         width: 1fr;
-        color: $text;
+        color: $foreground;
     }
 
     FileSelector .error {

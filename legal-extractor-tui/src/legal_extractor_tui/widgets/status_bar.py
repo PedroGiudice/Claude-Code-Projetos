@@ -50,7 +50,7 @@ class StatusBar(Horizontal):
 
     StatusBar .status-message {
         width: 1fr;
-        color: $text;
+        color: $foreground;
     }
 
     StatusBar .cpu-metric {

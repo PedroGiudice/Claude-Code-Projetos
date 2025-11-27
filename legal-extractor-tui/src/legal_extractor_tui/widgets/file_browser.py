@@ -112,9 +112,9 @@ class FileBrowser(Vertical):
         height: 3;
         content-align: center middle;
         text-style: bold;
-        color: $text;
-        background: $boost;
-        border-bottom: solid $border;
+        color: $foreground;
+        background: $surface;
+        border-bottom: solid $primary;
     }
 
     FileBrowser FilteredDirectoryTree {

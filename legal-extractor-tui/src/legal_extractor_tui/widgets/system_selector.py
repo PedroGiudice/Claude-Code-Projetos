@@ -80,18 +80,19 @@ class SystemSelector(Vertical):
     SystemSelector .system-description {
         width: 100%;
         height: auto;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
         padding: 1;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
         min-height: 3;
     }
 
     SystemSelector .description-label {
         width: 100%;
         height: 1;
-        color: $text-muted;
-        text-style: italic;
+        color: $foreground;
+        text-style: dim italic;
     }
 
     SystemSelector .current-system {

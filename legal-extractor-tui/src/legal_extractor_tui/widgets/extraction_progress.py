@@ -52,7 +52,8 @@ class StageIndicator(Static):
 
     StageIndicator .stage-status {
         width: auto;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
     }
 
     StageIndicator ProgressBar {
@@ -62,7 +63,8 @@ class StageIndicator(Static):
     StageIndicator .stage-message {
         width: 100%;
         height: 1;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
         margin-top: 1;
     }
 
@@ -79,7 +81,8 @@ class StageIndicator(Static):
     }
 
     StageIndicator.pending .stage-name {
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
     }
     """
 
@@ -216,7 +219,7 @@ class ExtractionProgress(Vertical):
         margin-top: 1;
         padding: 1;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
     }
 
     ExtractionProgress .stats-row {
@@ -231,7 +234,7 @@ class ExtractionProgress(Vertical):
 
     ExtractionProgress .stats-value {
         width: 1fr;
-        color: $text;
+        color: $foreground;
     }
 
     ExtractionProgress .overall-status {
@@ -243,7 +246,8 @@ class ExtractionProgress(Vertical):
     }
 
     ExtractionProgress .overall-status.idle {
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim;
     }
 
     ExtractionProgress .overall-status.processing {

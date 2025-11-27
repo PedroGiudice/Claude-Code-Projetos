@@ -58,16 +58,16 @@ class ConfigPanel(Vertical):
         width: 100%;
         height: 1;
         text-style: bold;
-        color: $text;
+        color: $foreground;
         margin-bottom: 1;
     }
 
     ConfigPanel .section-description {
         width: 100%;
         height: auto;
-        color: $text-muted;
+        color: $foreground;
+        text-style: dim italic;
         margin-bottom: 1;
-        text-style: italic;
     }
 
     ConfigPanel Checkbox {
@@ -109,7 +109,7 @@ class ConfigPanel(Vertical):
         color: $accent;
         padding: 1;
         background: $surface;
-        border: solid $border;
+        border: solid $primary;
         margin-top: 1;
     }
     """
@@ -349,8 +349,11 @@ class ConfigPanel(Vertical):
         terms = [term.strip() for term in blacklist_str.split(",")]
         return [term for term in terms if term]
 
-    def validate_config(self) -> tuple[bool, str]:
-        """Validate current configuration.
+    def check_config_validity(self) -> tuple[bool, str]:
+        """Check if current configuration is valid.
+
+        Note: This method was renamed from validate_config() to avoid
+        conflict with Textual's reactive validator pattern (validate_<varname>).
 
         Returns:
             Tuple of (is_valid, error_message)

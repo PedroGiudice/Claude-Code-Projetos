@@ -39,7 +39,7 @@ class Header(Container):
         width: 1fr;
         content-align: left middle;
         text-style: bold;
-        color: $text;
+        color: $foreground;
     }
 
     Header .status {

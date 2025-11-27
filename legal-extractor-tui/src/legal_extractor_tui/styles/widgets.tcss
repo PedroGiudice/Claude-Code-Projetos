@@ -29,8 +29,7 @@ FileSelector .file-path:focus {
 }
 
 FileSelector .file-info {
-    text-style: dim;
-    text-style: italic;
+    text-style: dim italic;
     padding: 0 1;
 }
 
@@ -133,8 +132,7 @@ ConfigPanel .config-input {
 }
 
 ConfigPanel .config-hint {
-    text-style: dim;
-    text-style: italic;
+    text-style: dim italic;
     padding: 0 1;
 }
 
@@ -174,26 +172,26 @@ ExtractionProgress .stage {
 
 ExtractionProgress .stage.pending {
     text-style: dim;
-    background: $surface 10%;
+    background: $surface;
     border-left: solid $surface;
 }
 
 ExtractionProgress .stage.active {
     color: $secondary;
-    background: $secondary 20%;
+    background: $secondary;
     border-left: thick $secondary;
     text-style: bold;
 }
 
 ExtractionProgress .stage.complete {
     color: $success;
-    background: $success 10%;
+    background: $success;
     border-left: solid $success;
 }
 
 ExtractionProgress .stage.error {
     color: $error;
-    background: $error 20%;
+    background: $error;
     border-left: thick $error;
     text-style: bold;
 }
@@ -256,8 +254,7 @@ ResultsPanel .preview-text {
 }
 
 ResultsPanel .preview-empty {
-    text-style: dim;
-    text-style: italic;
+    text-style: dim italic;
     text-align: center;
     padding: 4;
 }
@@ -287,8 +284,7 @@ ResultsPanel .metadata-value {
 }
 
 ResultsPanel .metadata-value.empty {
-    text-style: dim;
-    text-style: italic;
+    text-style: dim italic;
 }
 
 /* Sections tab */
@@ -453,9 +449,8 @@ Input.-success {
     border: solid $success;
 }
 
-Input > .input-placeholder {
+Input .input-placeholder {
     text-style: dim;
-    opacity: 0.5;
 }
 
 Input:disabled {
@@ -540,15 +535,15 @@ ProgressBar {
     border: solid $primary;
 }
 
-ProgressBar > .bar--bar {
+ProgressBar .bar--bar {
     background: $primary;
 }
 
-ProgressBar > .bar--complete {
+ProgressBar .bar--complete {
     background: $success;
 }
 
-ProgressBar > .bar--indeterminate {
+ProgressBar .bar--indeterminate {
     background: $accent;
 }
 
@@ -557,12 +552,12 @@ RadioSet {
     padding: 1;
 }
 
-RadioSet > RadioButton {
+RadioSet RadioButton {
     padding: 1;
     margin-bottom: 1;
 }
 
-RadioSet > RadioButton:focus {
+RadioSet RadioButton:focus {
     background: $panel;
 }
 
@@ -580,11 +575,11 @@ Select:focus {
     background: $surface;
 }
 
-Select > SelectCurrent {
+Select SelectCurrent {
     background: $panel;
 }
 
-Select > SelectOverlay {
+Select SelectOverlay {
     background: $surface;
     border: solid $accent;
 }
@@ -608,21 +603,21 @@ DataTable {
     border: solid $primary;
 }
 
-DataTable > .datatable--header {
+DataTable .datatable--header {
     background: $surface;
     text-style: bold;
     color: $primary;
 }
 
-DataTable > .datatable--row {
+DataTable .datatable--row {
     background: $surface;
 }
 
-DataTable > .datatable--row:hover {
+DataTable .datatable--row:hover {
     background: $panel;
 }
 
-DataTable > .datatable--cursor {
+DataTable .datatable--cursor {
     background: $primary;
     color: $background;
 }
@@ -638,12 +633,12 @@ Tree:focus {
     border: solid $accent;
 }
 
-Tree > .tree--cursor {
+Tree .tree--cursor {
     background: $primary;
     color: $background;
 }
 
-Tree > .tree--cursor > .tree--label {
+Tree .tree--cursor .tree--label {
     text-style: bold;
 }
 
@@ -671,27 +666,27 @@ LogPanel {
     overflow-y: auto;
 }
 
-LogPanel > .log-line {
+LogPanel .log-line {
     padding: 0 1;
 }
 
-LogPanel > .log-line.error {
+LogPanel .log-line.error {
     color: $error;
 }
 
-LogPanel > .log-line.warning {
+LogPanel .log-line.warning {
     color: $warning;
 }
 
-LogPanel > .log-line.success {
+LogPanel .log-line.success {
     color: $success;
 }
 
-LogPanel > .log-line.info {
+LogPanel .log-line.info {
     color: $primary;
 }
 
-LogPanel > .log-line.debug {
+LogPanel .log-line.debug {
     text-style: dim;
 }
 
@@ -706,19 +701,19 @@ StatusBar {
     dock: bottom;
 }
 
-StatusBar > .status-segment {
+StatusBar .status-segment {
     padding: 0 1;
 }
 
-StatusBar > .status-segment.left {
+StatusBar .status-segment.left {
     dock: left;
 }
 
-StatusBar > .status-segment.right {
+StatusBar .status-segment.right {
     dock: right;
 }
 
-StatusBar > .status-segment.center {
+StatusBar .status-segment.center {
     dock: none;
 }
 

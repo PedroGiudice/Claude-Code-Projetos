@@ -8,12 +8,12 @@ LoadingIndicator {
     padding: 1;
 }
 
-LoadingIndicator > .spinner {
+LoadingIndicator .spinner {
     color: $accent;
     text-style: bold;
 }
 
-LoadingIndicator > .message {
+LoadingIndicator .message {
     color: $foreground;
     padding-top: 1;
 }
@@ -26,24 +26,24 @@ ProgressBar {
     padding: 0 1;
 }
 
-ProgressBar > .bar-fill {
+ProgressBar .bar-fill {
     background: $accent;
     height: 100%;
 }
 
-ProgressBar > .bar-fill.-success {
+ProgressBar .bar-fill.-success {
     background: $success;
 }
 
-ProgressBar > .bar-fill.-error {
+ProgressBar .bar-fill.-error {
     background: $error;
 }
 
-ProgressBar > .bar-fill.-warning {
+ProgressBar .bar-fill.-warning {
     background: $warning;
 }
 
-ProgressBar > .bar-label {
+ProgressBar .bar-label {
     color: $foreground;
     text-style: bold;
     align: center middle;
@@ -75,11 +75,11 @@ ProgressBar > .bar-label {
     border: solid $error;
 }
 
-.toast > .toast-title {
+.toast .toast-title {
     text-style: bold;
     padding-bottom: 1;
 }
 
-.toast > .toast-message {
+.toast .toast-message {
     color: $foreground;
 }

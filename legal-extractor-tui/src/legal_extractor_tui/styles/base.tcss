@@ -1,31 +1,8 @@
 /* Base styles and CSS variables for Legal Extractor TUI */
 
-/* Textual uses $variable syntax, not CSS var() syntax */
-$primary: #8be9fd;        /* Cyan - main accent */
-$secondary: #bd93f9;      /* Purple - secondary accent */
-$accent: #ff79c6;         /* Pink - highlights */
-$foreground: #f8f8f2;     /* Off-white - main text */
-$background: #0d0d0d;     /* Near black - main background */
-$surface: #1a1a2e;        /* Dark blue-gray - elevated surfaces */
-$panel: #16213e;          /* Dark blue - panel backgrounds */
-
-/* Semantic colors */
-$success: #50fa7b;        /* Green - success states */
-$warning: #ffb86c;        /* Orange - warnings */
-$error: #ff5555;          /* Red - errors */
-
-/* NOTE: Custom CSS variables removed - Textual only supports built-in theme variables
-   Built-in variables available: $primary, $secondary, $accent, $foreground, $background,
+/* NOTE: Variables are supplied by the Python Theme object defined in themes/*.py
+   Textual built-in variables: $primary, $secondary, $accent, $foreground, $background,
    $surface, $panel, $success, $warning, $error
-
-   Color mapping applied:
-   - stage-pending    → $surface (gray/neutral)
-   - stage-active     → $secondary (purple)
-   - stage-complete   → $success (green)
-   - stage-error      → $error (red)
-   - confidence-high  → $success (green)
-   - confidence-medium → $warning (orange)
-   - confidence-low   → $error (red)
 */
 
 /* Reset and base styles */
@@ -34,7 +11,11 @@ Screen {
     color: $foreground;
 }
 
-/* Scrollbar styling - Note: Textual handles scrollbars automatically */
+/* Scrollbar styling - Ensures visibility across themes */
+ScrollBar {
+    background: $surface;
+    color: $primary;
+}
 
 /* Typography */
 .heading-1 {
@@ -119,10 +100,9 @@ Screen {
     color: $primary;
 }
 
-/* Confidence badges */
+/* Confidence badges - Mapped to semantic variables */
 .confidence-high {
     color: $success;
-    text-style: bold;
 }
 
 .confidence-medium {
@@ -135,109 +115,36 @@ Screen {
 }
 
 /* Spacing utilities */
-.p-0 {
-    padding: 0;
-}
+.p-0 { padding: 0; }
+.p-1 { padding: 1; }
+.p-2 { padding: 2; }
+.px-1 { padding: 0 1; }
+.px-2 { padding: 0 2; }
+.py-1 { padding: 1 0; }
+.py-2 { padding: 2 0; }
 
-.p-1 {
-    padding: 1;
-}
-
-.p-2 {
-    padding: 2;
-}
-
-.px-1 {
-    padding: 0 1;
-}
-
-.px-2 {
-    padding: 0 2;
-}
-
-.py-1 {
-    padding: 1 0;
-}
-
-.py-2 {
-    padding: 2 0;
-}
-
-.m-0 {
-    margin: 0;
-}
-
-.m-1 {
-    margin: 1;
-}
-
-.m-2 {
-    margin: 2;
-}
-
-.mb-1 {
-    margin-bottom: 1;
-}
-
-.mb-2 {
-    margin-bottom: 2;
-}
-
-.mt-1 {
-    margin-top: 1;
-}
-
-.mt-2 {
-    margin-top: 2;
-}
+.m-0 { margin: 0; }
+.m-1 { margin: 1; }
+.m-2 { margin: 2; }
+.mb-1 { margin-bottom: 1; }
+.mb-2 { margin-bottom: 2; }
+.mt-1 { margin-top: 1; }
+.mt-2 { margin-top: 2; }
 
 /* Border utilities */
-.border {
-    border: solid $primary;
-}
-
-.border-accent {
-    border: solid $accent;
-}
-
-.border-error {
-    border: solid $error;
-}
-
-.border-success {
-    border: solid $success;
-}
-
-.border-panel {
-    border: solid $primary;
-}
-
-.border-thick {
-    border: thick $primary;
-}
+.border { border: solid $primary; }
+.border-accent { border: solid $accent; }
+.border-error { border: solid $error; }
+.border-success { border: solid $success; }
+.border-panel { border: solid $primary; }
+.border-thick { border: thick $primary; }
 
 /* Display utilities */
-.hidden {
-    display: none;
-}
-
-.visible {
-    display: block;
-}
+.hidden { display: none; }
+.visible { display: block; }
 
 /* Width/Height utilities */
-.w-full {
-    width: 100%;
-}
-
-.h-full {
-    height: 100%;
-}
-
-.w-auto {
-    width: auto;
-}
-
-.h-auto {
-    height: auto;
-}
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.w-auto { width: auto; }
+.h-auto { height: auto; }

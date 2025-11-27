@@ -66,7 +66,7 @@ class Sidebar(Container):
     Sidebar Button {
         width: 100%;
         margin-bottom: 1;
-        background: $boost;
+        background: $surface;
     }
 
     Sidebar OptionList {
