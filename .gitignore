@@ -192,3 +192,7 @@ stj-indices/
 ~/stj-indices/
 agentes/stj-dados-abertos/data_local/
 .claude/agents-external/
+
+# Gemini CLI context files (large, auto-generated)
+gemini_context.txt
+*_context.txt
