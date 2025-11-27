@@ -9,13 +9,7 @@ from textual.screen import Screen
 
 from legal_extractor_tui.config import APP_NAME, APP_VERSION, STYLES_DIR
 from legal_extractor_tui.screens import HelpScreen, MainScreen
-from legal_extractor_tui.themes import (
-    MINIMAL_DARK_THEME,
-    MINIMAL_LIGHT_THEME,
-    VIBE_MATRIX_THEME,
-    VIBE_NEON_THEME,
-    VIBE_SYNTHWAVE_THEME,
-)
+from legal_extractor_tui.themes import VIBE_NEON_THEME
 
 
 class LegalExtractorApp(App):
@@ -51,7 +45,6 @@ class LegalExtractorApp(App):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("q", "quit", "Sair"),
         Binding("?", "show_help", "Ajuda"),
-        Binding("d", "toggle_dark", "Tema"),
         Binding("r", "run_extraction", "Extrair", show=True),
         Binding("escape", "cancel_extraction", "Cancelar"),
         Binding("ctrl+o", "open_file", "Abrir PDF"),
@@ -73,40 +66,30 @@ class LegalExtractorApp(App):
         """Initialize the Legal Extractor application.
 
         Args:
-            theme_name: Name of the theme to use (vibe-neon, matrix, synthwave,
-                       minimal-dark, minimal-light)
+            theme_name: Name of the theme to use (default: vibe-neon)
             dev_mode: Enable development mode with debug features
             initial_file: Optional PDF file to load on startup
         """
         super().__init__()
-        self._initial_theme = theme_name
         self._dev_mode = dev_mode
         self._initial_file = Path(initial_file) if initial_file else None
 
-        # Register all available themes
+        # Register theme
         self.register_theme(VIBE_NEON_THEME)
-        self.register_theme(VIBE_MATRIX_THEME)
-        self.register_theme(VIBE_SYNTHWAVE_THEME)
-        self.register_theme(MINIMAL_DARK_THEME)
-        self.register_theme(MINIMAL_LIGHT_THEME)
 
     def on_mount(self) -> None:
         """Called when the app is mounted.
 
-        Sets up the initial theme and screen, and optionally loads
+        Sets up the theme and screen, and optionally loads
         the initial file if provided.
         """
-        # Set theme (must be done before pushing screens)
-        self.theme = self._initial_theme
-        self.dark = True  # Start in dark mode
+        # Set vibe-neon theme
+        self.theme = "vibe-neon"
+        self.dark = True
 
         # Push main screen
         main_screen = MainScreen(initial_file=self._initial_file)
         self.push_screen(main_screen)
-
-    def action_toggle_dark(self) -> None:
-        """Toggle between dark and light mode."""
-        self.dark = not self.dark
 
     def action_show_help(self) -> None:
         """Display the help screen with keybindings and documentation."""
