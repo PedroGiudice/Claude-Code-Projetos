@@ -1,0 +1,745 @@
+/* Widget-specific styles for Legal Extractor TUI */
+
+/* ==================================================
+   FILE SELECTOR WIDGET
+   ================================================== */
+FileSelector {
+    height: auto;
+    min-height: 8;
+    border: solid var(--primary);
+    padding: 1;
+    margin-bottom: 1;
+    background: var(--panel-bg);
+}
+
+FileSelector:focus-within {
+    border: solid var(--accent);
+}
+
+FileSelector .file-path {
+    width: 100%;
+    margin-bottom: 1;
+    padding: 1;
+    background: var(--surface);
+    border: solid var(--panel-border);
+}
+
+FileSelector .file-path:focus {
+    border: solid var(--primary);
+}
+
+FileSelector .file-info {
+    color: var(--text-muted);
+    text-style: italic;
+    padding: 0 1;
+}
+
+FileSelector .file-status {
+    padding: 1;
+    margin-top: 1;
+}
+
+FileSelector .file-status.valid {
+    color: var(--legal-success);
+}
+
+FileSelector .file-status.invalid {
+    color: var(--legal-error);
+}
+
+FileSelector Button {
+    margin-top: 1;
+}
+
+/* ==================================================
+   SYSTEM SELECTOR WIDGET
+   ================================================== */
+SystemSelector {
+    height: auto;
+    min-height: 5;
+    border: solid var(--primary);
+    padding: 1;
+    margin-bottom: 1;
+    background: var(--panel-bg);
+}
+
+SystemSelector:focus-within {
+    border: solid var(--accent);
+}
+
+SystemSelector .system-option {
+    padding: 1;
+    margin-bottom: 1;
+    background: var(--surface);
+    border: solid var(--panel-border);
+}
+
+SystemSelector .system-option:hover {
+    border: solid var(--primary);
+    background: var(--panel);
+}
+
+SystemSelector .system-option.selected {
+    border: solid var(--accent);
+    background: var(--panel);
+    text-style: bold;
+}
+
+SystemSelector .system-label {
+    color: var(--primary);
+    text-style: bold;
+}
+
+SystemSelector .system-description {
+    color: var(--text-muted);
+    padding-left: 2;
+}
+
+/* ==================================================
+   CONFIG PANEL WIDGET
+   ================================================== */
+ConfigPanel {
+    height: auto;
+    border: solid var(--primary);
+    padding: 1 2;
+    background: var(--panel-bg);
+    margin-bottom: 1;
+}
+
+ConfigPanel:focus-within {
+    border: solid var(--accent);
+}
+
+ConfigPanel .config-section {
+    margin-bottom: 2;
+    padding-bottom: 1;
+    border-bottom: solid var(--panel-border);
+}
+
+ConfigPanel .config-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+ConfigPanel .config-label {
+    color: var(--secondary);
+    text-style: bold;
+    padding-bottom: 1;
+}
+
+ConfigPanel .config-input {
+    width: 100%;
+    margin-bottom: 1;
+}
+
+ConfigPanel .config-hint {
+    color: var(--text-muted);
+    text-style: italic;
+    padding: 0 1;
+}
+
+ConfigPanel Switch {
+    margin: 1 0;
+}
+
+ConfigPanel Input {
+    margin: 1 0;
+}
+
+/* ==================================================
+   EXTRACTION PROGRESS WIDGET
+   ================================================== */
+ExtractionProgress {
+    height: auto;
+    min-height: 8;
+    border: solid var(--accent);
+    padding: 1 2;
+    background: var(--panel-bg);
+}
+
+ExtractionProgress .progress-header {
+    text-style: bold;
+    color: var(--accent);
+    padding-bottom: 1;
+    border-bottom: solid var(--panel-border);
+    margin-bottom: 1;
+}
+
+ExtractionProgress .stage {
+    height: 2;
+    margin-bottom: 1;
+    padding: 0 1;
+    border-left: solid var(--panel-border);
+}
+
+ExtractionProgress .stage.pending {
+    color: var(--text-muted);
+    background: var(--stage-pending) 10%;
+    border-left: solid var(--stage-pending);
+}
+
+ExtractionProgress .stage.active {
+    color: var(--stage-active);
+    background: var(--stage-active) 20%;
+    border-left: thick var(--stage-active);
+    text-style: bold;
+}
+
+ExtractionProgress .stage.complete {
+    color: var(--stage-complete);
+    background: var(--stage-complete) 10%;
+    border-left: solid var(--stage-complete);
+}
+
+ExtractionProgress .stage.error {
+    color: var(--stage-error);
+    background: var(--stage-error) 20%;
+    border-left: thick var(--stage-error);
+    text-style: bold;
+}
+
+ExtractionProgress .stage-name {
+    text-style: bold;
+}
+
+ExtractionProgress .stage-status {
+    color: var(--text-muted);
+    padding-left: 2;
+}
+
+ExtractionProgress .stats {
+    color: var(--text-muted);
+    text-align: right;
+    padding-top: 1;
+    border-top: solid var(--panel-border);
+    margin-top: 1;
+}
+
+ExtractionProgress .stats-item {
+    padding: 0 2;
+}
+
+ExtractionProgress ProgressBar {
+    margin: 1 0;
+}
+
+/* ==================================================
+   RESULTS PANEL WIDGET
+   ================================================== */
+ResultsPanel {
+    height: 100%;
+    width: 100%;
+    border: solid var(--primary);
+    background: var(--panel-bg);
+}
+
+ResultsPanel:focus-within {
+    border: solid var(--accent);
+}
+
+ResultsPanel TabbedContent {
+    height: 100%;
+    width: 100%;
+}
+
+ResultsPanel TabPane {
+    padding: 1;
+}
+
+/* Preview tab */
+ResultsPanel .preview-text {
+    padding: 2;
+    overflow-y: auto;
+    height: 100%;
+    background: var(--surface);
+    border: solid var(--panel-border);
+    font-family: monospace;
+}
+
+ResultsPanel .preview-empty {
+    color: var(--text-muted);
+    text-style: italic;
+    text-align: center;
+    padding: 4;
+}
+
+/* Metadata tab */
+ResultsPanel .metadata-grid {
+    padding: 2;
+    overflow-y: auto;
+}
+
+ResultsPanel .metadata-row {
+    margin-bottom: 1;
+    padding: 1;
+    background: var(--surface);
+    border: solid var(--panel-border);
+}
+
+ResultsPanel .metadata-label {
+    color: var(--secondary);
+    text-style: bold;
+    width: 20;
+    display: inline-block;
+}
+
+ResultsPanel .metadata-value {
+    color: var(--foreground);
+}
+
+ResultsPanel .metadata-value.empty {
+    color: var(--text-muted);
+    text-style: italic;
+}
+
+/* Sections tab */
+ResultsPanel .sections-list {
+    padding: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+
+ResultsPanel .section-item {
+    padding: 2;
+    margin-bottom: 1;
+    border: solid var(--panel-border);
+    background: var(--surface);
+}
+
+ResultsPanel .section-item:hover {
+    border: solid var(--primary);
+    background: var(--panel);
+}
+
+ResultsPanel .section-header {
+    text-style: bold;
+    color: var(--primary);
+    padding-bottom: 1;
+    margin-bottom: 1;
+    border-bottom: solid var(--panel-border);
+}
+
+ResultsPanel .section-title {
+    color: var(--accent);
+    text-style: bold;
+}
+
+ResultsPanel .section-confidence {
+    padding-left: 2;
+}
+
+ResultsPanel .section-content {
+    padding: 1 0;
+    color: var(--foreground);
+}
+
+ResultsPanel .section-metadata {
+    color: var(--text-muted);
+    padding-top: 1;
+    border-top: solid var(--panel-border);
+    margin-top: 1;
+}
+
+/* Export buttons */
+ResultsPanel .export-buttons {
+    dock: bottom;
+    height: auto;
+    padding: 1 2;
+    align: right middle;
+    background: var(--surface);
+    border-top: solid var(--primary);
+}
+
+ResultsPanel .export-buttons Button {
+    margin-left: 1;
+}
+
+/* ==================================================
+   STANDARD TEXTUAL WIDGETS (CUSTOMIZED)
+   ================================================== */
+
+/* Button */
+Button {
+    background: var(--surface);
+    color: var(--foreground);
+    border: solid var(--primary);
+    padding: 0 2;
+    min-width: 10;
+    height: 3;
+}
+
+Button:hover {
+    background: var(--panel);
+    border: solid var(--accent);
+}
+
+Button:focus {
+    background: var(--primary);
+    color: var(--background);
+    text-style: bold;
+}
+
+Button.-primary {
+    background: var(--primary);
+    color: var(--background);
+    border: none;
+}
+
+Button.-primary:hover {
+    background: var(--accent);
+}
+
+Button.-primary:focus {
+    background: var(--secondary);
+}
+
+Button.-success {
+    background: var(--success);
+    color: var(--background);
+    border: none;
+}
+
+Button.-success:hover {
+    background: var(--success);
+    opacity: 0.8;
+}
+
+Button.-danger {
+    background: var(--error);
+    color: var(--foreground);
+    border: none;
+}
+
+Button.-danger:hover {
+    background: var(--error);
+    opacity: 0.8;
+}
+
+Button.-warning {
+    background: var(--warning);
+    color: var(--background);
+    border: none;
+}
+
+Button.-warning:hover {
+    background: var(--warning);
+    opacity: 0.8;
+}
+
+Button:disabled {
+    opacity: 0.5;
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+/* Input */
+Input {
+    background: var(--panel);
+    color: var(--foreground);
+    border: solid var(--primary);
+    padding: 0 1;
+    height: 3;
+}
+
+Input:focus {
+    border: solid var(--accent);
+    background: var(--surface);
+}
+
+Input.-error {
+    border: solid var(--error);
+}
+
+Input.-success {
+    border: solid var(--success);
+}
+
+Input > .input-placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+Input:disabled {
+    opacity: 0.5;
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+/* Label */
+Label {
+    color: var(--foreground);
+    padding: 0 0 1 0;
+}
+
+Label.-required::after {
+    content: " *";
+    color: var(--error);
+}
+
+Label.-muted {
+    color: var(--text-muted);
+}
+
+/* Static (text display) */
+Static {
+    color: var(--foreground);
+    background: transparent;
+}
+
+Static.-highlight {
+    color: var(--accent);
+    text-style: bold;
+}
+
+Static.-muted {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+Static.-primary {
+    color: var(--primary);
+}
+
+Static.-secondary {
+    color: var(--secondary);
+}
+
+Static.-error {
+    color: var(--error);
+}
+
+Static.-success {
+    color: var(--success);
+}
+
+Static.-warning {
+    color: var(--warning);
+}
+
+/* Switch */
+Switch {
+    height: 3;
+    padding: 0 1;
+}
+
+Switch:focus {
+    background: var(--panel);
+}
+
+Switch.-on {
+    color: var(--success);
+}
+
+Switch.-off {
+    color: var(--text-muted);
+}
+
+/* ProgressBar */
+ProgressBar {
+    height: 1;
+    background: var(--surface);
+    border: solid var(--panel-border);
+}
+
+ProgressBar > .bar--bar {
+    background: var(--primary);
+}
+
+ProgressBar > .bar--complete {
+    background: var(--success);
+}
+
+ProgressBar > .bar--indeterminate {
+    background: var(--accent);
+}
+
+/* RadioSet */
+RadioSet {
+    padding: 1;
+}
+
+RadioSet > RadioButton {
+    padding: 1;
+    margin-bottom: 1;
+}
+
+RadioSet > RadioButton:focus {
+    background: var(--panel);
+}
+
+/* Select */
+Select {
+    background: var(--panel);
+    color: var(--foreground);
+    border: solid var(--primary);
+    height: 3;
+    padding: 0 1;
+}
+
+Select:focus {
+    border: solid var(--accent);
+    background: var(--surface);
+}
+
+Select > SelectCurrent {
+    background: var(--panel);
+}
+
+Select > SelectOverlay {
+    background: var(--surface);
+    border: solid var(--accent);
+}
+
+/* TextArea */
+TextArea {
+    background: var(--panel);
+    color: var(--foreground);
+    border: solid var(--primary);
+    padding: 1;
+}
+
+TextArea:focus {
+    border: solid var(--accent);
+    background: var(--surface);
+}
+
+/* DataTable */
+DataTable {
+    background: var(--panel-bg);
+    border: solid var(--primary);
+}
+
+DataTable > .datatable--header {
+    background: var(--panel-header);
+    text-style: bold;
+    color: var(--primary);
+}
+
+DataTable > .datatable--row {
+    background: var(--surface);
+}
+
+DataTable > .datatable--row:hover {
+    background: var(--panel);
+}
+
+DataTable > .datatable--cursor {
+    background: var(--primary);
+    color: var(--background);
+}
+
+/* Tree */
+Tree {
+    background: var(--panel-bg);
+    border: solid var(--primary);
+    padding: 1;
+}
+
+Tree:focus {
+    border: solid var(--accent);
+}
+
+Tree > .tree--cursor {
+    background: var(--primary);
+    color: var(--background);
+}
+
+Tree > .tree--cursor > .tree--label {
+    text-style: bold;
+}
+
+/* LoadingIndicator */
+LoadingIndicator {
+    background: var(--panel-bg);
+    color: var(--accent);
+}
+
+/* Placeholder */
+Placeholder {
+    background: var(--panel);
+    color: var(--text-muted);
+    border: dashed var(--panel-border);
+}
+
+/* ==================================================
+   LOG PANEL (CUSTOM WIDGET)
+   ================================================== */
+LogPanel {
+    background: var(--panel-bg);
+    border: solid var(--primary);
+    padding: 1;
+    height: 100%;
+    overflow-y: auto;
+}
+
+LogPanel > .log-line {
+    padding: 0 1;
+    font-family: monospace;
+}
+
+LogPanel > .log-line.error {
+    color: var(--error);
+}
+
+LogPanel > .log-line.warning {
+    color: var(--warning);
+}
+
+LogPanel > .log-line.success {
+    color: var(--success);
+}
+
+LogPanel > .log-line.info {
+    color: var(--primary);
+}
+
+LogPanel > .log-line.debug {
+    color: var(--text-muted);
+}
+
+/* ==================================================
+   STATUS BAR (CUSTOM WIDGET)
+   ================================================== */
+StatusBar {
+    background: var(--surface);
+    border-top: solid var(--primary);
+    height: 3;
+    padding: 0 2;
+    dock: bottom;
+}
+
+StatusBar > .status-segment {
+    padding: 0 1;
+}
+
+StatusBar > .status-segment.left {
+    dock: left;
+}
+
+StatusBar > .status-segment.right {
+    dock: right;
+}
+
+StatusBar > .status-segment.center {
+    dock: center;
+}
+
+StatusBar .status-icon {
+    padding-right: 1;
+}
+
+StatusBar .status-text {
+    color: var(--foreground);
+}
+
+StatusBar .status-error {
+    color: var(--error);
+}
+
+StatusBar .status-success {
+    color: var(--success);
+}
+
+StatusBar .status-warning {
+    color: var(--warning);
+}

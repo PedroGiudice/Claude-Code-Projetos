@@ -1,0 +1,350 @@
+/* Layout styles for Legal Extractor TUI screens and containers */
+
+/* Main application container */
+#main-container {
+    width: 100%;
+    height: 100%;
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: 35 1fr;
+}
+
+/* Left panel (sidebar with controls) */
+#left-panel {
+    width: 35;
+    height: 100%;
+    dock: left;
+    padding: 1;
+    background: var(--surface);
+    border-right: solid var(--primary);
+}
+
+#left-panel:focus-within {
+    border-right: solid var(--accent);
+}
+
+/* Center panel (main content area) */
+#center-panel {
+    width: 1fr;
+    height: 100%;
+    padding: 1;
+    layout: vertical;
+}
+
+/* Progress area (collapsible) */
+#progress-area {
+    height: auto;
+    max-height: 12;
+    min-height: 8;
+    margin-bottom: 1;
+    background: var(--panel-bg);
+    border: solid var(--accent);
+    padding: 1;
+}
+
+#progress-area.hidden {
+    display: none;
+    height: 0;
+    max-height: 0;
+    min-height: 0;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+#progress-area.collapsed {
+    max-height: 3;
+    min-height: 3;
+    overflow: hidden;
+}
+
+/* Results area (main content) */
+#results-area {
+    height: 1fr;
+    width: 100%;
+    min-height: 20;
+}
+
+/* Panel containers */
+.panel {
+    background: var(--panel-bg);
+    border: solid var(--primary);
+    padding: 1 2;
+    margin: 1 0;
+    border-radius: 1;
+}
+
+.panel:focus-within {
+    border: solid var(--accent);
+}
+
+.panel-header {
+    text-style: bold;
+    color: var(--primary);
+    padding-bottom: 1;
+    border-bottom: solid var(--panel-border);
+    margin-bottom: 1;
+}
+
+.panel-content {
+    padding: 1 0;
+}
+
+.panel-footer {
+    padding-top: 1;
+    border-top: solid var(--panel-border);
+    margin-top: 1;
+}
+
+/* Control sections in left panel */
+.control-section {
+    margin-bottom: 2;
+    padding-bottom: 1;
+    border-bottom: solid var(--panel-border);
+}
+
+.control-section:last-child {
+    border-bottom: none;
+}
+
+.control-section-title {
+    text-style: bold;
+    color: var(--secondary);
+    padding-bottom: 1;
+    margin-bottom: 1;
+}
+
+/* Modal overlay */
+.modal-overlay {
+    align: center middle;
+    background: var(--background);
+    layer: overlay;
+}
+
+.modal-container {
+    width: 80;
+    height: auto;
+    max-height: 80%;
+    background: var(--panel-bg);
+    border: thick var(--accent);
+    padding: 2;
+    border-radius: 1;
+}
+
+.modal-title {
+    text-style: bold;
+    color: var(--accent);
+    text-align: center;
+    padding-bottom: 1;
+    border-bottom: solid var(--primary);
+    margin-bottom: 2;
+}
+
+.modal-body {
+    padding: 2 0;
+    overflow-y: auto;
+    max-height: 60;
+}
+
+.modal-footer {
+    padding-top: 2;
+    border-top: solid var(--primary);
+    text-align: center;
+    margin-top: 2;
+}
+
+/* Grid layouts */
+.grid-2col {
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: 1fr 1fr;
+    grid-gutter: 1;
+}
+
+.grid-3col {
+    layout: grid;
+    grid-size: 3 1;
+    grid-columns: 1fr 1fr 1fr;
+    grid-gutter: 1;
+}
+
+.grid-auto {
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: auto 1fr;
+    grid-gutter: 1;
+}
+
+/* Metadata grid (label: value pairs) */
+.metadata-grid {
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: 20 1fr;
+    grid-gutter: 1;
+    padding: 1;
+}
+
+/* Horizontal layout */
+.horizontal {
+    layout: horizontal;
+    height: auto;
+    align: left middle;
+}
+
+.horizontal-space-between {
+    layout: horizontal;
+    height: auto;
+    align: left middle;
+}
+
+.horizontal-space-between > * {
+    margin-right: 2;
+}
+
+.horizontal-space-between > *:last-child {
+    margin-right: 0;
+}
+
+/* Vertical layout */
+.vertical {
+    layout: vertical;
+    width: auto;
+}
+
+/* Alignment utilities */
+.center {
+    align: center middle;
+}
+
+.align-left {
+    align: left middle;
+}
+
+.align-right {
+    align: right middle;
+}
+
+.align-top {
+    align: center top;
+}
+
+.align-bottom {
+    align: center bottom;
+}
+
+/* Fill available space */
+.fill {
+    width: 100%;
+    height: 100%;
+}
+
+.fill-width {
+    width: 100%;
+}
+
+.fill-height {
+    height: 100%;
+}
+
+/* Scrollable containers */
+.scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.scrollable-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.scrollable-both {
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/* Section dividers */
+.section-divider {
+    height: 1;
+    width: 100%;
+    background: var(--panel-border);
+    margin: 2 0;
+}
+
+/* Button groups */
+.button-group {
+    layout: horizontal;
+    height: auto;
+    align: left middle;
+    padding: 1 0;
+}
+
+.button-group > Button {
+    margin-right: 1;
+}
+
+.button-group > Button:last-child {
+    margin-right: 0;
+}
+
+.button-group-right {
+    layout: horizontal;
+    height: auto;
+    align: right middle;
+    padding: 1 0;
+}
+
+.button-group-center {
+    layout: horizontal;
+    height: auto;
+    align: center middle;
+    padding: 1 0;
+}
+
+/* Tabs container */
+.tabs-container {
+    height: 100%;
+    width: 100%;
+}
+
+/* Content wrapper with padding */
+.content-wrapper {
+    padding: 2;
+}
+
+/* List containers */
+.list-container {
+    padding: 1;
+    overflow-y: auto;
+}
+
+.list-item {
+    padding: 1;
+    margin-bottom: 1;
+    border: solid var(--panel-border);
+    background: var(--surface);
+}
+
+.list-item:hover {
+    border: solid var(--primary);
+    background: var(--panel);
+}
+
+.list-item.selected {
+    border: solid var(--accent);
+    background: var(--panel);
+}
+
+/* Status bar at bottom */
+.status-bar-container {
+    dock: bottom;
+    height: 3;
+    background: var(--surface);
+    border-top: solid var(--primary);
+}
+
+/* Header bar at top */
+.header-bar-container {
+    dock: top;
+    height: 3;
+    background: var(--surface);
+    border-bottom: solid var(--primary);
+}

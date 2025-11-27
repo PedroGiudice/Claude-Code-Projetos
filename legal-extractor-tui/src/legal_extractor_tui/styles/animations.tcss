@@ -1,0 +1,161 @@
+/* Animation styles for dynamic elements */
+
+/* LoadingIndicator */
+LoadingIndicator {
+    background: transparent;
+    color: var(--primary);
+    text-align: center;
+    padding: 1;
+}
+
+LoadingIndicator > .spinner {
+    color: var(--accent);
+    text-style: bold;
+}
+
+LoadingIndicator > .message {
+    color: var(--foreground);
+    padding-top: 1;
+}
+
+/* ProgressBar */
+ProgressBar {
+    background: var(--surface);
+    border: solid var(--primary);
+    height: 3;
+    padding: 0 1;
+}
+
+ProgressBar > .bar-fill {
+    background: var(--accent);
+    height: 100%;
+}
+
+ProgressBar > .bar-fill.-success {
+    background: var(--success);
+}
+
+ProgressBar > .bar-fill.-error {
+    background: var(--error);
+}
+
+ProgressBar > .bar-fill.-warning {
+    background: var(--warning);
+}
+
+ProgressBar > .bar-label {
+    color: var(--foreground);
+    text-style: bold;
+    align: center middle;
+    text-align: center;
+}
+
+/* Toast notification */
+.toast {
+    background: var(--panel);
+    border: solid var(--accent);
+    padding: 1 2;
+    border-radius: 1;
+    layer: notification;
+    width: 50;
+    height: auto;
+    offset: 2 2;
+}
+
+.toast.-info {
+    border: solid var(--primary);
+}
+
+.toast.-success {
+    border: solid var(--success);
+}
+
+.toast.-warning {
+    border: solid var(--warning);
+}
+
+.toast.-error {
+    border: solid var(--error);
+}
+
+.toast > .toast-title {
+    text-style: bold;
+    padding-bottom: 1;
+}
+
+.toast > .toast-message {
+    color: var(--foreground);
+}
+
+/* Pulse animation for active elements */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fade-in 0.3s ease-in;
+}
+
+/* Slide in from right */
+@keyframes slide-in-right {
+    from {
+        offset-x: 100%;
+    }
+    to {
+        offset-x: 0;
+    }
+}
+
+.slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+}
+
+/* Slide in from bottom */
+@keyframes slide-in-bottom {
+    from {
+        offset-y: 100%;
+    }
+    to {
+        offset-y: 0;
+    }
+}
+
+.slide-in-bottom {
+    animation: slide-in-bottom 0.3s ease-out;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+    0%, 100% {
+        offset-x: 0;
+    }
+    10%, 30%, 50%, 70%, 90% {
+        offset-x: -1;
+    }
+    20%, 40%, 60%, 80% {
+        offset-x: 1;
+    }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}

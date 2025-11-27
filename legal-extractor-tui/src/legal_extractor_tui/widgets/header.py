@@ -1,0 +1,135 @@
+"""Header widget with ASCII logo, title and status indicator.
+
+Example:
+    ```python
+    from legal_extractor_tui.widgets.header import Header
+
+    header = Header()
+    header.set_status("Running", "green")
+    ```
+"""
+
+from textual.app import ComposeResult
+from textual.containers import Container
+from textual.widgets import Static
+
+
+class Header(Container):
+    """Header widget displaying logo, title and status.
+
+    Attributes:
+        DEFAULT_CSS: Inline CSS styling for the header
+    """
+
+    DEFAULT_CSS = """
+    Header {
+        height: 5;
+        dock: top;
+        background: $panel;
+        border-bottom: solid $primary;
+    }
+
+    Header .logo {
+        width: 30;
+        content-align: center middle;
+        color: $accent;
+    }
+
+    Header .title {
+        width: 1fr;
+        content-align: left middle;
+        text-style: bold;
+        color: $text;
+    }
+
+    Header .status {
+        width: 20;
+        content-align: right middle;
+        padding-right: 2;
+    }
+    """
+
+    def __init__(
+        self,
+        title: str = "TUI Template App",
+        logo: str | None = None,
+        *,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        """Initialize the header.
+
+        Args:
+            title: Application title to display
+            logo: Optional custom ASCII logo (uses default if None)
+            name: Name of the widget
+            id: ID of the widget
+            classes: CSS classes to apply
+        """
+        super().__init__(name=name, id=id, classes=classes)
+        self._title = title
+        self._logo = logo or self._default_logo()
+        self._status_text = ""
+        self._status_style = ""
+
+    def _default_logo(self) -> str:
+        """Generate default ASCII logo.
+
+        Returns:
+            Multi-line ASCII art logo string
+        """
+        return """
+  ████████╗██╗   ██╗██╗
+  ╚══██╔══╝██║   ██║██║
+     ██║   ██║   ██║██║
+     ██║   ╚██╗ ██╔╝██║
+     ██║    ╚████╔╝ ██║
+     ╚═╝     ╚═══╝  ╚═╝
+"""
+
+    def compose(self) -> ComposeResult:
+        """Compose the header layout.
+
+        Yields:
+            Static widgets for logo, title and status
+        """
+        yield Static(self._logo, classes="logo")
+        yield Static(self._title, classes="title")
+        yield Static(self._status_text, classes="status", id="header-status")
+
+    def set_status(self, status: str, style: str = "") -> None:
+        """Update the status indicator.
+
+        Args:
+            status: Status text to display
+            style: Rich markup style (e.g., "green", "red bold", "[cyan]text[/]")
+
+        Example:
+            ```python
+            header.set_status("Ready", "green")
+            header.set_status("Error", "red bold")
+            header.set_status("[yellow]Warning[/]")
+            ```
+        """
+        self._status_text = status
+        self._status_style = style
+
+        status_widget = self.query_one("#header-status", Static)
+        if style and not style.startswith("["):
+            # Wrap in Rich markup if not already formatted
+            formatted_status = f"[{style}]{status}[/]"
+        else:
+            formatted_status = status
+
+        status_widget.update(formatted_status)
+
+    def set_title(self, title: str) -> None:
+        """Update the title text.
+
+        Args:
+            title: New title to display
+        """
+        self._title = title
+        title_widget = self.query_one(".title", Static)
+        title_widget.update(title)

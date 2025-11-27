@@ -1,0 +1,407 @@
+"""Results panel widget for displaying extraction results.
+
+Example:
+    ```python
+    from legal_extractor_tui.widgets.results_panel import ResultsPanel
+    from legal_extractor_tui.messages.extractor_messages import ExtractionCompleted
+
+    results = ResultsPanel()
+
+    @on(ExtractionCompleted)
+    def handle_completed(self, event: ExtractionCompleted) -> None:
+        results.set_result(event.result)
+    ```
+"""
+
+import json
+from pathlib import Path
+
+from textual.app import ComposeResult
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.reactive import reactive
+from textual.widgets import Button, Label, Static, TabbedContent, TabPane
+
+from legal_extractor_tui.messages.extractor_messages import (
+    ExportRequested,
+    ExtractionCompleted,
+)
+
+
+class ResultsPanel(Vertical):
+    """Widget for displaying extraction results.
+
+    Shows tabbed view with:
+    - Preview: First 1000 chars of cleaned text
+    - Metadata: System detection, stats, confidence
+    - Sections: List of detected sections (if analyzed)
+
+    Also provides export buttons for TXT, MD, JSON formats.
+    """
+
+    DEFAULT_CSS = """
+    ResultsPanel {
+        width: 100%;
+        height: 100%;
+        background: $panel;
+        border: solid $primary;
+    }
+
+    ResultsPanel .results-header {
+        width: 100%;
+        height: 3;
+        background: $boost;
+        border-bottom: solid $border;
+        padding: 1;
+    }
+
+    ResultsPanel .results-title {
+        width: 1fr;
+        text-style: bold;
+        color: $accent;
+    }
+
+    ResultsPanel .export-buttons {
+        width: auto;
+        height: 1;
+    }
+
+    ResultsPanel Button {
+        margin-left: 1;
+        min-width: 10;
+    }
+
+    ResultsPanel TabbedContent {
+        width: 100%;
+        height: 1fr;
+    }
+
+    ResultsPanel TabPane {
+        padding: 1;
+    }
+
+    ResultsPanel .preview-text {
+        width: 100%;
+        height: 1fr;
+        background: $surface;
+        border: solid $border;
+        padding: 1;
+        overflow-y: auto;
+    }
+
+    ResultsPanel .metadata-container {
+        width: 100%;
+        height: 1fr;
+        overflow-y: auto;
+    }
+
+    ResultsPanel .metadata-row {
+        width: 100%;
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    ResultsPanel .metadata-label {
+        width: 20;
+        color: $accent;
+        text-style: bold;
+    }
+
+    ResultsPanel .metadata-value {
+        width: 1fr;
+        color: $text;
+    }
+
+    ResultsPanel .sections-container {
+        width: 100%;
+        height: 1fr;
+        overflow-y: auto;
+    }
+
+    ResultsPanel .section-item {
+        width: 100%;
+        height: auto;
+        padding: 1;
+        margin-bottom: 1;
+        background: $surface;
+        border: solid $border;
+    }
+
+    ResultsPanel .section-title {
+        width: 100%;
+        text-style: bold;
+        color: $accent;
+    }
+
+    ResultsPanel .section-preview {
+        width: 100%;
+        color: $text-muted;
+        margin-top: 1;
+    }
+
+    ResultsPanel .empty-message {
+        width: 100%;
+        height: 100%;
+        content-align: center middle;
+        color: $text-muted;
+        text-style: italic;
+    }
+    """
+
+    has_result: reactive[bool] = reactive(False)
+    result_data: reactive[dict] = reactive({})
+
+    def __init__(
+        self,
+        *,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        """Initialize results panel."""
+        super().__init__(name=name, id=id, classes=classes)
+
+    def compose(self) -> ComposeResult:
+        """Compose results panel layout."""
+        with Horizontal(classes="results-header"):
+            yield Label("Extraction Results", classes="results-title")
+            with Horizontal(classes="export-buttons"):
+                yield Button("Export TXT", id="export-txt", variant="primary")
+                yield Button("Export MD", id="export-md", variant="default")
+                yield Button("Export JSON", id="export-json", variant="default")
+
+        with TabbedContent(id="results-tabs"):
+            with TabPane("Preview", id="tab-preview"):
+                yield self._create_preview_pane()
+
+            with TabPane("Metadata", id="tab-metadata"):
+                yield self._create_metadata_pane()
+
+            with TabPane("Sections", id="tab-sections"):
+                yield self._create_sections_pane()
+
+    def _create_preview_pane(self) -> Static:
+        """Create preview tab content."""
+        if self.has_result and "text" in self.result_data:
+            preview_text = self.result_data["text"][:1000]
+            if len(self.result_data["text"]) > 1000:
+                preview_text += "\n\n... (truncated)"
+            return Static(preview_text, classes="preview-text", id="preview-text")
+        else:
+            return Static(
+                "No results yet. Process a PDF file to see extracted text here.",
+                classes="empty-message",
+                id="preview-text"
+            )
+
+    def _create_metadata_pane(self) -> VerticalScroll:
+        """Create metadata tab content."""
+        container = VerticalScroll(classes="metadata-container", id="metadata-container")
+
+        if self.has_result:
+            # Worker returns flat structure, not nested metadata
+            # Add metadata rows
+            rows_data = [
+                ("System Detected", self.result_data.get("system_name", "N/A")),
+                ("System Code", self.result_data.get("system", "N/A")),
+                ("Confidence", f"{self.result_data.get('confidence', 0):.1%}"),
+                ("Original Length", f"{self.result_data.get('original_length', 0):,} chars"),
+                ("Final Length", f"{self.result_data.get('final_length', 0):,} chars"),
+                ("Reduction", f"{self.result_data.get('reduction_pct', 0):.1%}"),
+                ("Patterns Removed", f"{self.result_data.get('patterns_removed', 0):,}"),
+            ]
+
+            for label_text, value_text in rows_data:
+                row = Horizontal(classes="metadata-row")
+                row.compose_add_child(Label(label_text + ":", classes="metadata-label"))
+                row.compose_add_child(Label(str(value_text), classes="metadata-value"))
+                container.compose_add_child(row)
+        else:
+            container.compose_add_child(
+                Static(
+                    "No metadata available. Process a PDF file first.",
+                    classes="empty-message"
+                )
+            )
+
+        return container
+
+    def _create_sections_pane(self) -> VerticalScroll:
+        """Create sections tab content."""
+        container = VerticalScroll(classes="sections-container", id="sections-container")
+
+        if self.has_result and "sections" in self.result_data:
+            sections = self.result_data["sections"]
+
+            if sections:
+                for idx, section in enumerate(sections, 1):
+                    section_widget = Vertical(classes="section-item")
+                    section_widget.compose_add_child(
+                        Label(f"Section {idx}: {section.get('title', 'Untitled')}", classes="section-title")
+                    )
+
+                    preview = section.get("content", "")[:200]
+                    if len(section.get("content", "")) > 200:
+                        preview += "..."
+
+                    section_widget.compose_add_child(
+                        Label(preview, classes="section-preview")
+                    )
+
+                    container.compose_add_child(section_widget)
+            else:
+                container.compose_add_child(
+                    Static(
+                        "No sections detected. Enable section analysis to extract sections.",
+                        classes="empty-message"
+                    )
+                )
+        else:
+            container.compose_add_child(
+                Static(
+                    "No sections available. Process a PDF with section analysis enabled.",
+                    classes="empty-message"
+                )
+            )
+
+        return container
+
+    def on_extraction_completed(self, event: ExtractionCompleted) -> None:
+        """Handle extraction completion and update results.
+
+        Args:
+            event: ExtractionCompleted message
+        """
+        self.set_result(event.result)
+
+    def set_result(self, result: dict) -> None:
+        """Set extraction result and update display.
+
+        Args:
+            result: Result dictionary with text, metadata, sections
+        """
+        self.result_data = result
+        self.has_result = True
+
+        # Update preview pane
+        self._update_preview_pane()
+
+        # Update metadata pane
+        self._update_metadata_pane()
+
+        # Update sections pane
+        self._update_sections_pane()
+
+    def _update_preview_pane(self) -> None:
+        """Update preview tab with new data."""
+        if not self.is_mounted:
+            return
+
+        try:
+            preview_widget = self.query_one("#preview-text", Static)
+            preview_widget.remove()
+        except Exception:
+            pass
+
+        tab_preview = self.query_one("#tab-preview", TabPane)
+        tab_preview.mount(self._create_preview_pane())
+
+    def _update_metadata_pane(self) -> None:
+        """Update metadata tab with new data."""
+        if not self.is_mounted:
+            return
+
+        try:
+            metadata_widget = self.query_one("#metadata-container", VerticalScroll)
+            metadata_widget.remove()
+        except Exception:
+            pass
+
+        tab_metadata = self.query_one("#tab-metadata", TabPane)
+        tab_metadata.mount(self._create_metadata_pane())
+
+    def _update_sections_pane(self) -> None:
+        """Update sections tab with new data."""
+        if not self.is_mounted:
+            return
+
+        try:
+            sections_widget = self.query_one("#sections-container", VerticalScroll)
+            sections_widget.remove()
+        except Exception:
+            pass
+
+        tab_sections = self.query_one("#tab-sections", TabPane)
+        tab_sections.mount(self._create_sections_pane())
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle export button clicks.
+
+        Args:
+            event: Button press event
+        """
+        if not self.has_result:
+            self.log.warning("No result to export")
+            return
+
+        button_id = event.button.id
+
+        if button_id == "export-txt":
+            self.post_message(ExportRequested("txt"))
+        elif button_id == "export-md":
+            self.post_message(ExportRequested("md"))
+        elif button_id == "export-json":
+            self.post_message(ExportRequested("json"))
+
+    def get_export_data(self, format: str) -> str:
+        """Get result data in specified format.
+
+        Args:
+            format: Export format (txt, md, json)
+
+        Returns:
+            Formatted string data
+        """
+        if not self.has_result:
+            return ""
+
+        if format == "txt":
+            return self.result_data.get("text", "")
+
+        elif format == "md":
+            md_content = "# Legal Text Extraction Result\n\n"
+
+            # Metadata section (flat structure from worker)
+            md_content += "## Metadata\n\n"
+            md_content += f"- **System**: {self.result_data.get('system_name', 'N/A')}\n"
+            md_content += f"- **System Code**: {self.result_data.get('system', 'N/A')}\n"
+            md_content += f"- **Confidence**: {self.result_data.get('confidence', 0):.1%}\n"
+            md_content += f"- **Original Length**: {self.result_data.get('original_length', 0):,} chars\n"
+            md_content += f"- **Final Length**: {self.result_data.get('final_length', 0):,} chars\n"
+            md_content += f"- **Reduction**: {self.result_data.get('reduction_pct', 0):.1%}\n\n"
+
+            # Text section
+            md_content += "## Extracted Text\n\n"
+            md_content += self.result_data.get("text", "")
+
+            # Sections
+            if "sections" in self.result_data and self.result_data["sections"]:
+                md_content += "\n\n## Detected Sections\n\n"
+                for idx, section in enumerate(self.result_data["sections"], 1):
+                    md_content += f"### {idx}. {section.get('title', 'Untitled')}\n\n"
+                    md_content += section.get("content", "") + "\n\n"
+
+            return md_content
+
+        elif format == "json":
+            return json.dumps(self.result_data, indent=2, ensure_ascii=False)
+
+        return ""
+
+    def clear_results(self) -> None:
+        """Clear all results and reset to empty state."""
+        self.result_data = {}
+        self.has_result = False
+
+        self._update_preview_pane()
+        self._update_metadata_pane()
+        self._update_sections_pane()
