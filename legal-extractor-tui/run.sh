@@ -17,7 +17,8 @@ source .venv/bin/activate 2>/dev/null || {
 # Check for dev flag
 if [ "$1" == "--dev" ]; then
     echo "Starting Legal Extractor TUI (dev mode)..."
-    textual run --dev src/legal_extractor_tui/app.py:LegalExtractorApp
+    # Use module path instead of file path for textual run
+    textual run --dev legal_extractor_tui.app:LegalExtractorApp
 else
     echo "Starting Legal Extractor TUI..."
     python -m legal_extractor_tui
