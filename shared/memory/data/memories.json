@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ac981966-917c-47c0-880c-fad905f14616",
+    "type": "bug_resolution",
+    "title": "Fix CSS Variables and Textual Compatibility in legal-extractor-tui",
+    "content": "## Problema\nErros de parsing CSS no legal-extractor-tui causados por variáveis CSS inválidas e incompatibilidades com Textual.\n\n## Variáveis Inválidas Encontradas\n- `$text` → `$foreground`\n- `$text-muted` → `$foreground` com `text-style: dim`\n- `$border` → `$primary`\n- `$boost` → `$surface`\n- `$primary-background` → `$surface`\n\n## Outras Correções\n1. Double text-style declarations → combinar em uma\n2. Opacity em color values → remover (não suportado)\n3. Child combinators (>) → usar descendant selectors\n4. `width: 1fr` → `width: 100%` (fr só em grid)\n5. `validate_config()` → `check_config_validity()` (conflito com Textual reactive validators)\n\n## Arquivos Corrigidos (15 total)\n- 4 arquivos .tcss: base, widgets, layout, animations\n- 11 widgets Python com DEFAULT_CSS\n\n## Commit\n`25a627f` fix(legal-extractor-tui): fix invalid CSS variables and Textual compatibility\n\n## Lições\n- Textual tem subset de variáveis CSS válidas: $primary, $secondary, $accent, $foreground, $background, $surface, $panel, $success, $warning, $error\n- Textual reactive validators: métodos `validate_<varname>` são auto-chamados\n- Usar frontend-developer subagent para auditorias CSS",
+    "tags": [
+      "css",
+      "textual",
+      "legal-extractor-tui",
+      "bug-fix",
+      "tcss",
+      "theming"
+    ],
+    "context": {
+      "commit": "25a627f",
+      "files_changed": 15,
+      "project": "legal-extractor-tui",
+      "date": "2025-11-27"
+    },
+    "created_at": "2025-11-27T10:07:08.740651"
+  }
+]

@@ -101,7 +101,9 @@ desktop.ini
 downloads/
 logs/
 outputs/
-data/
+# Ignore data/ at root level, but allow shared/memory/data/
+/data/
+!shared/memory/data/
 raw_data/
 processed_data/
 cache/
