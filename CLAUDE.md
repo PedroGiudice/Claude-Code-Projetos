@@ -917,7 +917,131 @@ alias braniac='test -f .claude/hooks/legal-braniac-session.json && echo "Braniac
 
 ---
 
-**Last updated:** 2025-11-19
+## TUI Template Implementation (2025-11-27)
+
+### Overview
+
+Implementacao completa de template maximalista para TUIs com Textual/Python.
+
+**Localizacao:** `tui-template/`
+**Versao:** v0.1.0
+**Commit:** `5eb0e41`
+
+### Estatisticas
+
+| Metrica | Valor |
+|---------|-------|
+| Arquivos Python | 39 |
+| Linhas de codigo | 9,335 |
+| Temas | 5 |
+| Widgets | 12+ |
+| Spinners customizados | 11 |
+
+### Componentes Implementados
+
+**Temas:**
+- `vibe-neon` - Dracula/Cyberpunk (padrao)
+- `vibe-matrix` - Matrix verde
+- `vibe-synthwave` - Rosa/roxo
+- `minimal-dark` - Minimalista escuro
+- `minimal-light` - Minimalista claro
+
+**Widgets Base:**
+- Header, Sidebar, LogPanel, ProgressPanel
+- StatusBar, FileBrowser, ResultViewer
+
+**Widgets Avancados (Powerline/Spinners):**
+- SpinnerWidget (11 spinners: claude, thinking, pulse_bar, neon, wave, matrix, processing, orbital, dna, minimal, cyber)
+- Blinker, InputCursor
+- PowerlineBar, PowerlineHeader, PowerlineFooter, PowerlineBreadcrumb
+
+**Arquitetura:**
+- Workers assincronos com cancelamento
+- Sistema de mensagens Textual
+- Models Pydantic para validacao
+- Testes pytest
+
+### Agentes Utilizados na Implementacao
+
+| Agente | Uso |
+|--------|-----|
+| `desenvolvimento` | Fases 1-13 (estrutura, widgets, workers, screens) |
+| `gemini-assistant` | Geracao de spinners, powerline widgets, review |
+| `frontend-developer` | Validacao de widgets e CSS |
+| `code-architecture-reviewer` | Review de arquitetura completa |
+| `frontend-error-fixer` | Correcao de 7 bugs criticos |
+
+### Bugs Criticos Corrigidos
+
+1. CSS Variable `$text-muted` nao definida
+2. Message attributes incorretos (7 mensagens)
+3. TUIApp constructor sem parametros
+4. Timer leak em PowerlineHeader
+5. CSS transform nao suportado pelo Textual
+6. RGBA background incompativel
+
+### Como Usar
+
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos/tui-template
+pip install -e ".[dev]"
+python -m tui_app
+# Ou: ./scripts/run_dev.sh
+```
+
+### Documentacao Gerada
+
+- `tui-template/README.md` - Documentacao principal
+- `tui-template/CHANGELOG.md` - Historico v0.1.0
+- `tui-template/BUG_FIXES_APPLIED.md` - Correcoes aplicadas
+- `tui-template/MESSAGE_CONTRACT_FIXES.md` - Contratos de mensagens
+
+### Licoes Aprendidas
+
+1. **Gemini CLI como segunda opiniao** - Util para gerar codigo repetitivo (spinners, widgets) e review de arquitetura
+2. **Frontend agents essenciais** - Identificaram 7 bugs criticos antes dos testes
+3. **Message contracts** - Importante validar consistencia entre emissor/receptor
+4. **CSS Textual** - Nao suporta todas propriedades CSS web (transform, rgba)
+
+---
+
+## Gemini CLI Integration (2025-11-27)
+
+### Setup
+
+Agente `gemini-assistant` adicionado para integracao com Gemini CLI:
+
+**Localizacao:** `.claude/agents/gemini-assistant.md`
+
+### Casos de Uso
+
+1. **Segunda opiniao** em arquitetura/codigo
+2. **Analise de contexto grande** (1M+ tokens)
+3. **Geracao de codigo repetitivo** (spinners, widgets)
+4. **Review de especificacoes**
+
+### Comandos
+
+```bash
+# Query simples
+gemini "Sua pergunta aqui"
+
+# Analise de arquivo
+cat arquivo.py | gemini "Analise este codigo"
+
+# Output JSON
+gemini "Liste melhorias" --output-format json
+```
+
+### Limitacoes
+
+- Requer autenticacao Google OAuth
+- Rate limits da API Gemini
+- Sem contexto persistente entre chamadas
+
+---
+
+**Last updated:** 2025-11-27
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** `~/claude-work/repos/Claude-Code-Projetos` (WSL2)
 - add explíto e curto que podem aparecer mensagens de erro, mas que não são VERDADEIROS erros de hook.
