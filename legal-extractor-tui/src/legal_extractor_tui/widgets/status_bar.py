@@ -69,8 +69,8 @@ class StatusBar(Horizontal):
     }
     """
 
-    cpu_percent: reactive[float] = reactive(0.0)
-    ram_percent: reactive[float] = reactive(0.0)
+    cpu_percent: reactive[float] = reactive(0.0, init=False)
+    ram_percent: reactive[float] = reactive(0.0, init=False)
 
     def __init__(
         self,

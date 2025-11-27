@@ -147,12 +147,12 @@ class MainScreen(Screen):
         progress.add_class("hidden")
 
         # Log startup
-        self.log("Application started", LogLevel.INFO)
+        self.add_log("Application started", LogLevel.INFO)
         self.update_status("Ready - Select a PDF file to extract")
 
         # If initial file was provided, trigger file selection
         if self.selected_file:
-            self.log(f"Loaded initial file: {self.selected_file.name}", LogLevel.INFO)
+            self.add_log(f"Loaded initial file: {self.selected_file.name}", LogLevel.INFO)
             self.update_status(f"File selected: {self.selected_file.name}")
 
     # Actions
@@ -165,22 +165,22 @@ class MainScreen(Screen):
         """
         # Validate file selection
         if not self.selected_file:
-            self.log("No file selected", LogLevel.WARNING)
+            self.add_log("No file selected", LogLevel.WARNING)
             self.update_status("Error: No file selected")
             return
 
         if not self.selected_file.exists():
-            self.log(f"File not found: {self.selected_file}", LogLevel.ERROR)
+            self.add_log(f"File not found: {self.selected_file}", LogLevel.ERROR)
             self.update_status("Error: File not found")
             return
 
         # Check if already running
         if self.extraction_worker and not self.extraction_worker.is_cancelled:
-            self.log("Extraction already running", LogLevel.WARNING)
+            self.add_log("Extraction already running", LogLevel.WARNING)
             return
 
         # Create and run worker
-        self.log(f"Starting extraction: {self.selected_file.name}", LogLevel.INFO)
+        self.add_log(f"Starting extraction: {self.selected_file.name}", LogLevel.INFO)
         self.update_status("Starting extraction...")
 
         self.extraction_worker = ExtractionWorker(self.app)
@@ -201,10 +201,10 @@ class MainScreen(Screen):
         """Cancel running extraction operation."""
         if self.extraction_worker and not self.extraction_worker.is_cancelled:
             self.extraction_worker.cancel()
-            self.log("Cancelling extraction...", LogLevel.WARNING)
+            self.add_log("Cancelling extraction...", LogLevel.WARNING)
             self.update_status("Cancelling...")
         else:
-            self.log("No extraction to cancel", LogLevel.DEBUG)
+            self.add_log("No extraction to cancel", LogLevel.DEBUG)
 
     def action_open_file(self) -> None:
         """Focus the file selector for file browsing."""
@@ -219,7 +219,7 @@ class MainScreen(Screen):
         to the specified file.
         """
         if not self.extraction_result:
-            self.log("No results to export", LogLevel.WARNING)
+            self.add_log("No results to export", LogLevel.WARNING)
             self.update_status("Error: No results to export")
             return
 
@@ -258,7 +258,7 @@ class MainScreen(Screen):
             event: FileSelected message with path
         """
         self.selected_file = event.path
-        self.log(f"File selected: {event.path.name}", LogLevel.INFO)
+        self.add_log(f"File selected: {event.path.name}", LogLevel.INFO)
         self.update_status(f"Selected: {event.path.name}")
 
         # Clear previous results
@@ -274,7 +274,7 @@ class MainScreen(Screen):
             event: SystemChanged message with system code
         """
         self.current_system = event.system
-        self.log(f"System changed: {event.system}", LogLevel.DEBUG)
+        self.add_log(f"System changed: {event.system}", LogLevel.DEBUG)
 
     @on(ConfigChanged)
     def on_config_changed(self, event: ConfigChanged) -> None:
@@ -284,7 +284,7 @@ class MainScreen(Screen):
             event: ConfigChanged message with config dict
         """
         self.current_config.update(event.config)
-        self.log(f"Config updated: {event.config}", LogLevel.DEBUG)
+        self.add_log(f"Config updated: {event.config}", LogLevel.DEBUG)
 
     # Message Handlers - Extraction Lifecycle
 
@@ -300,7 +300,7 @@ class MainScreen(Screen):
         progress.remove_class("hidden")
         progress.reset()
 
-        self.log(
+        self.add_log(
             f"Extraction started: {event.file_path.name} (system: {event.system})",
             LogLevel.INFO,
         )
@@ -324,9 +324,9 @@ class MainScreen(Screen):
         # Log progress with details if available
         if event.details:
             detail_str = ", ".join(f"{k}={v}" for k, v in event.details.items())
-            self.log(f"{event.message} ({detail_str})", LogLevel.DEBUG)
+            self.add_log(f"{event.message} ({detail_str})", LogLevel.DEBUG)
         else:
-            self.log(event.message, LogLevel.DEBUG)
+            self.add_log(event.message, LogLevel.DEBUG)
 
         self.update_status(event.message)
 
@@ -350,7 +350,7 @@ class MainScreen(Screen):
 
         # Log completion
         char_count = event.result.get("final_length", 0)
-        self.log(
+        self.add_log(
             f"Extraction completed in {event.elapsed_time:.2f}s ({char_count:,} chars)",
             LogLevel.SUCCESS,
         )
@@ -370,7 +370,7 @@ class MainScreen(Screen):
         progress.add_class("hidden")
 
         # Log error
-        self.log(
+        self.add_log(
             f"Extraction failed at {event.stage}: {event.message}",
             LogLevel.ERROR,
         )
@@ -387,7 +387,7 @@ class MainScreen(Screen):
         progress = self.query_one("#extraction-progress", ExtractionProgressWidget)
         progress.add_class("hidden")
 
-        self.log(
+        self.add_log(
             f"Extraction cancelled at {event.stage}",
             LogLevel.WARNING,
         )
@@ -401,7 +401,7 @@ class MainScreen(Screen):
             event: ExportRequested message
         """
         if not self.extraction_result:
-            self.log("No results to export", LogLevel.WARNING)
+            self.add_log("No results to export", LogLevel.WARNING)
             return
 
         try:
@@ -420,21 +420,21 @@ class MainScreen(Screen):
             # Write to file
             if event.destination:
                 event.destination.write_text(content, encoding="utf-8")
-                self.log(
+                self.add_log(
                     f"Exported to {event.destination.name} ({event.format})",
                     LogLevel.SUCCESS,
                 )
                 self.update_status(f"Saved: {event.destination.name}")
             else:
-                self.log("Export cancelled - no destination", LogLevel.WARNING)
+                self.add_log("Export cancelled - no destination", LogLevel.WARNING)
 
         except Exception as e:
-            self.log(f"Export failed: {e}", LogLevel.ERROR)
+            self.add_log(f"Export failed: {e}", LogLevel.ERROR)
             self.update_status(f"Export error: {e}")
 
     # Helper Methods
 
-    def log(self, message: str, level: LogLevel = LogLevel.INFO) -> None:
+    def add_log(self, message: str, level: LogLevel = LogLevel.INFO) -> None:
         """Post log message to log panel.
 
         Args:

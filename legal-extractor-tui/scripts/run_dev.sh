@@ -33,4 +33,4 @@ echo "   (Textual DevTools will be available)"
 echo ""
 
 # Run with Textual dev mode
-textual run --dev src/tui_app/app.py:TUIApp
+textual run --dev src/legal_extractor_tui/app.py:LegalExtractorApp

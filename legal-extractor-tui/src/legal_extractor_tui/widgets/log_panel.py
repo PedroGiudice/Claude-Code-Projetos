@@ -98,7 +98,7 @@ class LogPanel(RichLog):
 
         return text
 
-    def log(self, message: str, level: str = "INFO", style: str = "cyan") -> None:
+    def add_log(self, message: str, level: str = "INFO", style: str = "cyan") -> None:
         """Log a message with custom level and style.
 
         Args:
@@ -108,7 +108,7 @@ class LogPanel(RichLog):
 
         Example:
             ```python
-            log_panel.log("Custom message", level="CUSTOM", style="magenta")
+            log_panel.add_log("Custom message", level="CUSTOM", style="magenta")
             ```
         """
         formatted = self._format_message(level, message, style)
@@ -120,7 +120,7 @@ class LogPanel(RichLog):
         Args:
             message: Debug message to log
         """
-        self.log(message, level="DEBUG", style="dim")
+        self.add_log(message, level="DEBUG", style="dim")
 
     def info(self, message: str) -> None:
         """Log an info message.
@@ -128,7 +128,7 @@ class LogPanel(RichLog):
         Args:
             message: Info message to log
         """
-        self.log(message, level="INFO", style="cyan")
+        self.add_log(message, level="INFO", style="cyan")
 
     def warning(self, message: str) -> None:
         """Log a warning message.
@@ -136,7 +136,7 @@ class LogPanel(RichLog):
         Args:
             message: Warning message to log
         """
-        self.log(message, level="WARNING", style="yellow")
+        self.add_log(message, level="WARNING", style="yellow")
 
     def error(self, message: str) -> None:
         """Log an error message.
@@ -144,7 +144,7 @@ class LogPanel(RichLog):
         Args:
             message: Error message to log
         """
-        self.log(message, level="ERROR", style="red bold")
+        self.add_log(message, level="ERROR", style="red bold")
 
     def success(self, message: str) -> None:
         """Log a success message.
@@ -152,7 +152,7 @@ class LogPanel(RichLog):
         Args:
             message: Success message to log
         """
-        self.log(message, level="SUCCESS", style="green bold")
+        self.add_log(message, level="SUCCESS", style="green bold")
 
     def separator(self, char: str = "─", style: str = "dim") -> None:
         """Write a separator line.
