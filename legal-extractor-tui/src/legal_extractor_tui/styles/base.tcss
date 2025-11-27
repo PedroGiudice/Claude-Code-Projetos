@@ -14,21 +14,19 @@ $success: #50fa7b;        /* Green - success states */
 $warning: #ffb86c;        /* Orange - warnings */
 $error: #ff5555;          /* Red - errors */
 
-/* Progress stage indicators */
-$stage-pending: #44475a;  /* Dark gray - not started */
-$stage-active: #bd93f9;   /* Purple - currently processing */
-$stage-complete: #50fa7b; /* Green - completed */
-$stage-error: #ff5555;    /* Red - failed */
+/* NOTE: Custom CSS variables removed - Textual only supports built-in theme variables
+   Built-in variables available: $primary, $secondary, $accent, $foreground, $background,
+   $surface, $panel, $success, $warning, $error
 
-/* Panel backgrounds */
-$panel: #1e1e2e;       /* Main panel background */
-$surface: #2d2d3d;   /* Panel header background */
-$primary: #44475a;   /* Panel border color */
-
-/* Confidence level colors */
-$confidence-high: #50fa7b;    /* >= 0.8 */
-$confidence-medium: #f1fa8c;  /* 0.5 - 0.79 */
-$confidence-low: #ff5555;     /* < 0.5 */
+   Color mapping applied:
+   - stage-pending    → $surface (gray/neutral)
+   - stage-active     → $secondary (purple)
+   - stage-complete   → $success (green)
+   - stage-error      → $error (red)
+   - confidence-high  → $success (green)
+   - confidence-medium → $warning (orange)
+   - confidence-low   → $error (red)
+*/
 
 /* Reset and base styles */
 Screen {
@@ -123,16 +121,16 @@ Screen {
 
 /* Confidence badges */
 .confidence-high {
-    color: $confidence-high;
+    color: $success;
     text-style: bold;
 }
 
 .confidence-medium {
-    color: $confidence-medium;
+    color: $warning;
 }
 
 .confidence-low {
-    color: $confidence-low;
+    color: $error;
     text-style: bold;
 }
 

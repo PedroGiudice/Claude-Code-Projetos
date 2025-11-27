@@ -174,27 +174,27 @@ ExtractionProgress .stage {
 
 ExtractionProgress .stage.pending {
     text-style: dim;
-    background: $stage-pending 10%;
-    border-left: solid $stage-pending;
+    background: $surface 10%;
+    border-left: solid $surface;
 }
 
 ExtractionProgress .stage.active {
-    color: $stage-active;
-    background: $stage-active 20%;
-    border-left: thick $stage-active;
+    color: $secondary;
+    background: $secondary 20%;
+    border-left: thick $secondary;
     text-style: bold;
 }
 
 ExtractionProgress .stage.complete {
-    color: $stage-complete;
-    background: $stage-complete 10%;
-    border-left: solid $stage-complete;
+    color: $success;
+    background: $success 10%;
+    border-left: solid $success;
 }
 
 ExtractionProgress .stage.error {
-    color: $stage-error;
-    background: $stage-error 20%;
-    border-left: thick $stage-error;
+    color: $error;
+    background: $error 20%;
+    border-left: thick $error;
     text-style: bold;
 }
 
@@ -253,7 +253,6 @@ ResultsPanel .preview-text {
     height: 100%;
     background: $surface;
     border: solid $primary;
-    font-family: monospace;
 }
 
 ResultsPanel .preview-empty {
@@ -280,7 +279,7 @@ ResultsPanel .metadata-label {
     color: $secondary;
     text-style: bold;
     width: 20;
-    display: inline-block;
+    display: block;
 }
 
 ResultsPanel .metadata-value {
@@ -471,9 +470,9 @@ Label {
     padding: 0 0 1 0;
 }
 
-Label.-required::after {
-    content: " *";
+Label.-required {
     color: $error;
+    text-style: bold;
 }
 
 Label.-muted {
@@ -674,7 +673,6 @@ LogPanel {
 
 LogPanel > .log-line {
     padding: 0 1;
-    font-family: monospace;
 }
 
 LogPanel > .log-line.error {
@@ -721,7 +719,7 @@ StatusBar > .status-segment.right {
 }
 
 StatusBar > .status-segment.center {
-    dock: center;
+    dock: none;
 }
 
 StatusBar .status-icon {
