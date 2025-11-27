@@ -15,12 +15,12 @@
     height: 100%;
     dock: left;
     padding: 1;
-    background: var(--surface);
-    border-right: solid var(--primary);
+    background: $surface;
+    border-right: solid $primary;
 }
 
 #left-panel:focus-within {
-    border-right: solid var(--accent);
+    border-right: solid $accent;
 }
 
 /* Center panel (main content area) */
@@ -37,8 +37,8 @@
     max-height: 12;
     min-height: 8;
     margin-bottom: 1;
-    background: var(--panel-bg);
-    border: solid var(--accent);
+    background: $panel-bg;
+    border: solid $accent;
     padding: 1;
 }
 
@@ -66,22 +66,21 @@
 
 /* Panel containers */
 .panel {
-    background: var(--panel-bg);
-    border: solid var(--primary);
+    background: $panel-bg;
+    border: solid $primary;
     padding: 1 2;
     margin: 1 0;
-    border-radius: 1;
 }
 
 .panel:focus-within {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 .panel-header {
     text-style: bold;
-    color: var(--primary);
+    color: $primary;
     padding-bottom: 1;
-    border-bottom: solid var(--panel-border);
+    border-bottom: solid $panel-border;
     margin-bottom: 1;
 }
 
@@ -91,7 +90,7 @@
 
 .panel-footer {
     padding-top: 1;
-    border-top: solid var(--panel-border);
+    border-top: solid $panel-border;
     margin-top: 1;
 }
 
@@ -99,7 +98,7 @@
 .control-section {
     margin-bottom: 2;
     padding-bottom: 1;
-    border-bottom: solid var(--panel-border);
+    border-bottom: solid $panel-border;
 }
 
 .control-section:last-child {
@@ -108,7 +107,7 @@
 
 .control-section-title {
     text-style: bold;
-    color: var(--secondary);
+    color: $secondary;
     padding-bottom: 1;
     margin-bottom: 1;
 }
@@ -116,26 +115,24 @@
 /* Modal overlay */
 .modal-overlay {
     align: center middle;
-    background: var(--background);
-    layer: overlay;
+    background: $background;
 }
 
 .modal-container {
     width: 80;
     height: auto;
     max-height: 80%;
-    background: var(--panel-bg);
-    border: thick var(--accent);
+    background: $panel-bg;
+    border: thick $accent;
     padding: 2;
-    border-radius: 1;
 }
 
 .modal-title {
     text-style: bold;
-    color: var(--accent);
+    color: $accent;
     text-align: center;
     padding-bottom: 1;
-    border-bottom: solid var(--primary);
+    border-bottom: solid $primary;
     margin-bottom: 2;
 }
 
@@ -147,7 +144,7 @@
 
 .modal-footer {
     padding-top: 2;
-    border-top: solid var(--primary);
+    border-top: solid $primary;
     text-align: center;
     margin-top: 2;
 }
@@ -265,7 +262,7 @@
 .section-divider {
     height: 1;
     width: 100%;
-    background: var(--panel-border);
+    background: $panel-border;
     margin: 2 0;
 }
 
@@ -319,32 +316,32 @@
 .list-item {
     padding: 1;
     margin-bottom: 1;
-    border: solid var(--panel-border);
-    background: var(--surface);
+    border: solid $panel-border;
+    background: $surface;
 }
 
 .list-item:hover {
-    border: solid var(--primary);
-    background: var(--panel);
+    border: solid $primary;
+    background: $panel;
 }
 
 .list-item.selected {
-    border: solid var(--accent);
-    background: var(--panel);
+    border: solid $accent;
+    background: $panel;
 }
 
 /* Status bar at bottom */
 .status-bar-container {
     dock: bottom;
     height: 3;
-    background: var(--surface);
-    border-top: solid var(--primary);
+    background: $surface;
+    border-top: solid $primary;
 }
 
 /* Header bar at top */
 .header-bar-container {
     dock: top;
     height: 3;
-    background: var(--surface);
-    border-bottom: solid var(--primary);
+    background: $surface;
+    border-bottom: solid $primary;
 }

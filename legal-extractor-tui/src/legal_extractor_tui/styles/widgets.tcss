@@ -6,30 +6,30 @@
 FileSelector {
     height: auto;
     min-height: 8;
-    border: solid var(--primary);
+    border: solid $primary;
     padding: 1;
     margin-bottom: 1;
-    background: var(--panel-bg);
+    background: $panel-bg;
 }
 
 FileSelector:focus-within {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 FileSelector .file-path {
     width: 100%;
     margin-bottom: 1;
     padding: 1;
-    background: var(--surface);
-    border: solid var(--panel-border);
+    background: $surface;
+    border: solid $panel-border;
 }
 
 FileSelector .file-path:focus {
-    border: solid var(--primary);
+    border: solid $primary;
 }
 
 FileSelector .file-info {
-    color: var(--text-muted);
+    color: $text-muted;
     text-style: italic;
     padding: 0 1;
 }
@@ -40,11 +40,11 @@ FileSelector .file-status {
 }
 
 FileSelector .file-status.valid {
-    color: var(--legal-success);
+    color: $success;
 }
 
 FileSelector .file-status.invalid {
-    color: var(--legal-error);
+    color: $error;
 }
 
 FileSelector Button {
@@ -57,41 +57,41 @@ FileSelector Button {
 SystemSelector {
     height: auto;
     min-height: 5;
-    border: solid var(--primary);
+    border: solid $primary;
     padding: 1;
     margin-bottom: 1;
-    background: var(--panel-bg);
+    background: $panel-bg;
 }
 
 SystemSelector:focus-within {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 SystemSelector .system-option {
     padding: 1;
     margin-bottom: 1;
-    background: var(--surface);
-    border: solid var(--panel-border);
+    background: $surface;
+    border: solid $panel-border;
 }
 
 SystemSelector .system-option:hover {
-    border: solid var(--primary);
-    background: var(--panel);
+    border: solid $primary;
+    background: $panel;
 }
 
 SystemSelector .system-option.selected {
-    border: solid var(--accent);
-    background: var(--panel);
+    border: solid $accent;
+    background: $panel;
     text-style: bold;
 }
 
 SystemSelector .system-label {
-    color: var(--primary);
+    color: $primary;
     text-style: bold;
 }
 
 SystemSelector .system-description {
-    color: var(--text-muted);
+    color: $text-muted;
     padding-left: 2;
 }
 
@@ -100,20 +100,20 @@ SystemSelector .system-description {
    ================================================== */
 ConfigPanel {
     height: auto;
-    border: solid var(--primary);
+    border: solid $primary;
     padding: 1 2;
-    background: var(--panel-bg);
+    background: $panel-bg;
     margin-bottom: 1;
 }
 
 ConfigPanel:focus-within {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 ConfigPanel .config-section {
     margin-bottom: 2;
     padding-bottom: 1;
-    border-bottom: solid var(--panel-border);
+    border-bottom: solid $panel-border;
 }
 
 ConfigPanel .config-section:last-child {
@@ -122,7 +122,7 @@ ConfigPanel .config-section:last-child {
 }
 
 ConfigPanel .config-label {
-    color: var(--secondary);
+    color: $secondary;
     text-style: bold;
     padding-bottom: 1;
 }
@@ -133,7 +133,7 @@ ConfigPanel .config-input {
 }
 
 ConfigPanel .config-hint {
-    color: var(--text-muted);
+    color: $text-muted;
     text-style: italic;
     padding: 0 1;
 }
@@ -152,16 +152,16 @@ ConfigPanel Input {
 ExtractionProgress {
     height: auto;
     min-height: 8;
-    border: solid var(--accent);
+    border: solid $accent;
     padding: 1 2;
-    background: var(--panel-bg);
+    background: $panel-bg;
 }
 
 ExtractionProgress .progress-header {
     text-style: bold;
-    color: var(--accent);
+    color: $accent;
     padding-bottom: 1;
-    border-bottom: solid var(--panel-border);
+    border-bottom: solid $panel-border;
     margin-bottom: 1;
 }
 
@@ -169,32 +169,32 @@ ExtractionProgress .stage {
     height: 2;
     margin-bottom: 1;
     padding: 0 1;
-    border-left: solid var(--panel-border);
+    border-left: solid $panel-border;
 }
 
 ExtractionProgress .stage.pending {
-    color: var(--text-muted);
-    background: var(--stage-pending) 10%;
-    border-left: solid var(--stage-pending);
+    color: $text-muted;
+    background: $stage-pending 10%;
+    border-left: solid $stage-pending;
 }
 
 ExtractionProgress .stage.active {
-    color: var(--stage-active);
-    background: var(--stage-active) 20%;
-    border-left: thick var(--stage-active);
+    color: $stage-active;
+    background: $stage-active 20%;
+    border-left: thick $stage-active;
     text-style: bold;
 }
 
 ExtractionProgress .stage.complete {
-    color: var(--stage-complete);
-    background: var(--stage-complete) 10%;
-    border-left: solid var(--stage-complete);
+    color: $stage-complete;
+    background: $stage-complete 10%;
+    border-left: solid $stage-complete;
 }
 
 ExtractionProgress .stage.error {
-    color: var(--stage-error);
-    background: var(--stage-error) 20%;
-    border-left: thick var(--stage-error);
+    color: $stage-error;
+    background: $stage-error 20%;
+    border-left: thick $stage-error;
     text-style: bold;
 }
 
@@ -203,15 +203,15 @@ ExtractionProgress .stage-name {
 }
 
 ExtractionProgress .stage-status {
-    color: var(--text-muted);
+    color: $text-muted;
     padding-left: 2;
 }
 
 ExtractionProgress .stats {
-    color: var(--text-muted);
+    color: $text-muted;
     text-align: right;
     padding-top: 1;
-    border-top: solid var(--panel-border);
+    border-top: solid $panel-border;
     margin-top: 1;
 }
 
@@ -229,12 +229,12 @@ ExtractionProgress ProgressBar {
 ResultsPanel {
     height: 100%;
     width: 100%;
-    border: solid var(--primary);
-    background: var(--panel-bg);
+    border: solid $primary;
+    background: $panel-bg;
 }
 
 ResultsPanel:focus-within {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 ResultsPanel TabbedContent {
@@ -251,13 +251,13 @@ ResultsPanel .preview-text {
     padding: 2;
     overflow-y: auto;
     height: 100%;
-    background: var(--surface);
-    border: solid var(--panel-border);
+    background: $surface;
+    border: solid $panel-border;
     font-family: monospace;
 }
 
 ResultsPanel .preview-empty {
-    color: var(--text-muted);
+    color: $text-muted;
     text-style: italic;
     text-align: center;
     padding: 4;
@@ -272,23 +272,23 @@ ResultsPanel .metadata-grid {
 ResultsPanel .metadata-row {
     margin-bottom: 1;
     padding: 1;
-    background: var(--surface);
-    border: solid var(--panel-border);
+    background: $surface;
+    border: solid $panel-border;
 }
 
 ResultsPanel .metadata-label {
-    color: var(--secondary);
+    color: $secondary;
     text-style: bold;
     width: 20;
     display: inline-block;
 }
 
 ResultsPanel .metadata-value {
-    color: var(--foreground);
+    color: $foreground;
 }
 
 ResultsPanel .metadata-value.empty {
-    color: var(--text-muted);
+    color: $text-muted;
     text-style: italic;
 }
 
@@ -302,25 +302,25 @@ ResultsPanel .sections-list {
 ResultsPanel .section-item {
     padding: 2;
     margin-bottom: 1;
-    border: solid var(--panel-border);
-    background: var(--surface);
+    border: solid $panel-border;
+    background: $surface;
 }
 
 ResultsPanel .section-item:hover {
-    border: solid var(--primary);
-    background: var(--panel);
+    border: solid $primary;
+    background: $panel;
 }
 
 ResultsPanel .section-header {
     text-style: bold;
-    color: var(--primary);
+    color: $primary;
     padding-bottom: 1;
     margin-bottom: 1;
-    border-bottom: solid var(--panel-border);
+    border-bottom: solid $panel-border;
 }
 
 ResultsPanel .section-title {
-    color: var(--accent);
+    color: $accent;
     text-style: bold;
 }
 
@@ -330,13 +330,13 @@ ResultsPanel .section-confidence {
 
 ResultsPanel .section-content {
     padding: 1 0;
-    color: var(--foreground);
+    color: $foreground;
 }
 
 ResultsPanel .section-metadata {
-    color: var(--text-muted);
+    color: $text-muted;
     padding-top: 1;
-    border-top: solid var(--panel-border);
+    border-top: solid $panel-border;
     margin-top: 1;
 }
 
@@ -346,8 +346,8 @@ ResultsPanel .export-buttons {
     height: auto;
     padding: 1 2;
     align: right middle;
-    background: var(--surface);
-    border-top: solid var(--primary);
+    background: $surface;
+    border-top: solid $primary;
 }
 
 ResultsPanel .export-buttons Button {
@@ -360,160 +360,160 @@ ResultsPanel .export-buttons Button {
 
 /* Button */
 Button {
-    background: var(--surface);
-    color: var(--foreground);
-    border: solid var(--primary);
+    background: $surface;
+    color: $foreground;
+    border: solid $primary;
     padding: 0 2;
     min-width: 10;
     height: 3;
 }
 
 Button:hover {
-    background: var(--panel);
-    border: solid var(--accent);
+    background: $panel;
+    border: solid $accent;
 }
 
 Button:focus {
-    background: var(--primary);
-    color: var(--background);
+    background: $primary;
+    color: $background;
     text-style: bold;
 }
 
 Button.-primary {
-    background: var(--primary);
-    color: var(--background);
+    background: $primary;
+    color: $background;
     border: none;
 }
 
 Button.-primary:hover {
-    background: var(--accent);
+    background: $accent;
 }
 
 Button.-primary:focus {
-    background: var(--secondary);
+    background: $secondary;
 }
 
 Button.-success {
-    background: var(--success);
-    color: var(--background);
+    background: $success;
+    color: $background;
     border: none;
 }
 
 Button.-success:hover {
-    background: var(--success);
+    background: $success;
     opacity: 0.8;
 }
 
 Button.-danger {
-    background: var(--error);
-    color: var(--foreground);
+    background: $error;
+    color: $foreground;
     border: none;
 }
 
 Button.-danger:hover {
-    background: var(--error);
+    background: $error;
     opacity: 0.8;
 }
 
 Button.-warning {
-    background: var(--warning);
-    color: var(--background);
+    background: $warning;
+    color: $background;
     border: none;
 }
 
 Button.-warning:hover {
-    background: var(--warning);
+    background: $warning;
     opacity: 0.8;
 }
 
 Button:disabled {
     opacity: 0.5;
-    background: var(--surface);
-    color: var(--text-muted);
+    background: $surface;
+    color: $text-muted;
 }
 
 /* Input */
 Input {
-    background: var(--panel);
-    color: var(--foreground);
-    border: solid var(--primary);
+    background: $panel;
+    color: $foreground;
+    border: solid $primary;
     padding: 0 1;
     height: 3;
 }
 
 Input:focus {
-    border: solid var(--accent);
-    background: var(--surface);
+    border: solid $accent;
+    background: $surface;
 }
 
 Input.-error {
-    border: solid var(--error);
+    border: solid $error;
 }
 
 Input.-success {
-    border: solid var(--success);
+    border: solid $success;
 }
 
 Input > .input-placeholder {
-    color: var(--text-muted);
+    color: $text-muted;
     opacity: 0.5;
 }
 
 Input:disabled {
     opacity: 0.5;
-    background: var(--surface);
-    color: var(--text-muted);
+    background: $surface;
+    color: $text-muted;
 }
 
 /* Label */
 Label {
-    color: var(--foreground);
+    color: $foreground;
     padding: 0 0 1 0;
 }
 
 Label.-required::after {
     content: " *";
-    color: var(--error);
+    color: $error;
 }
 
 Label.-muted {
-    color: var(--text-muted);
+    color: $text-muted;
 }
 
 /* Static (text display) */
 Static {
-    color: var(--foreground);
+    color: $foreground;
     background: transparent;
 }
 
 Static.-highlight {
-    color: var(--accent);
+    color: $accent;
     text-style: bold;
 }
 
 Static.-muted {
-    color: var(--text-muted);
+    color: $text-muted;
     opacity: 0.7;
 }
 
 Static.-primary {
-    color: var(--primary);
+    color: $primary;
 }
 
 Static.-secondary {
-    color: var(--secondary);
+    color: $secondary;
 }
 
 Static.-error {
-    color: var(--error);
+    color: $error;
 }
 
 Static.-success {
-    color: var(--success);
+    color: $success;
 }
 
 Static.-warning {
-    color: var(--warning);
+    color: $warning;
 }
 
 /* Switch */
@@ -523,34 +523,34 @@ Switch {
 }
 
 Switch:focus {
-    background: var(--panel);
+    background: $panel;
 }
 
 Switch.-on {
-    color: var(--success);
+    color: $success;
 }
 
 Switch.-off {
-    color: var(--text-muted);
+    color: $text-muted;
 }
 
 /* ProgressBar */
 ProgressBar {
     height: 1;
-    background: var(--surface);
-    border: solid var(--panel-border);
+    background: $surface;
+    border: solid $panel-border;
 }
 
 ProgressBar > .bar--bar {
-    background: var(--primary);
+    background: $primary;
 }
 
 ProgressBar > .bar--complete {
-    background: var(--success);
+    background: $success;
 }
 
 ProgressBar > .bar--indeterminate {
-    background: var(--accent);
+    background: $accent;
 }
 
 /* RadioSet */
@@ -564,84 +564,84 @@ RadioSet > RadioButton {
 }
 
 RadioSet > RadioButton:focus {
-    background: var(--panel);
+    background: $panel;
 }
 
 /* Select */
 Select {
-    background: var(--panel);
-    color: var(--foreground);
-    border: solid var(--primary);
+    background: $panel;
+    color: $foreground;
+    border: solid $primary;
     height: 3;
     padding: 0 1;
 }
 
 Select:focus {
-    border: solid var(--accent);
-    background: var(--surface);
+    border: solid $accent;
+    background: $surface;
 }
 
 Select > SelectCurrent {
-    background: var(--panel);
+    background: $panel;
 }
 
 Select > SelectOverlay {
-    background: var(--surface);
-    border: solid var(--accent);
+    background: $surface;
+    border: solid $accent;
 }
 
 /* TextArea */
 TextArea {
-    background: var(--panel);
-    color: var(--foreground);
-    border: solid var(--primary);
+    background: $panel;
+    color: $foreground;
+    border: solid $primary;
     padding: 1;
 }
 
 TextArea:focus {
-    border: solid var(--accent);
-    background: var(--surface);
+    border: solid $accent;
+    background: $surface;
 }
 
 /* DataTable */
 DataTable {
-    background: var(--panel-bg);
-    border: solid var(--primary);
+    background: $panel-bg;
+    border: solid $primary;
 }
 
 DataTable > .datatable--header {
-    background: var(--panel-header);
+    background: $panel-header;
     text-style: bold;
-    color: var(--primary);
+    color: $primary;
 }
 
 DataTable > .datatable--row {
-    background: var(--surface);
+    background: $surface;
 }
 
 DataTable > .datatable--row:hover {
-    background: var(--panel);
+    background: $panel;
 }
 
 DataTable > .datatable--cursor {
-    background: var(--primary);
-    color: var(--background);
+    background: $primary;
+    color: $background;
 }
 
 /* Tree */
 Tree {
-    background: var(--panel-bg);
-    border: solid var(--primary);
+    background: $panel-bg;
+    border: solid $primary;
     padding: 1;
 }
 
 Tree:focus {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 Tree > .tree--cursor {
-    background: var(--primary);
-    color: var(--background);
+    background: $primary;
+    color: $background;
 }
 
 Tree > .tree--cursor > .tree--label {
@@ -650,23 +650,23 @@ Tree > .tree--cursor > .tree--label {
 
 /* LoadingIndicator */
 LoadingIndicator {
-    background: var(--panel-bg);
-    color: var(--accent);
+    background: $panel-bg;
+    color: $accent;
 }
 
 /* Placeholder */
 Placeholder {
-    background: var(--panel);
-    color: var(--text-muted);
-    border: dashed var(--panel-border);
+    background: $panel;
+    color: $text-muted;
+    border: dashed $panel-border;
 }
 
 /* ==================================================
    LOG PANEL (CUSTOM WIDGET)
    ================================================== */
 LogPanel {
-    background: var(--panel-bg);
-    border: solid var(--primary);
+    background: $panel-bg;
+    border: solid $primary;
     padding: 1;
     height: 100%;
     overflow-y: auto;
@@ -678,31 +678,31 @@ LogPanel > .log-line {
 }
 
 LogPanel > .log-line.error {
-    color: var(--error);
+    color: $error;
 }
 
 LogPanel > .log-line.warning {
-    color: var(--warning);
+    color: $warning;
 }
 
 LogPanel > .log-line.success {
-    color: var(--success);
+    color: $success;
 }
 
 LogPanel > .log-line.info {
-    color: var(--primary);
+    color: $primary;
 }
 
 LogPanel > .log-line.debug {
-    color: var(--text-muted);
+    color: $text-muted;
 }
 
 /* ==================================================
    STATUS BAR (CUSTOM WIDGET)
    ================================================== */
 StatusBar {
-    background: var(--surface);
-    border-top: solid var(--primary);
+    background: $surface;
+    border-top: solid $primary;
     height: 3;
     padding: 0 2;
     dock: bottom;
@@ -729,17 +729,17 @@ StatusBar .status-icon {
 }
 
 StatusBar .status-text {
-    color: var(--foreground);
+    color: $foreground;
 }
 
 StatusBar .status-error {
-    color: var(--error);
+    color: $error;
 }
 
 StatusBar .status-success {
-    color: var(--success);
+    color: $success;
 }
 
 StatusBar .status-warning {
-    color: var(--warning);
+    color: $warning;
 }

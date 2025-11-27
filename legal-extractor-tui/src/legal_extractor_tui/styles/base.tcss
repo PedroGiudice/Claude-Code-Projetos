@@ -1,113 +1,81 @@
 /* Base styles and CSS variables for Legal Extractor TUI */
 
-/* Color variables - base theme (Dracula-inspired) */
-:root {
-    /* Primary brand colors */
-    --primary: #8be9fd;        /* Cyan - main accent */
-    --secondary: #bd93f9;      /* Purple - secondary accent */
-    --accent: #ff79c6;         /* Pink - highlights */
-    --foreground: #f8f8f2;     /* Off-white - main text */
-    --background: #0d0d0d;     /* Near black - main background */
-    --surface: #1a1a2e;        /* Dark blue-gray - elevated surfaces */
-    --panel: #16213e;          /* Dark blue - panel backgrounds */
+/* Textual uses $variable syntax, not CSS var() syntax */
+$primary: #8be9fd;        /* Cyan - main accent */
+$secondary: #bd93f9;      /* Purple - secondary accent */
+$accent: #ff79c6;         /* Pink - highlights */
+$foreground: #f8f8f2;     /* Off-white - main text */
+$background: #0d0d0d;     /* Near black - main background */
+$surface: #1a1a2e;        /* Dark blue-gray - elevated surfaces */
+$panel: #16213e;          /* Dark blue - panel backgrounds */
 
-    /* Semantic colors */
-    --success: #50fa7b;        /* Green - success states */
-    --warning: #ffb86c;        /* Orange - warnings */
-    --error: #ff5555;          /* Red - errors */
-    --text-muted: #6272a4;     /* Muted blue - secondary text */
+/* Semantic colors */
+$success: #50fa7b;        /* Green - success states */
+$warning: #ffb86c;        /* Orange - warnings */
+$error: #ff5555;          /* Red - errors */
+$text-muted: #6272a4;     /* Muted blue - secondary text */
 
-    /* Legal extractor specific colors */
-    --legal-success: #50fa7b;  /* Document processed successfully */
-    --legal-warning: #f1fa8c;  /* Low confidence warnings */
-    --legal-error: #ff5555;    /* Extraction failures */
-    --legal-info: #8be9fd;     /* Information messages */
+/* Progress stage indicators */
+$stage-pending: #44475a;  /* Dark gray - not started */
+$stage-active: #bd93f9;   /* Purple - currently processing */
+$stage-complete: #50fa7b; /* Green - completed */
+$stage-error: #ff5555;    /* Red - failed */
 
-    /* Progress stage indicators */
-    --stage-pending: #44475a;  /* Dark gray - not started */
-    --stage-active: #bd93f9;   /* Purple - currently processing */
-    --stage-complete: #50fa7b; /* Green - completed */
-    --stage-error: #ff5555;    /* Red - failed */
+/* Panel backgrounds */
+$panel-bg: #1e1e2e;       /* Main panel background */
+$panel-header: #2d2d3d;   /* Panel header background */
+$panel-border: #44475a;   /* Panel border color */
 
-    /* Panel backgrounds */
-    --panel-bg: #1e1e2e;       /* Main panel background */
-    --panel-header: #2d2d3d;   /* Panel header background */
-    --panel-border: #44475a;   /* Panel border color */
-
-    /* Confidence level colors */
-    --confidence-high: #50fa7b;    /* >= 0.8 */
-    --confidence-medium: #f1fa8c;  /* 0.5 - 0.79 */
-    --confidence-low: #ff5555;     /* < 0.5 */
-}
+/* Confidence level colors */
+$confidence-high: #50fa7b;    /* >= 0.8 */
+$confidence-medium: #f1fa8c;  /* 0.5 - 0.79 */
+$confidence-low: #ff5555;     /* < 0.5 */
 
 /* Reset and base styles */
-* {
-    box-sizing: border-box;
-    scrollbar-color: var(--primary) var(--surface);
-    scrollbar-width: thin;
-}
-
 Screen {
-    background: var(--background);
-    color: var(--foreground);
+    background: $background;
+    color: $foreground;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 1;
-    height: 1;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--surface);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 1;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-}
+/* Scrollbar styling - Note: Textual handles scrollbars automatically */
 
 /* Typography */
 .heading-1 {
     text-style: bold;
-    color: var(--primary);
+    color: $primary;
     padding-bottom: 1;
 }
 
 .heading-2 {
     text-style: bold;
-    color: var(--secondary);
+    color: $secondary;
 }
 
 .heading-3 {
     text-style: bold;
-    color: var(--accent);
+    color: $accent;
 }
 
 /* Text utilities */
 .muted {
-    color: var(--text-muted);
+    color: $text-muted;
     opacity: 0.7;
 }
 
 .error-text {
-    color: var(--error);
+    color: $error;
 }
 
 .success-text {
-    color: var(--success);
+    color: $success;
 }
 
 .warning-text {
-    color: var(--warning);
+    color: $warning;
 }
 
 .info-text {
-    color: var(--primary);
+    color: $primary;
 }
 
 .bold {
@@ -136,36 +104,36 @@ Screen {
 
 /* Status indicators */
 .status-success {
-    color: var(--legal-success);
+    color: $success;
     text-style: bold;
 }
 
 .status-warning {
-    color: var(--legal-warning);
+    color: $warning;
     text-style: bold;
 }
 
 .status-error {
-    color: var(--legal-error);
+    color: $error;
     text-style: bold;
 }
 
 .status-info {
-    color: var(--legal-info);
+    color: $primary;
 }
 
 /* Confidence badges */
 .confidence-high {
-    color: var(--confidence-high);
+    color: $confidence-high;
     text-style: bold;
 }
 
 .confidence-medium {
-    color: var(--confidence-medium);
+    color: $confidence-medium;
 }
 
 .confidence-low {
-    color: var(--confidence-low);
+    color: $confidence-low;
     text-style: bold;
 }
 
@@ -228,27 +196,27 @@ Screen {
 
 /* Border utilities */
 .border {
-    border: solid var(--primary);
+    border: solid $primary;
 }
 
 .border-accent {
-    border: solid var(--accent);
+    border: solid $accent;
 }
 
 .border-error {
-    border: solid var(--error);
+    border: solid $error;
 }
 
 .border-success {
-    border: solid var(--success);
+    border: solid $success;
 }
 
 .border-panel {
-    border: solid var(--panel-border);
+    border: solid $panel-border;
 }
 
 .border-thick {
-    border: thick var(--primary);
+    border: thick $primary;
 }
 
 /* Display utilities */
