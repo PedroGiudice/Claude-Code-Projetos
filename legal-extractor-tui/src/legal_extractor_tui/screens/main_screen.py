@@ -83,7 +83,7 @@ class MainScreen(Screen):
     """
 
     BINDINGS = [
-        Binding("r", "run_extraction", "Extrair", show=True),
+        Binding("ctrl+r", "run_extraction", "Extrair", show=True),
         Binding("escape", "cancel_extraction", "Cancelar", show=True),
         Binding("ctrl+o", "open_file", "Abrir", show=True),
         Binding("ctrl+s", "save_result", "Salvar", show=True),

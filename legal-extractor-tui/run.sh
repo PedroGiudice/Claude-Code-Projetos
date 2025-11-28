@@ -5,7 +5,7 @@
 #
 # Options:
 #   --dev       Enable development mode with Textual DevTools (hot CSS reload)
-#   --theme     Set theme: neon (default), matrix, synthwave, dark, light
+#   --theme     Set theme: neon (default), matrix, synthwave, dark
 #   --help      Show this help message
 #
 set -e  # Exit on error
@@ -40,7 +40,6 @@ show_help() {
     echo "                    matrix    - Matrix green"
     echo "                    synthwave - Pink/purple synthwave"
     echo "                    dark      - Minimal dark"
-    echo "                    light     - Minimal light"
     echo "  --help          Show this help message"
     echo ""
     echo "Examples:"
@@ -66,7 +65,7 @@ while [[ $# -gt 0 ]]; do
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
                 echo "ERROR: --theme requires a value"
-                echo "Valid themes: neon, matrix, synthwave, dark, light"
+                echo "Valid themes: neon, matrix, synthwave, dark"
                 exit 1
             fi
             THEME_NAME="$1"

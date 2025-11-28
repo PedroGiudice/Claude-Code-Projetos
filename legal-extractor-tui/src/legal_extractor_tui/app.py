@@ -16,7 +16,12 @@ from textual.screen import Screen
 
 from legal_extractor_tui.config import APP_NAME, APP_VERSION, STYLES_DIR
 from legal_extractor_tui.screens import HelpScreen, MainScreen
-from legal_extractor_tui.themes import VIBE_NEON_THEME
+from legal_extractor_tui.themes import (
+    VIBE_NEON_THEME,
+    VIBE_MATRIX_THEME,
+    VIBE_SYNTHWAVE_THEME,
+    MINIMAL_DARK_THEME,
+)
 
 # Try to import and install tui_safety for mouse tracking protection
 try:
@@ -60,7 +65,7 @@ class LegalExtractorApp(App):
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("q", "quit", "Sair"),
         Binding("?", "show_help", "Ajuda"),
-        Binding("r", "run_extraction", "Extrair", show=True),
+        Binding("ctrl+r", "run_extraction", "Extrair", show=True),
         Binding("escape", "cancel_extraction", "Cancelar"),
         Binding("ctrl+o", "open_file", "Abrir PDF"),
         Binding("ctrl+s", "save_result", "Salvar"),
@@ -90,8 +95,11 @@ class LegalExtractorApp(App):
         self._dev_mode = dev_mode
         self._initial_file = Path(initial_file) if initial_file else None
 
-        # Register theme (currently only vibe-neon is implemented)
+        # Register all available themes
         self.register_theme(VIBE_NEON_THEME)
+        self.register_theme(VIBE_MATRIX_THEME)
+        self.register_theme(VIBE_SYNTHWAVE_THEME)
+        self.register_theme(MINIMAL_DARK_THEME)
 
     def on_mount(self) -> None:
         """Called when the app is mounted.

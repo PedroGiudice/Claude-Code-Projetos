@@ -10,7 +10,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--theme",
-        choices=["neon", "matrix", "synthwave", "dark", "light"],
+        choices=["neon", "matrix", "synthwave", "dark"],
         default="neon",
         help="Color theme (default: neon)"
     )
@@ -33,7 +33,6 @@ def main() -> int:
         "matrix": "vibe-matrix",
         "synthwave": "vibe-synthwave",
         "dark": "minimal-dark",
-        "light": "minimal-light",
     }
 
     from legal_extractor_tui.app import LegalExtractorApp
