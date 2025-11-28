@@ -48,8 +48,8 @@ Example:
 
     # Powerline widgets
     powerline = PowerlineBar([
-        PowerlineSegment("Status", "white", "blue"),
-        PowerlineSegment("Ready", "white", "green")
+        PowerlineSegment("Status", "$foreground", "$primary"),
+        PowerlineSegment("Ready", "$foreground", "$success")
     ])
     breadcrumb = PowerlineBreadcrumb(["Home", "Projects", "TUI"])
 

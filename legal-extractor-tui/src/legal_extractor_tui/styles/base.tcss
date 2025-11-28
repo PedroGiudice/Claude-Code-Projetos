@@ -20,7 +20,7 @@ $confidence-low: $error;
 
 /* Reset and base styles */
 Screen {
-    background: $background;
+    background: #000000;
     color: $foreground;
 }
 

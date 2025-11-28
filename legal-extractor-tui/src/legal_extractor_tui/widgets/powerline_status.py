@@ -147,8 +147,8 @@ class PowerlineHeader(Widget):
     def compose(self) -> ComposeResult:
         """Compose the header with left and right aligned sections."""
         left_segments = [
-            PowerlineSegment(self.app_name, "white", "blue", icon="🚀"),
-            PowerlineSegment(self.version, "white", "dark_blue"),
+            PowerlineSegment(self.app_name, "$foreground", "$primary", icon="🚀"),
+            PowerlineSegment(self.version, "$foreground", "$primary-darken-1"),
         ]
         with Container(classes="header-left"):
             yield PowerlineBar(segments=left_segments, use_powerline_fonts=self.use_powerline_fonts)
@@ -156,7 +156,7 @@ class PowerlineHeader(Widget):
         if self.show_time:
             time_str = self.time.strftime("%H:%M:%S")
             right_segments = [
-                PowerlineSegment(time_str, "white", "green", icon="🕒"),
+                PowerlineSegment(time_str, "$foreground", "$success", icon="🕒"),
             ]
             # PowerlineFooter handles right-to-left rendering
             with Container(classes="header-right"):
@@ -242,9 +242,9 @@ class PowerlineApp(App):
         )
         
         footer_segments = [
-            PowerlineSegment("INFO", "black", "orange"),
-            PowerlineSegment("UTF-8", "white", "dark_blue"),
-            PowerlineSegment("READY", "white", "green", icon="✅"),
+            PowerlineSegment("INFO", "$background", "$warning"),
+            PowerlineSegment("UTF-8", "$foreground", "$primary-darken-1"),
+            PowerlineSegment("READY", "$foreground", "$success", icon="✅"),
         ]
         yield PowerlineFooter(segments=footer_segments)
 

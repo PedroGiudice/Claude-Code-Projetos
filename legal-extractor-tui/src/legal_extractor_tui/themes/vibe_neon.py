@@ -4,13 +4,13 @@ from textual.theme import Theme
 
 VIBE_NEON_THEME = Theme(
     name="vibe-neon",
-    primary="#8be9fd",
-    secondary="#bd93f9",
-    accent="#ff79c6",
-    foreground="#f8f8f2",
-    background="#0d0d0d",
-    surface="#1a1a2e",
-    panel="#16213e",
+    primary="#8be9fd",      # Cyan (Dracula cyan)
+    secondary="#bd93f9",    # Purple (Dracula purple)
+    accent="#ff79c6",       # Pink (Dracula pink)
+    foreground="#f8f8f2",   # Light gray (Dracula foreground)
+    background="#000000",   # Pure black for maximum contrast
+    surface="#0d0d0d",      # Near black for subtle depth
+    panel="#0d0d0d",        # Near black - consistent dark base
     success="#50fa7b",
     warning="#ffb86c",
     error="#ff5555",
@@ -35,7 +35,7 @@ VIBE_NEON_THEME = Theme(
         "block-cursor-text-style": "bold",
         "border": "#8be9fd",
         "border-blurred": "#44475a",
-        "footer-background": "#1a1a2e",
+        "footer-background": "#1e1e2e",
         "footer-foreground": "#f8f8f2",
         "footer-key-foreground": "#50fa7b",
         "scrollbar": "#44475a",
@@ -49,5 +49,8 @@ VIBE_NEON_THEME = Theme(
         "link-color-hover": "#ff79c6",
         "button-foreground": "#f8f8f2",
         "button-focus-text-style": "bold reverse",
+        # Text utilities
+        "text-muted": "#6272a4",      # Dracula comment color
+        "text-disabled": "#44475a",   # Even more muted
     },
 )

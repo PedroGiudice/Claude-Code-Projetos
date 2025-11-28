@@ -24,6 +24,8 @@ from textual.widgets import Button, Input, Label, Static
 
 from legal_extractor_tui.messages.extractor_messages import FileSelected
 
+from textual.message import Message
+
 
 class FileSelector(Vertical):
     """Widget for selecting PDF files to process.
@@ -31,6 +33,10 @@ class FileSelector(Vertical):
     Displays current file path, browse button, and file information.
     Validates that selected files are PDFs.
     """
+
+    class BrowseRequested(Message):
+        """Emitted when user clicks Browse button."""
+        pass
 
     # CSS moved to widgets.tcss for centralized theme management
 
@@ -69,10 +75,10 @@ class FileSelector(Vertical):
         with Horizontal(classes="file-input-container"):
             yield Input(
                 value=self.selected_path,
-                placeholder="Enter path to PDF file or click Browse...",
+                placeholder="/path/to/document.pdf",
                 id="file-path-input"
             )
-            yield Button("Browse...", id="browse-button", variant="primary")
+            yield Button("Browse", id="browse-button", variant="primary")
 
         with Vertical(classes="file-info", id="file-info-panel"):
             with Horizontal(classes="file-info-row"):
@@ -91,10 +97,8 @@ class FileSelector(Vertical):
                     id="status-label"
                 )
 
-        if self.error_message:
-            yield Label(self.error_message, classes="error", id="error-label")
-        elif self.file_valid:
-            yield Label("Valid PDF file selected", classes="valid", id="valid-label")
+        # Persistent status label - updated dynamically
+        yield Label("", classes="status-message", id="status-message")
 
     def _get_filename(self) -> str:
         """Get filename from current path.
@@ -177,31 +181,28 @@ class FileSelector(Vertical):
             filesize_label.update(self.file_size)
 
             status_label = self.query_one("#status-label", Label)
-            status_label.update("Ready" if is_valid else error or "No file selected")
+            status_label.update("Ready" if is_valid else f"Error: {error}" if error else "No file selected")
 
             # Update error/valid message
             self._update_status_message()
 
     def _update_status_message(self) -> None:
         """Update error or valid status message display."""
-        # Remove existing status messages
         try:
-            error_label = self.query_one("#error-label")
-            error_label.remove()
-        except Exception:
-            pass
+            status_msg = self.query_one("#status-message", Label)
+            # Reset classes
+            status_msg.remove_class("error", "valid")
 
-        try:
-            valid_label = self.query_one("#valid-label")
-            valid_label.remove()
+            if self.error_message:
+                status_msg.update(self.error_message)
+                status_msg.add_class("error")
+            elif self.file_valid:
+                status_msg.update("Valid PDF file selected")
+                status_msg.add_class("valid")
+            else:
+                status_msg.update("")
         except Exception:
-            pass
-
-        # Add appropriate status message
-        if self.error_message:
-            self.mount(Label(self.error_message, classes="error", id="error-label"))
-        elif self.file_valid:
-            self.mount(Label("Valid PDF file selected", classes="valid", id="valid-label"))
+            pass  # Widget not yet mounted
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle manual path entry.
@@ -232,10 +233,8 @@ class FileSelector(Vertical):
             event: Button press event
         """
         if event.button.id == "browse-button":
-            # In a real implementation, this would open a file dialog
-            # For now, we'll log that it was pressed
-            # The main app should handle showing a FileBrowser modal
-            self.log("Browse button pressed - file browser should be shown")
+            # Emit message for parent to handle (show FileBrowser modal)
+            self.post_message(self.BrowseRequested())
 
     def set_path(self, path: str | Path) -> None:
         """Set the file path programmatically.

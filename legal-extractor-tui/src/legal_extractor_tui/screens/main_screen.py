@@ -29,6 +29,7 @@ from legal_extractor_tui.messages import (
     StatusUpdate,
     SystemChanged,
 )
+from legal_extractor_tui.screens.file_browser_screen import FileBrowserScreen
 from legal_extractor_tui.widgets import (
     ConfigPanel,
     ExtractionProgress as ExtractionProgressWidget,
@@ -249,6 +250,44 @@ class MainScreen(Screen):
         self.app.push_screen(HelpScreen())
 
     # Message Handlers - File Selection
+
+    @on(FileSelector.BrowseRequested)
+    def on_browse_requested(self, event: FileSelector.BrowseRequested) -> None:
+        """Handle browse button click from FileSelector.
+
+        Opens a modal file browser for selecting PDF files.
+
+        Args:
+            event: BrowseRequested message
+        """
+        # Stop event propagation
+        event.stop()
+
+        # Determine initial path for browser
+        if self.selected_file and self.selected_file.parent.exists():
+            initial_path = self.selected_file.parent
+        else:
+            initial_path = Path.cwd()
+
+        # Show file browser modal
+        self.app.push_screen(
+            FileBrowserScreen(initial_path=initial_path),
+            callback=self._handle_file_browser_result
+        )
+
+    def _handle_file_browser_result(self, selected_path: Path | None) -> None:
+        """Handle result from file browser modal.
+
+        Args:
+            selected_path: Path to selected PDF file, or None if cancelled
+        """
+        if selected_path:
+            # Update FileSelector with selected path
+            file_selector = self.query_one("#file-selector", FileSelector)
+            file_selector.set_path(selected_path)
+
+            # Log the selection
+            self.add_log(f"File browsed and selected: {selected_path.name}", LogLevel.INFO)
 
     @on(FileSelected)
     def on_file_selected(self, event: FileSelected) -> None:

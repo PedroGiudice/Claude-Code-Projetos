@@ -15,12 +15,12 @@
     height: 100%;
     dock: left;
     padding: 1;
-    background: $surface;
-    border-right: solid $primary;
+    background: #0d0d0d;
+    border-right: heavy $primary;
 }
 
 #left-panel:focus-within {
-    border-right: solid $accent;
+    border-right: heavy $accent;
 }
 
 /* Center panel (main content area) */
@@ -37,8 +37,8 @@
     max-height: 12;
     min-height: 8;
     margin-bottom: 1;
-    background: $panel;
-    border: solid $accent;
+    background: #0d0d0d;
+    border: heavy $accent;
     padding: 1;
 }
 
@@ -66,21 +66,21 @@
 
 /* Panel containers */
 .panel {
-    background: $panel;
-    border: solid $primary;
+    background: #0d0d0d;
+    border: heavy $primary;
     padding: 1 2;
     margin: 1 0;
 }
 
 .panel:focus-within {
-    border: solid $accent;
+    border: heavy $accent;
 }
 
 .panel-header {
     text-style: bold;
-    color: $primary;
+    color: $accent;
     padding-bottom: 1;
-    border-bottom: solid $primary;
+    border-bottom: thick $primary;
     margin-bottom: 1;
 }
 
@@ -90,7 +90,7 @@
 
 .panel-footer {
     padding-top: 1;
-    border-top: solid $primary;
+    border-top: thick $primary;
     margin-top: 1;
 }
 
@@ -98,7 +98,7 @@
 .control-section {
     margin-bottom: 2;
     padding-bottom: 1;
-    border-bottom: solid $primary;
+    border-bottom: thick $primary;
 }
 
 .control-section:last-child {
@@ -115,15 +115,15 @@
 /* Modal overlay */
 .modal-overlay {
     align: center middle;
-    background: $background;
+    background: #000000;
 }
 
 .modal-container {
     width: 80;
     height: auto;
     max-height: 80%;
-    background: $panel;
-    border: thick $accent;
+    background: #0d0d0d;
+    border: heavy $accent;
     padding: 2;
 }
 
@@ -132,7 +132,7 @@
     color: $accent;
     text-align: center;
     padding-bottom: 1;
-    border-bottom: solid $primary;
+    border-bottom: thick $primary;
     margin-bottom: 2;
 }
 
@@ -144,7 +144,7 @@
 
 .modal-footer {
     padding-top: 2;
-    border-top: solid $primary;
+    border-top: thick $primary;
     text-align: center;
     margin-top: 2;
 }
@@ -334,14 +334,14 @@
 .status-bar-container {
     dock: bottom;
     height: 3;
-    background: $surface;
-    border-top: solid $primary;
+    background: #0d0d0d;
+    border-top: heavy $primary;
 }
 
 /* Header bar at top */
 .header-bar-container {
     dock: top;
     height: 3;
-    background: $surface;
-    border-bottom: solid $primary;
+    background: #0d0d0d;
+    border-bottom: heavy $primary;
 }

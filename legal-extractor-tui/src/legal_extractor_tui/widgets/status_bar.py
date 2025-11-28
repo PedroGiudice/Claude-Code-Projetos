@@ -62,19 +62,29 @@ class StatusBar(Horizontal):
         """Compose the status bar layout.
 
         Yields:
-            Labels for status message and metrics
+            Labels for status message and metrics with separators
         """
         yield Label(self._status_message, classes="status-message", id="status-message")
+        yield Label("│", classes="separator")
         yield Label(self._format_runtime(), classes="runtime-metric", id="runtime")
+        yield Label("│", classes="separator")
         yield Label(self._format_cpu(), classes="cpu-metric", id="cpu")
+        yield Label("│", classes="separator")
         yield Label(self._format_ram(), classes="ram-metric", id="ram")
 
     def on_mount(self) -> None:
         """Set up periodic metric updates when widget is mounted."""
         # Update metrics every 2 seconds
-        self.set_interval(2.0, self._update_metrics)
+        self._metrics_timer = self.set_interval(2.0, self._update_metrics)
         # Update runtime every second
-        self.set_interval(1.0, self._update_runtime)
+        self._runtime_timer = self.set_interval(1.0, self._update_runtime)
+
+    def on_unmount(self) -> None:
+        """Clean up timers when widget is unmounted."""
+        if hasattr(self, '_metrics_timer') and self._metrics_timer:
+            self._metrics_timer.stop()
+        if hasattr(self, '_runtime_timer') and self._runtime_timer:
+            self._runtime_timer.stop()
 
     def _get_cpu_percent(self) -> float:
         """Get current CPU usage percentage.
@@ -114,23 +124,23 @@ class StatusBar(Horizontal):
         """Format CPU metric for display.
 
         Returns:
-            Formatted CPU string
+            Formatted CPU string with icon
         """
-        return f"CPU: {self.cpu_percent:5.1f}%"
+        return f"CPU: {self.cpu_percent:4.1f}%"
 
     def _format_ram(self) -> str:
         """Format RAM metric for display.
 
         Returns:
-            Formatted RAM string
+            Formatted RAM string with icon
         """
-        return f"RAM: {self.ram_percent:5.1f}%"
+        return f"RAM: {self.ram_percent:4.1f}%"
 
     def _format_runtime(self) -> str:
         """Format runtime for display.
 
         Returns:
-            Formatted runtime string
+            Formatted runtime string with icon
         """
         elapsed = time.time() - self._start_time
         delta = timedelta(seconds=int(elapsed))

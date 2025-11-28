@@ -22,7 +22,7 @@ class LogLevel(str, Enum):
         """Get Rich color for this log level."""
         return {
             self.DEBUG: "dim cyan",
-            self.INFO: "blue",
+            self.INFO: "cyan",
             self.WARNING: "yellow",
             self.ERROR: "red",
             self.SUCCESS: "green",

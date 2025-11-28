@@ -162,6 +162,12 @@ class SpinnerWidget(Static):
         self.style = style
         self._update_display()
 
+    def on_unmount(self) -> None:
+        """Clean up timer when widget is unmounted."""
+        if self._timer:
+            self._timer.stop()
+            self._timer = None
+
     def watch_is_spinning(self, is_spinning: bool) -> None:
         """React to changes in spinning state.
 

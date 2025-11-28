@@ -75,7 +75,12 @@ class Blinker(Static):
     def on_mount(self) -> None:
         """Start blinking when widget is mounted."""
         self._update_display()
-        self.set_interval(self.blink_rate_ms / 1000, self._toggle)
+        self._blink_timer = self.set_interval(self.blink_rate_ms / 1000, self._toggle)
+
+    def on_unmount(self) -> None:
+        """Clean up timer when widget is unmounted."""
+        if hasattr(self, '_blink_timer') and self._blink_timer:
+            self._blink_timer.stop()
 
     def _toggle(self) -> None:
         """Toggle cursor visibility."""
@@ -181,7 +186,12 @@ class InputCursor(Static):
     def on_mount(self) -> None:
         """Start cursor blinking when widget is mounted."""
         self._update_display()
-        self.set_interval(self.blink_rate_ms / 1000, self._toggle_cursor)
+        self._cursor_timer = self.set_interval(self.blink_rate_ms / 1000, self._toggle_cursor)
+
+    def on_unmount(self) -> None:
+        """Clean up timer when widget is unmounted."""
+        if hasattr(self, '_cursor_timer') and self._cursor_timer:
+            self._cursor_timer.stop()
 
     def _toggle_cursor(self) -> None:
         """Toggle cursor visibility."""

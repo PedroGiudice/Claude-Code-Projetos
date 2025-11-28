@@ -6,54 +6,101 @@
    ================================================== */
 FileSelector {
     height: auto;
-    min-height: 8;
+    min-height: 12;
     border: heavy $primary;
-    padding: 1;
+    padding: 1 2;
     margin-bottom: 1;
-    background: $panel;
+    background: #0d0d0d;
 }
 
 FileSelector:focus-within {
     border: heavy $accent;
-    background: $primary-darken-1 10%;
+    background: #0d0d0d;
 }
 
-FileSelector .file-path {
-    width: 100%;
+FileSelector .selector-title {
+    color: $accent;
+    text-style: bold;
     margin-bottom: 1;
-    padding: 1;
-    background: $surface;
-    border: solid $primary-lighten-1;
+    padding-bottom: 1;
+    border-bottom: thick $primary;
 }
 
-FileSelector .file-path:focus {
-    border: thick $primary;
-    background: $background;
+FileSelector .file-input-container {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1;
+}
+
+FileSelector #file-path-input {
+    width: 1fr;
+    margin-right: 1;
+}
+
+FileSelector #browse-button {
+    width: auto;
+    min-width: 14;
 }
 
 FileSelector .file-info {
-    text-style: dim italic;
-    padding: 0 1;
-    color: $primary-lighten-1;
-}
-
-FileSelector .file-status {
+    background: #000000;
+    border: thick $primary;
     padding: 1;
     margin-top: 1;
 }
 
-FileSelector .file-status.valid {
-    color: $success;
+FileSelector .file-info-row {
+    width: 100%;
+    height: auto;
+    margin-bottom: 0;
+}
+
+FileSelector .file-info-label {
+    width: 12;
+    color: $secondary;
     text-style: bold;
 }
 
-FileSelector .file-status.invalid {
+FileSelector .file-info-value {
+    width: 1fr;
+    color: $foreground;
+}
+
+FileSelector .error {
     color: $error;
     text-style: bold;
+    background: #000000;
+    padding: 1;
+    margin-top: 1;
+    border: heavy $error;
 }
 
-FileSelector Button {
+FileSelector .valid {
+    color: $success;
+    text-style: bold;
+    background: #000000;
+    padding: 1;
     margin-top: 1;
+    border: heavy $success;
+}
+
+FileSelector #status-message {
+    height: auto;
+    margin-top: 1;
+}
+
+FileSelector #status-message.error {
+    color: $error;
+    text-style: bold;
+    padding: 1;
+    border: heavy $error;
+}
+
+FileSelector #status-message.valid {
+    color: $success;
+    text-style: bold;
+    padding: 1;
+    border: heavy $success;
 }
 
 /* ==================================================
@@ -65,29 +112,29 @@ SystemSelector {
     border: heavy $primary;
     padding: 1;
     margin-bottom: 1;
-    background: $panel;
+    background: #0d0d0d;
 }
 
 SystemSelector:focus-within {
     border: heavy $accent;
-    background: $primary-darken-1 10%;
+    background: #0d0d0d;
 }
 
 SystemSelector .system-option {
     padding: 1;
     margin-bottom: 1;
-    background: $surface;
-    border: solid $primary-lighten-1;
+    background: #000000;
+    border: thick $primary;
 }
 
 SystemSelector .system-option:hover {
-    border: thick $primary;
-    background: $primary-darken-1 15%;
+    border: thick $accent;
+    background: #000000;
 }
 
 SystemSelector .system-option.selected {
     border: heavy $accent;
-    background: $accent-darken-1 20%;
+    background: #000000;
     text-style: bold;
 }
 
@@ -109,13 +156,13 @@ ConfigPanel {
     height: auto;
     border: heavy $primary;
     padding: 1 2;
-    background: $panel;
+    background: #0d0d0d;
     margin-bottom: 1;
 }
 
 ConfigPanel:focus-within {
     border: heavy $accent;
-    background: $primary-darken-1 10%;
+    background: #0d0d0d;
 }
 
 ConfigPanel .config-section {
@@ -162,7 +209,7 @@ ExtractionProgress {
     min-height: 8;
     border: heavy $accent;
     padding: 1 2;
-    background: $panel;
+    background: #0d0d0d;
 }
 
 ExtractionProgress .progress-header {
@@ -182,26 +229,26 @@ ExtractionProgress .stage {
 
 ExtractionProgress .stage.pending {
     text-style: dim;
-    background: $surface 30%;
-    border-left: solid $surface;
+    background: #000000;
+    border-left: solid $primary;
 }
 
 ExtractionProgress .stage.active {
-    color: $secondary;
-    background: $secondary-darken-1 25%;
-    border-left: heavy $secondary;
+    color: $accent;
+    background: #000000;
+    border-left: heavy $accent;
     text-style: bold;
 }
 
 ExtractionProgress .stage.complete {
     color: $success;
-    background: $success-darken-1 20%;
-    border-left: thick $success;
+    background: #000000;
+    border-left: heavy $success;
 }
 
 ExtractionProgress .stage.error {
     color: $error;
-    background: $error-darken-1 20%;
+    background: #000000;
     border-left: heavy $error;
     text-style: bold;
 }
@@ -238,7 +285,7 @@ ResultsPanel {
     height: 100%;
     width: 100%;
     border: heavy $primary;
-    background: $panel;
+    background: #0d0d0d;
 }
 
 ResultsPanel:focus-within {
@@ -259,8 +306,8 @@ ResultsPanel .preview-text {
     padding: 2;
     overflow-y: auto;
     height: 100%;
-    background: $surface;
-    border: solid $primary-lighten-1;
+    background: #000000;
+    border: thick $primary;
 }
 
 ResultsPanel .preview-empty {
@@ -279,8 +326,8 @@ ResultsPanel .metadata-grid {
 ResultsPanel .metadata-row {
     margin-bottom: 1;
     padding: 1;
-    background: $surface;
-    border: solid $primary-lighten-1;
+    background: #000000;
+    border: thick $primary;
 }
 
 ResultsPanel .metadata-label {
@@ -309,13 +356,13 @@ ResultsPanel .sections-list {
 ResultsPanel .section-item {
     padding: 2;
     margin-bottom: 1;
-    border: solid $primary-lighten-1;
-    background: $surface;
+    border: thick $primary;
+    background: #000000;
 }
 
 ResultsPanel .section-item:hover {
-    border: thick $primary;
-    background: $primary-darken-1 15%;
+    border: heavy $accent;
+    background: #000000;
 }
 
 ResultsPanel .section-header {
@@ -353,8 +400,8 @@ ResultsPanel .export-buttons {
     height: auto;
     padding: 1 2;
     align: right middle;
-    background: $surface;
-    border-top: thick $primary;
+    background: #0d0d0d;
+    border-top: heavy $primary;
 }
 
 ResultsPanel .export-buttons Button {
@@ -367,7 +414,7 @@ ResultsPanel .export-buttons Button {
 
 /* Button - Cyberpunk style with heavy borders */
 Button {
-    background: $surface;
+    background: #0d0d0d;
     color: $foreground;
     border: thick $primary;
     padding: 0 2;
@@ -376,65 +423,71 @@ Button {
 }
 
 Button:hover {
-    background: $primary-darken-1 20%;
-    border: thick $accent;
+    background: #0d0d0d;
+    border: heavy $accent;
+    color: $accent;
 }
 
 Button:focus {
-    background: $primary;
-    color: $background;
+    background: #0d0d0d;
+    color: $accent;
     text-style: bold;
     border: heavy $accent;
 }
 
 Button.-primary {
-    background: $primary;
-    color: $background;
-    border: thick $primary-lighten-1;
+    background: #0d0d0d;
+    color: $primary;
+    border: heavy $primary;
     text-style: bold;
 }
 
 Button.-primary:hover {
-    background: $accent;
-    border: thick $accent-lighten-1;
+    background: #0d0d0d;
+    color: $accent;
+    border: heavy $accent;
 }
 
 Button.-primary:focus {
-    background: $secondary;
-    border: heavy $secondary-lighten-1;
+    background: #0d0d0d;
+    color: $accent;
+    border: heavy $accent;
 }
 
 Button.-success {
-    background: $success;
-    color: $background;
-    border: thick $success-lighten-1;
+    background: #0d0d0d;
+    color: $success;
+    border: heavy $success;
     text-style: bold;
 }
 
 Button.-success:hover {
-    background: $success-lighten-1;
+    background: #0d0d0d;
+    border: heavy $success;
 }
 
 Button.-danger {
-    background: $error;
-    color: $foreground;
-    border: thick $error-lighten-1;
+    background: #0d0d0d;
+    color: $error;
+    border: heavy $error;
     text-style: bold;
 }
 
 Button.-danger:hover {
-    background: $error-lighten-1;
+    background: #0d0d0d;
+    border: heavy $error;
 }
 
 Button.-warning {
-    background: $warning;
-    color: $background;
-    border: thick $warning-lighten-1;
+    background: #0d0d0d;
+    color: $warning;
+    border: heavy $warning;
     text-style: bold;
 }
 
 Button.-warning:hover {
-    background: $warning-lighten-1;
+    background: #0d0d0d;
+    border: heavy $warning;
 }
 
 Button:disabled {
@@ -446,24 +499,24 @@ Button:disabled {
 
 /* Input - Neon glow on focus */
 Input {
-    background: $panel;
+    background: #000000;
     color: $foreground;
-    border: solid $primary;
+    border: thick $primary;
     padding: 0 1;
     height: 3;
 }
 
 Input:focus {
     border: heavy $accent;
-    background: $surface;
+    background: #000000;
 }
 
 Input.-error {
-    border: thick $error;
+    border: heavy $error;
 }
 
 Input.-success {
-    border: thick $success;
+    border: heavy $success;
 }
 
 Input .input-placeholder {
@@ -553,7 +606,7 @@ Switch.-off {
 /* ProgressBar - Heavy border with depth */
 ProgressBar {
     height: 1;
-    background: $surface;
+    background: #000000;
     border: thick $primary;
 }
 
@@ -586,7 +639,7 @@ RadioSet RadioButton:focus {
 
 /* Select - Cyberpunk dropdown */
 Select {
-    background: $panel;
+    background: #000000;
     color: $foreground;
     border: thick $primary;
     height: 3;
@@ -595,21 +648,21 @@ Select {
 
 Select:focus {
     border: heavy $accent;
-    background: $surface;
+    background: #000000;
 }
 
 Select SelectCurrent {
-    background: $panel;
+    background: #000000;
 }
 
 Select SelectOverlay {
-    background: $surface;
+    background: #0d0d0d;
     border: heavy $accent;
 }
 
 /* TextArea - Neon bordered */
 TextArea {
-    background: $panel;
+    background: #000000;
     color: $foreground;
     border: thick $primary;
     padding: 1;
@@ -617,39 +670,41 @@ TextArea {
 
 TextArea:focus {
     border: heavy $accent;
-    background: $surface;
+    background: #000000;
 }
 
 /* DataTable - Cyberpunk grid */
 DataTable {
-    background: $panel;
+    background: #0d0d0d;
     border: heavy $primary;
 }
 
 DataTable .datatable--header {
-    background: $primary-darken-1 20%;
+    background: #000000;
     text-style: bold;
-    color: $primary-lighten-1;
+    color: $primary;
     border-bottom: thick $primary;
 }
 
 DataTable .datatable--row {
-    background: $surface;
+    background: #000000;
 }
 
 DataTable .datatable--row:hover {
-    background: $primary-darken-1 15%;
+    background: #000000;
+    border: thick $accent;
 }
 
 DataTable .datatable--cursor {
-    background: $primary;
-    color: $background;
+    background: #000000;
+    color: $accent;
     text-style: bold;
+    border: heavy $accent;
 }
 
 /* Tree - Neon file browser */
 Tree {
-    background: $panel;
+    background: #0d0d0d;
     border: heavy $primary;
     padding: 1;
 }
@@ -659,9 +714,10 @@ Tree:focus {
 }
 
 Tree .tree--cursor {
-    background: $primary;
-    color: $background;
+    background: #000000;
+    color: $accent;
     text-style: bold;
+    border-left: heavy $accent;
 }
 
 Tree .tree--cursor .tree--label {
@@ -670,13 +726,13 @@ Tree .tree--cursor .tree--label {
 
 /* LoadingIndicator - Animated neon */
 LoadingIndicator {
-    background: $panel;
+    background: #000000;
     color: $accent;
 }
 
 /* Placeholder - Dashed cyberpunk border */
 Placeholder {
-    background: $panel 30%;
+    background: #000000;
     text-style: dim;
     border: dashed $primary;
     color: $foreground 60%;
@@ -686,7 +742,7 @@ Placeholder {
    LOG PANEL (CUSTOM WIDGET)
    ================================================== */
 LogPanel {
-    background: $panel;
+    background: #0d0d0d;
     border: heavy $primary;
     padding: 1;
     height: 100%;
@@ -723,11 +779,29 @@ LogPanel .log-line.debug {
    STATUS BAR (CUSTOM WIDGET)
    ================================================== */
 StatusBar {
-    background: $surface;
+    background: #0d0d0d;
     border-top: heavy $primary;
     height: 3;
     padding: 0 2;
     dock: bottom;
+}
+
+StatusBar .status-message {
+    color: $accent;
+    text-style: bold;
+    padding-right: 1;
+}
+
+StatusBar .separator {
+    color: $primary;
+    padding: 0 1;
+}
+
+StatusBar .runtime-metric,
+StatusBar .cpu-metric,
+StatusBar .ram-metric {
+    color: $foreground;
+    padding: 0 1;
 }
 
 StatusBar .status-segment {
@@ -774,57 +848,87 @@ StatusBar .status-warning {
    HEADER WIDGET
    ================================================== */
 Header {
-    height: 5;
+    height: 16;
     dock: top;
-    background: $panel;
-    border-bottom: solid $primary;
+    background: #0d0d0d;
+    border-bottom: heavy $accent;
+    padding: 1 2;
 }
 
 Header .logo {
-    width: 30;
+    width: 100%;
     content-align: center middle;
     color: $accent;
+    text-style: bold;
 }
 
 Header .title {
     width: 1fr;
-    content-align: left middle;
+    content-align: center middle;
     text-style: bold;
-    color: $foreground;
+    color: $primary;
 }
 
 Header .status {
-    width: 20;
+    width: auto;
     content-align: right middle;
     padding-right: 2;
+    text-style: bold;
 }
 
 /* ==================================================
    SIDEBAR WIDGET
    ================================================== */
 Sidebar {
-    width: 20;
+    width: 24;
     dock: left;
-    background: $panel;
-    border-right: solid $primary;
+    background: #0d0d0d;
+    border-right: heavy $primary;
     padding: 1;
 }
 
 Sidebar.collapsed {
-    width: 3;
+    width: 4;
 }
 
 Sidebar Button {
     width: 100%;
     margin-bottom: 1;
-    background: $surface;
+    background: #000000;
+    border: thick $primary;
+    text-style: bold;
+}
+
+Sidebar Button:hover {
+    border: heavy $accent;
+    background: #000000;
 }
 
 Sidebar OptionList {
     width: 100%;
-    background: $panel;
-    border: none;
+    background: #0d0d0d;
+    border: thick $primary;
     height: 1fr;
+    padding: 1;
+}
+
+Sidebar OptionList > .option-list--option {
+    padding: 1;
+    margin-bottom: 1;
+    background: #000000;
+    border-left: thick $primary;
+}
+
+Sidebar OptionList > .option-list--option-hover {
+    background: #000000;
+    border-left: heavy $accent;
+}
+
+Sidebar OptionList > .option-list--option-selected {
+    background: #000000;
+    border-left: heavy $accent;
+    text-style: bold;
+    color: $accent;
 }
 
 Sidebar.collapsed OptionList {
@@ -841,8 +945,8 @@ Sidebar.collapsed Button {
 FileBrowser {
     width: 100%;
     height: 100%;
-    background: $panel;
-    border: solid $primary;
+    background: #0d0d0d;
+    border: heavy $primary;
 }
 
 FileBrowser .browser-title {
@@ -850,21 +954,21 @@ FileBrowser .browser-title {
     height: 3;
     content-align: center middle;
     text-style: bold;
-    color: $foreground;
-    background: $surface;
-    border-bottom: solid $primary;
+    color: $accent;
+    background: #000000;
+    border-bottom: thick $primary;
 }
 
 FileBrowser FilteredDirectoryTree {
     width: 100%;
     height: 1fr;
-    background: $surface;
+    background: #000000;
 }
 
 FileBrowser DirectoryTree {
     width: 100%;
     height: 1fr;
-    background: $surface;
+    background: #000000;
 }
 
 /* ==================================================
@@ -873,15 +977,15 @@ FileBrowser DirectoryTree {
 ResultViewer {
     width: 100%;
     height: 100%;
-    background: $panel;
-    border: solid $primary;
+    background: #0d0d0d;
+    border: heavy $primary;
 }
 
 ResultViewer .viewer-header {
     width: 100%;
     height: 3;
-    background: $surface;
-    border-bottom: solid $primary;
+    background: #000000;
+    border-bottom: thick $primary;
     padding: 0 2;
 }
 
@@ -902,7 +1006,7 @@ ResultViewer .viewer-source {
 ResultViewer Markdown {
     width: 100%;
     height: 1fr;
-    background: $surface;
+    background: #000000;
     padding: 1 2;
 }
 
@@ -910,7 +1014,7 @@ ResultViewer .empty-message {
     width: 100%;
     height: 1fr;
     content-align: center middle;
-    color: $foreground;
+    color: $primary;
     text-style: dim italic;
 }
 
@@ -976,8 +1080,8 @@ StageProgress {
     height: 3;
     width: 100%;
     layout: horizontal;
-    background: $panel;
-    border: solid $primary;
+    background: #0d0d0d;
+    border: thick $primary;
     margin-bottom: 1;
 }
 
@@ -998,19 +1102,19 @@ StageProgress .stage-status {
 }
 
 StageProgress.pending {
-    border: solid $surface;
+    border: thick $primary;
 }
 
 StageProgress.running {
-    border: solid $accent;
+    border: heavy $accent;
 }
 
 StageProgress.completed {
-    border: solid $success;
+    border: heavy $success;
 }
 
 StageProgress.error {
-    border: solid $error;
+    border: heavy $error;
 }
 
 /* ==================================================
@@ -1019,8 +1123,8 @@ StageProgress.error {
 PipelineProgress {
     width: 100%;
     height: auto;
-    background: $surface;
-    border: solid $primary;
+    background: #0d0d0d;
+    border: thick $primary;
     padding: 1;
 }
 
@@ -1085,4 +1189,36 @@ PowerlineBreadcrumb .crumb:hover {
 PowerlineBreadcrumb .separator {
     width: auto;
     padding: 0;
+}
+
+/* ==================================================
+   FILE BROWSER MODAL SCREEN
+   ================================================== */
+#file-browser-dialog {
+    width: 80;
+    height: 30;
+    background: #0d0d0d;
+    border: heavy $primary;
+    padding: 1;
+}
+
+#file-browser-dialog #browser-title {
+    width: 100%;
+    height: 3;
+    content-align: center middle;
+    text-style: bold;
+    color: $accent;
+    background: #000000;
+    border-bottom: thick $primary;
+}
+
+#file-browser-dialog #file-browser {
+    width: 100%;
+    height: 1fr;
+    margin: 1 0;
+}
+
+#file-browser-dialog #cancel-btn {
+    width: 100%;
+    height: 3;
 }

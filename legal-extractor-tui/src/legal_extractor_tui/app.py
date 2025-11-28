@@ -1,7 +1,14 @@
 """Main TUI application class for Legal Extractor."""
 
+import os
+import sys
 from pathlib import Path
 from typing import ClassVar
+
+# Add tui_safety to Python path if available
+_tui_safety_path = os.path.expanduser("~/.local/lib/python")
+if os.path.exists(_tui_safety_path) and _tui_safety_path not in sys.path:
+    sys.path.insert(0, _tui_safety_path)
 
 from textual.app import App
 from textual.binding import Binding
@@ -10,6 +17,14 @@ from textual.screen import Screen
 from legal_extractor_tui.config import APP_NAME, APP_VERSION, STYLES_DIR
 from legal_extractor_tui.screens import HelpScreen, MainScreen
 from legal_extractor_tui.themes import VIBE_NEON_THEME
+
+# Try to import and install tui_safety for mouse tracking protection
+try:
+    import tui_safety
+    tui_safety.install()
+except ImportError:
+    # tui_safety not available - continue without mouse tracking protection
+    pass
 
 
 class LegalExtractorApp(App):
@@ -71,10 +86,11 @@ class LegalExtractorApp(App):
             initial_file: Optional PDF file to load on startup
         """
         super().__init__()
+        self._theme_name = theme_name
         self._dev_mode = dev_mode
         self._initial_file = Path(initial_file) if initial_file else None
 
-        # Register theme
+        # Register theme (currently only vibe-neon is implemented)
         self.register_theme(VIBE_NEON_THEME)
 
     def on_mount(self) -> None:
@@ -83,8 +99,8 @@ class LegalExtractorApp(App):
         Sets up the theme and screen, and optionally loads
         the initial file if provided.
         """
-        # Set vibe-neon theme
-        self.theme = "vibe-neon"
+        # Apply theme and dark mode
+        self.theme = self._theme_name
         self.dark = True
 
         # Push main screen
