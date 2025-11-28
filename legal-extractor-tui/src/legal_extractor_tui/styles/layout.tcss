@@ -13,21 +13,21 @@
     min-width: 30;
     max-width: 45;
     height: 100%;
-    padding: 1;
+    padding: 0;
     background: #0d0d0d;
-    border-right: heavy $primary;
+    border-right: solid $primary;
     overflow-y: auto;
 }
 
 #sidebar-panel:focus-within {
-    border-right: heavy $accent;
+    border-right: solid $accent;
 }
 
 /* Content area (main content) - fills remaining space */
 #content-area {
     width: 1fr;
     height: 100%;
-    padding: 1;
+    padding: 0;
     layout: vertical;
     overflow-y: auto;
 }
@@ -39,19 +39,19 @@
     max-width: 45;
     height: 100%;
     dock: left;
-    padding: 1;
+    padding: 0;
     background: #0d0d0d;
-    border-right: heavy $primary;
+    border-right: solid $primary;
 }
 
 #left-panel:focus-within {
-    border-right: heavy $accent;
+    border-right: solid $accent;
 }
 
 #center-panel {
     width: 100%;
     height: 100%;
-    padding: 1;
+    padding: 0;
     layout: vertical;
 }
 
@@ -60,10 +60,10 @@
     height: auto;
     max-height: 12;
     min-height: 8;
-    margin-bottom: 1;
+    margin-bottom: 0;
     background: #0d0d0d;
-    border: heavy $accent;
-    padding: 1;
+    border: solid $accent;
+    padding: 0;
 }
 
 #progress-area.hidden {
@@ -76,8 +76,8 @@
 }
 
 #progress-area.collapsed {
-    max-height: 3;
-    min-height: 3;
+    max-height: 1;
+    min-height: 1;
     overflow: hidden;
 }
 
@@ -91,38 +91,38 @@
 /* Panel containers */
 .panel {
     background: #0d0d0d;
-    border: heavy $primary;
-    padding: 1 2;
-    margin: 1 0;
+    border: solid $primary;
+    padding: 0 1;
+    margin: 0;
 }
 
 .panel:focus-within {
-    border: heavy $accent;
+    border: solid $accent;
 }
 
 .panel-header {
     text-style: bold;
     color: $accent;
-    padding-bottom: 1;
-    border-bottom: thick $primary;
-    margin-bottom: 1;
+    padding-bottom: 0;
+    border-bottom: solid $primary;
+    margin-bottom: 0;
 }
 
 .panel-content {
-    padding: 1 0;
+    padding: 0;
 }
 
 .panel-footer {
-    padding-top: 1;
-    border-top: thick $primary;
-    margin-top: 1;
+    padding-top: 0;
+    border-top: solid $primary;
+    margin-top: 0;
 }
 
 /* Control sections in left panel */
 .control-section {
-    margin-bottom: 2;
-    padding-bottom: 1;
-    border-bottom: thick $primary;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: solid $primary;
 }
 
 .control-section:last-child {
@@ -132,8 +132,8 @@
 .control-section-title {
     text-style: bold;
     color: $secondary;
-    padding-bottom: 1;
-    margin-bottom: 1;
+    padding-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* Modal overlay */
@@ -147,30 +147,30 @@
     height: auto;
     max-height: 80%;
     background: #0d0d0d;
-    border: heavy $accent;
-    padding: 2;
+    border: solid $accent;
+    padding: 0;
 }
 
 .modal-title {
     text-style: bold;
     color: $accent;
     text-align: center;
-    padding-bottom: 1;
-    border-bottom: thick $primary;
-    margin-bottom: 2;
+    padding-bottom: 0;
+    border-bottom: solid $primary;
+    margin-bottom: 0;
 }
 
 .modal-body {
-    padding: 2 0;
+    padding: 0;
     overflow-y: auto;
     max-height: 60;
 }
 
 .modal-footer {
-    padding-top: 2;
-    border-top: thick $primary;
+    padding-top: 0;
+    border-top: solid $primary;
     text-align: center;
-    margin-top: 2;
+    margin-top: 0;
 }
 
 /* Grid layouts */
@@ -200,8 +200,8 @@
     layout: grid;
     grid-size: 2 1;
     grid-columns: 20 1fr;
-    grid-gutter: 1;
-    padding: 1;
+    grid-gutter: 0;
+    padding: 0;
 }
 
 /* Horizontal layout */
@@ -333,13 +333,13 @@
 
 /* List containers */
 .list-container {
-    padding: 1;
+    padding: 0;
     overflow-y: auto;
 }
 
 .list-item {
-    padding: 1;
-    margin-bottom: 1;
+    padding: 0;
+    margin-bottom: 0;
     border: solid $primary;
     background: $surface;
 }
@@ -357,15 +357,15 @@
 /* Status bar at bottom */
 .status-bar-container {
     dock: bottom;
-    height: 3;
+    height: 1;
     background: #0d0d0d;
-    border-top: heavy $primary;
+    border-top: solid $primary;
 }
 
 /* Header bar at top */
 .header-bar-container {
     dock: top;
-    height: 3;
+    height: 1;
     background: #0d0d0d;
-    border-bottom: heavy $primary;
+    border-bottom: solid $primary;
 }
