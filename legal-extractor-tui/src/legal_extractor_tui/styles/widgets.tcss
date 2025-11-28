@@ -953,34 +953,37 @@ StatusBar .status-warning {
 }
 
 /* ==================================================
-   HEADER WIDGET
+   HEADER WIDGET - Compact left-aligned with gradient logo
    ================================================== */
 Header {
-    height: 3;
+    height: auto;
+    max-height: 8;
     dock: top;
     background: #0d0d0d;
-    border-bottom: solid $accent;
+    border-bottom: solid $primary;
     padding: 0 1;
+    layout: horizontal;
 }
 
 Header .logo {
-    width: 100%;
-    content-align: center middle;
-    color: $accent;
+    width: auto;
+    content-align: left top;
     text-style: bold;
 }
 
 Header .title {
     width: 1fr;
-    content-align: center middle;
+    content-align: left middle;
     text-style: bold;
     color: $primary;
+    padding-left: 2;
+    display: none;
 }
 
 Header .status {
     width: auto;
     content-align: right middle;
-    padding-right: 2;
+    padding-right: 1;
     text-style: bold;
 }
 
@@ -1329,4 +1332,315 @@ PowerlineBreadcrumb .separator {
 #file-browser-dialog #cancel-btn {
     width: 100%;
     height: 1;
+}
+
+/* ==================================================
+   SPINNER WIDGET - Rotating Loading Indicators
+   ================================================== */
+SpinnerWidget {
+    width: auto;
+    height: 1;
+    padding: 0 1;
+    background: transparent;
+    color: $foreground;
+}
+
+/* Spinner status color variants */
+SpinnerWidget.spinner-idle {
+    color: $foreground 60%;
+    text-style: dim;
+}
+
+SpinnerWidget.spinner-active {
+    color: $accent;
+    text-style: bold;
+}
+
+SpinnerWidget.spinner-success {
+    color: $success;
+    text-style: bold;
+}
+
+SpinnerWidget.spinner-error {
+    color: $error;
+    text-style: bold;
+}
+
+SpinnerWidget.spinner-warning {
+    color: $warning;
+    text-style: bold;
+}
+
+SpinnerWidget.spinner-info {
+    color: $primary-lighten-1;
+    text-style: normal;
+}
+
+SpinnerWidget.spinner-processing {
+    color: $secondary;
+    text-style: normal;
+}
+
+/* Compact inline spinner (single character width) */
+SpinnerWidget.compact {
+    width: 1;
+    padding: 0;
+}
+
+/* ==================================================
+   STATUS INDICATORS - Text-based State Display
+   ================================================== */
+
+/* Base status indicator styling */
+.status-indicator {
+    width: auto;
+    height: 1;
+    padding: 0 1;
+    text-style: bold;
+}
+
+/* Status: Ready (green) */
+.status-ready {
+    color: $success;
+    text-style: bold;
+}
+
+/* Status: Error (red) */
+.status-error {
+    color: $error;
+    text-style: bold;
+}
+
+/* Status: Processing (cyan/accent) */
+.status-processing {
+    color: $accent;
+    text-style: normal;
+}
+
+/* Status: Warning (orange) */
+.status-warning {
+    color: $warning;
+    text-style: bold;
+}
+
+/* Status: Info (cyan) */
+.status-info {
+    color: $primary-lighten-1;
+    text-style: normal;
+}
+
+/* Status: Success (green) */
+.status-success {
+    color: $success;
+    text-style: bold;
+}
+
+/* Status: Pending (dimmed) */
+.status-pending {
+    color: $foreground 60%;
+    text-style: dim;
+}
+
+/* Status: Active (bright accent) */
+.status-active {
+    color: $accent;
+    text-style: bold;
+}
+
+/* ==================================================
+   STAGE STATUS LABELS (without emojis)
+   ================================================== */
+
+/* Stage labels for ExtractionProgress and similar widgets */
+.stage-label {
+    width: auto;
+    padding: 0 1;
+}
+
+.stage-label.pending {
+    color: $foreground 60%;
+    text-style: dim;
+}
+
+.stage-label.active {
+    color: $accent;
+    text-style: bold;
+}
+
+.stage-label.complete {
+    color: $success;
+    text-style: bold;
+}
+
+.stage-label.error {
+    color: $error;
+    text-style: bold;
+}
+
+.stage-label.warning {
+    color: $warning;
+    text-style: bold;
+}
+
+/* ==================================================
+   INLINE STATUS TEXT (for use in labels/headers)
+   ================================================== */
+
+/* Inline status text variants - no background, just color */
+.text-ready { color: $success; }
+.text-error { color: $error; text-style: bold; }
+.text-warning { color: $warning; }
+.text-processing { color: $accent; }
+.text-success { color: $success; text-style: bold; }
+.text-info { color: $primary-lighten-1; }
+.text-pending { color: $foreground 60%; text-style: dim; }
+.text-active { color: $accent; text-style: bold; }
+
+/* ==================================================
+   PROGRESS INDICATORS WITH COLOR STATES
+   ================================================== */
+
+/* ProgressBar color overrides for status */
+ProgressBar.progress-success .bar--bar {
+    background: $success;
+}
+
+ProgressBar.progress-error .bar--bar {
+    background: $error;
+}
+
+ProgressBar.progress-warning .bar--bar {
+    background: $warning;
+}
+
+ProgressBar.progress-info .bar--bar {
+    background: $primary-lighten-1;
+}
+
+ProgressBar.progress-processing .bar--bar {
+    background: $accent;
+}
+
+/* ==================================================
+   STAGE ROWS WITH STATUS COLORS
+   ================================================== */
+
+/* For stage rows in ExtractionProgress */
+.stage-row {
+    width: 100%;
+    height: 1;
+    padding: 0 1;
+}
+
+.stage-row.pending {
+    border-left: solid $foreground 60%;
+    background: #000000;
+}
+
+.stage-row.active {
+    border-left: solid $accent;
+    background: #000000;
+    color: $accent;
+}
+
+.stage-row.complete {
+    border-left: solid $success;
+    background: #000000;
+    color: $success;
+}
+
+.stage-row.error {
+    border-left: solid $error;
+    background: #000000;
+    color: $error;
+}
+
+.stage-row.warning {
+    border-left: solid $warning;
+    background: #000000;
+    color: $warning;
+}
+
+/* ==================================================
+   LOADING STATES (for containers)
+   ================================================== */
+
+/* Container loading state */
+.loading {
+    border: solid $accent;
+}
+
+.loading-success {
+    border: solid $success;
+}
+
+.loading-error {
+    border: solid $error;
+}
+
+/* ==================================================
+   BLINKER WIDGET - Cursor-style Animation
+   ================================================== */
+
+Blinker {
+    width: 1;
+    height: 1;
+    background: transparent;
+}
+
+Blinker.blink-active {
+    color: $accent;
+    text-style: bold reverse;
+}
+
+Blinker.blink-success {
+    color: $success;
+    text-style: bold reverse;
+}
+
+Blinker.blink-error {
+    color: $error;
+    text-style: bold reverse;
+}
+
+/* ==================================================
+   COMPACT STATUS BADGES
+   ================================================== */
+
+/* Small status badges (1-2 characters) */
+.badge {
+    width: auto;
+    height: 1;
+    padding: 0;
+    text-style: bold;
+}
+
+.badge-ready {
+    color: $success;
+    background: #000000;
+    border: solid $success;
+}
+
+.badge-error {
+    color: $error;
+    background: #000000;
+    border: solid $error;
+}
+
+.badge-warning {
+    color: $warning;
+    background: #000000;
+    border: solid $warning;
+}
+
+.badge-info {
+    color: $primary-lighten-1;
+    background: #000000;
+    border: solid $primary-lighten-1;
+}
+
+.badge-processing {
+    color: $accent;
+    background: #000000;
+    border: solid $accent;
 }
