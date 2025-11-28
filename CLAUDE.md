@@ -1228,3 +1228,4 @@ Cada agente e independente. O workflow e documentado no `SQUAD_MANIFEST.md` e se
 - add
 - add
 - Use descriptive names and be thorough documenting test, results and next steps
+- ADD

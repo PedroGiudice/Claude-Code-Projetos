@@ -260,3 +260,53 @@ Proceed directly - orchestration/delegation has overhead
 1. Read `agentes/[project]/KNOWN_ISSUES_API_*.md` if exists
 2. Verify method signatures (don't assume parameters exist)
 3. Test with actual API responses (not assumptions)
+
+---
+
+## Working Directory Management (CRITICAL - HOOKS BREAK!)
+
+**SEMPRE retorne ao diretório raiz do repositório após usar `cd`.**
+
+Os hooks do Claude Code dependem do `pwd` estar no repo principal. Se você deixar o `pwd` em um subdiretório, os hooks QUEBRAM silenciosamente no próximo prompt do usuário.
+
+### Práticas Obrigatórias
+
+1. **PREFERIR caminhos relativos** (evitar `cd` sempre que possível):
+   ```bash
+   # ✅ BOM
+   ls skills/
+   cat agentes/oab-watcher/main.py
+
+   # ❌ EVITAR
+   cd skills && ls
+   ```
+
+2. **Se `cd` for necessário**, use **subshells**:
+   ```bash
+   # ✅ BOM - pwd retorna automaticamente
+   (cd skills && ls -la)
+
+   # ❌ EVITAR - pwd fica alterado
+   cd skills && ls -la
+   ```
+
+3. **Para múltiplas operações**, retorne explicitamente:
+   ```bash
+   # ✅ BOM - retorno garantido
+   cd agentes/oab-watcher; source .venv/bin/activate; python main.py; cd ~/claude-work/repos/Claude-Code-Projetos
+   ```
+
+4. **Após QUALQUER `cd`**, confirme retorno ao root:
+   ```bash
+   cd ~/claude-work/repos/Claude-Code-Projetos
+   pwd  # Verificar: deve mostrar o repo principal
+   ```
+
+### Por Que Isso Importa
+
+- Hooks executam com paths relativos ao `pwd` atual
+- Se `pwd` estiver em subdiretório, hooks tentam: `.../subdir/.claude/hooks/...` → ❌ NOT FOUND
+- Hooks falham SILENCIOSAMENTE (sem erro visível, apenas warning)
+- Monitoramento, context collection, e automação quebram sem aviso
+
+**NUNCA assuma que o próximo prompt funcionará se você deixou o `pwd` alterado.**
