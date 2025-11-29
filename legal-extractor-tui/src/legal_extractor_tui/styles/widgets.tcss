@@ -19,11 +19,11 @@ FileSelector:focus-within {
 }
 
 FileSelector .selector-title {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
     margin-bottom: 0;
     padding-bottom: 0;
-    border-bottom: solid #8be9fd;
+    border-bottom: solid $primary;
 }
 
 FileSelector .file-input-container {
@@ -35,6 +35,13 @@ FileSelector .file-input-container {
 FileSelector #file-path-input {
     width: 1fr;
     margin-right: 0;
+    color: #ffaa00;
+    background: #000000;
+}
+
+FileSelector #file-path-input:focus {
+    color: #ff8800;
+    border: solid $accent;
 }
 
 FileSelector #browse-button {
@@ -54,13 +61,13 @@ FileSelector .file-info-row {
 
 FileSelector .file-info-label {
     width: 12;
-    color: #bd93f9;  /* EXPLICIT PURPLE */
+    color: $secondary;
     text-style: bold;
 }
 
 FileSelector .file-info-value {
     width: 1fr;
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    color: $foreground;
 }
 
 FileSelector .error {
@@ -117,21 +124,21 @@ SystemSelector:focus-within {
 }
 
 SystemSelector .selector-title {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
 }
 
 SystemSelector Select {
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    color: #ffaa00;
 }
 
 SystemSelector Select SelectCurrent {
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    color: #ffaa00;
     background: #000000;
 }
 
 SystemSelector Select SelectCurrent Static {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: #ff8800;
 }
 
 SystemSelector .system-description {
@@ -193,6 +200,12 @@ ConfigPanel Switch {
 
 ConfigPanel Input {
     margin: 1 0;
+    color: #ffaa00;
+    background: #000000;
+}
+
+ConfigPanel Input:focus {
+    color: #ff8800;
 }
 
 /* ==================================================
@@ -485,47 +498,45 @@ ResultsPanel .export-buttons Button {
    ================================================== */
 
 /* Button - Minimal cyberpunk style */
-/* FORCE EXPLICIT COLORS - NO VARIABLES */
 Button {
     background: #0d0d0d;
-    color: #8be9fd;  /* EXPLICIT CYAN - always visible */
-    border: solid #8be9fd;
+    color: $foreground;
+    border: solid $primary;
     padding: 0 1;
     min-width: 10;
     height: 1;
-    text-style: bold;
 }
 
 Button:hover {
     background: #0d0d0d;
-    border: solid #ff79c6;  /* EXPLICIT PINK */
-    color: #ff79c6;
+    border: solid $accent;
+    color: $accent;
 }
 
 Button:focus {
     background: #0d0d0d;
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
-    border: solid #ff79c6;
+    border: solid $accent;
 }
 
 Button.-primary {
     background: #0d0d0d;
-    color: #8be9fd;  /* EXPLICIT CYAN */
-    border: solid #8be9fd;
+    color: $primary;
+    border: solid $primary;
     text-style: bold;
 }
 
 Button.-primary:hover {
     background: #0d0d0d;
-    color: #ff79c6;  /* EXPLICIT PINK */
-    border: solid #ff79c6;
+    color: $accent;
+    border: solid $accent;
 }
 
 Button.-primary:focus {
     background: #0d0d0d;
-    color: #ff79c6;  /* EXPLICIT PINK */
-    border: solid #ff79c6;
+    color: $accent;
+    border: solid $accent;
 }
 
 Button.-success {
@@ -565,111 +576,96 @@ Button.-warning:hover {
 }
 
 Button:disabled {
-    background: #44475a;  /* EXPLICIT SURFACE */
-    color: #6272a4;  /* EXPLICIT MUTED */
+    background: $surface 50%;
+    color: $foreground 50%;
     text-style: dim;
-    border: solid #44475a;
-}
-
-/* FORCE button text/labels to be visible */
-Button > Label {
-    color: #8be9fd;  /* EXPLICIT CYAN */
-}
-
-Button:hover > Label {
-    color: #ff79c6;  /* EXPLICIT PINK */
-}
-
-Button:focus > Label {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    border: solid $primary-darken-1;
 }
 
 /* Input - Minimal style */
-/* FORCE EXPLICIT COLORS */
 Input {
     background: #000000;
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
-    border: solid #8be9fd;
+    color: #ffaa00;      /* AMBER - alto contraste */
+    border: solid $primary;
     padding: 0 1;
     height: 1;
 }
 
 Input:focus {
-    border: solid #ff79c6;  /* EXPLICIT PINK */
+    border: solid $accent;
     background: #000000;
+    color: #ff8800;      /* LARANJA VIBRANTE */
 }
 
 Input.-error {
-    border: solid #ff5555;  /* EXPLICIT RED */
+    border: solid $error;
 }
 
 Input.-success {
-    border: solid #50fa7b;  /* EXPLICIT GREEN */
+    border: solid $success;
 }
 
 Input .input-placeholder {
     text-style: dim;
-    color: #6272a4;  /* EXPLICIT MUTED */
+    color: #cc8800 60%;  /* LARANJA ESCURO */
 }
 
 Input:disabled {
-    background: #44475a;  /* EXPLICIT SURFACE */
-    color: #6272a4;  /* EXPLICIT MUTED */
+    background: $surface 50%;
+    color: $foreground 50%;
     text-style: dim;
 }
 
 /* Label */
-/* FORCE EXPLICIT COLORS */
 Label {
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND - always visible */
+    color: $foreground;
     padding: 0 0 1 0;
 }
 
 Label.-required {
-    color: #ff5555;  /* EXPLICIT RED */
+    color: $error;
     text-style: bold;
 }
 
 Label.-muted {
     text-style: dim;
-    color: #6272a4;  /* EXPLICIT MUTED */
+    color: $foreground 70%;
 }
 
 /* Static (text display) */
-/* FORCE EXPLICIT COLORS */
 Static {
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    color: $foreground;
     background: transparent;
 }
 
 Static.-highlight {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
 }
 
 Static.-muted {
     text-style: dim;
-    color: #6272a4;  /* EXPLICIT MUTED */
+    color: $foreground 70%;
 }
 
 Static.-primary {
-    color: #8be9fd;  /* EXPLICIT CYAN */
+    color: $primary;
 }
 
 Static.-secondary {
-    color: #bd93f9;  /* EXPLICIT PURPLE */
+    color: $secondary;
 }
 
 Static.-error {
-    color: #ff5555;  /* EXPLICIT RED */
+    color: $error;
 }
 
 Static.-success {
-    color: #50fa7b;  /* EXPLICIT GREEN */
+    color: $success;
 }
 
 Static.-warning {
-    color: #ffb86c;  /* EXPLICIT ORANGE */
+    color: $warning;
 }
 
 /* Switch - Minimal toggle */
@@ -728,51 +724,39 @@ RadioSet RadioButton:focus {
 }
 
 /* Select - Minimal dropdown */
-/* FORCE EXPLICIT COLORS */
 Select {
     background: #000000;
-    color: #8be9fd;  /* EXPLICIT CYAN */
-    border: solid #8be9fd;
+    color: $foreground;
+    border: solid $primary;
     height: 1;
     padding: 0 1;
 }
 
 Select:focus {
-    border: solid #ff79c6;  /* EXPLICIT PINK */
+    border: solid $accent;
     background: #000000;
 }
 
 Select SelectCurrent {
     background: #000000;
-    color: #8be9fd;  /* EXPLICIT CYAN */
+    color: $foreground;
 }
 
 Select SelectCurrent Static {
-    color: #8be9fd;  /* EXPLICIT CYAN */
-    text-style: bold;
+    color: $foreground;
 }
 
 Select.-has-value SelectCurrent Static {
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
-}
-
-/* FORCE Select labels visible */
-Select > Label {
-    color: #8be9fd;  /* EXPLICIT CYAN */
-}
-
-Select:focus > Label {
-    color: #ff79c6;  /* EXPLICIT PINK */
 }
 
 Select SelectOverlay {
     background: #0d0d0d;
-    border: solid #ff79c6;  /* EXPLICIT PINK */
+    border: solid $accent;
 }
 
 /* Select OptionList - Dropdown options */
-/* FORCE EXPLICIT COLORS */
 Select > SelectOverlay > OptionList {
     background: #000000;
     border: none;
@@ -781,21 +765,21 @@ Select > SelectOverlay > OptionList {
 Select OptionList > .option-list--option {
     padding: 0;
     background: #000000;
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
-    border-left: solid #8be9fd;
+    color: $foreground;
+    border-left: solid $primary;
 }
 
 Select OptionList > .option-list--option-hover {
     background: #000000;
-    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
-    border-left: solid #ff79c6;  /* EXPLICIT PINK */
+    color: $foreground;
+    border-left: solid $accent;
 }
 
 Select OptionList > .option-list--option-highlighted {
     background: #000000;
-    color: #ff79c6;  /* EXPLICIT PINK */
+    color: $accent;
     text-style: bold;
-    border-left: solid #ff79c6;
+    border-left: solid $accent;
 }
 
 /* TextArea - Minimal bordered */
@@ -809,43 +793,6 @@ TextArea {
 TextArea:focus {
     border: solid $accent;
     background: #000000;
-}
-
-/* TabbedContent - Minimal tabs */
-/* FORCE EXPLICIT COLORS FOR TABS */
-TabbedContent {
-    background: #0d0d0d;
-}
-
-TabbedContent Tabs {
-    background: #0d0d0d;
-    border-bottom: solid #8be9fd;
-}
-
-TabbedContent Tab {
-    background: #000000;
-    color: #8be9fd;  /* EXPLICIT CYAN */
-    border: solid #8be9fd;
-    padding: 0 2;
-    text-style: bold;
-}
-
-TabbedContent Tab:hover {
-    background: #0d0d0d;
-    color: #ff79c6;  /* EXPLICIT PINK */
-    border: solid #ff79c6;
-}
-
-TabbedContent Tab.-active {
-    background: #000000;
-    color: #ff79c6;  /* EXPLICIT PINK - active tab */
-    border: solid #ff79c6;
-    text-style: bold;
-}
-
-TabbedContent TabPane {
-    background: #000000;
-    padding: 0;
 }
 
 /* DataTable - Minimal grid */
@@ -1710,4 +1657,64 @@ Blinker.blink-error {
     color: $accent;
     background: #000000;
     border: solid $accent;
+}
+
+/* ============================================
+   PREVIEW MODAL SCREEN
+   ============================================ */
+
+PreviewModalScreen {
+    align: center middle;
+    background: #000000 80%;
+}
+
+#preview-dialog {
+    width: 85%;
+    max-width: 120;
+    height: 80%;
+    max-height: 35;
+    background: #0d0d0d;
+    border: heavy $accent;
+    padding: 0;
+}
+
+.preview-header {
+    height: 3;
+    padding: 0 2;
+    border-bottom: solid $primary;
+    align: left middle;
+    background: #1a1a1a;
+}
+
+.preview-title {
+    color: $accent;
+    text-style: bold;
+}
+
+.preview-badge {
+    margin-left: 2;
+    color: #ffaa00;
+}
+
+#preview-content {
+    height: 1fr;
+    padding: 1 2;
+    background: $surface;
+}
+
+#preview-text-full {
+    width: 100%;
+    color: $foreground;
+}
+
+.preview-footer {
+    height: 3;
+    padding: 0 2;
+    border-top: solid $primary;
+    align: center middle;
+    background: #1a1a1a;
+}
+
+.preview-footer Button {
+    margin: 0 1;
 }

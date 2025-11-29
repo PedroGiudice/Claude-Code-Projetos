@@ -34,7 +34,7 @@ class ResultsPanel(Vertical):
     - Metadata: System detection, stats, confidence
     - Sections: List of detected sections (if analyzed)
 
-    Also provides export buttons for TXT, MD, JSON formats.
+    Also provides preview button (opens modal) and export buttons for TXT, MD, JSON formats.
     """
 
     # CSS moved to widgets.tcss for centralized theme management
@@ -57,6 +57,7 @@ class ResultsPanel(Vertical):
         with Horizontal(classes="results-header"):
             yield Label("Extraction Results", classes="results-title")
             with Horizontal(classes="export-buttons"):
+                yield Button("👁 Preview", id="preview-btn", variant="default")
                 yield Button("Export TXT", id="export-txt", variant="primary")
                 yield Button("Export MD", id="export-md", variant="default")
                 yield Button("Export JSON", id="export-json", variant="default")

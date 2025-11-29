@@ -68,10 +68,11 @@ class MainScreen(Screen):
         └─────────────────────────────────────────────────────────┘
 
     Keybindings:
-        - r: Run extraction on selected file
+        - ctrl+r: Run extraction on selected file
         - escape: Cancel running extraction
         - ctrl+o: Focus file selector
         - ctrl+s: Save/export results
+        - ctrl+p: Show full text preview in modal
         - ?: Show help screen
 
     Attributes:
@@ -87,6 +88,7 @@ class MainScreen(Screen):
         Binding("escape", "cancel_extraction", "Cancelar", show=True),
         Binding("ctrl+o", "open_file", "Abrir", show=True),
         Binding("ctrl+s", "save_result", "Salvar", show=True),
+        Binding("ctrl+p", "show_preview", "Preview", show=True),
         Binding("?", "show_help", "Ajuda", show=True),
     ]
 
@@ -255,6 +257,20 @@ class MainScreen(Screen):
 
         self.app.push_screen(HelpScreen())
 
+    def action_show_preview(self) -> None:
+        """Show full text preview in modal."""
+        # Verificar se tem resultado
+        results_panel = self.query_one("#results-panel", ResultsPanel)
+        if not results_panel.has_result:
+            self.add_log("No results to preview", LogLevel.WARNING)
+            return
+
+        # Obter texto do resultado
+        text = results_panel.result_data.get("text", "") if results_panel.result_data else ""
+
+        from legal_extractor_tui.screens.preview_modal_screen import PreviewModalScreen
+        self.app.push_screen(PreviewModalScreen(text=text))
+
     def action_clear_selection(self) -> None:
         """Clear file selection and results."""
         # Clear file selector
@@ -285,6 +301,8 @@ class MainScreen(Screen):
             self.action_save_result()
         elif event.button.id == "clear-btn":
             self.action_clear_selection()
+        elif event.button.id == "preview-btn":
+            self.action_show_preview()
 
     # Message Handlers - File Selection
 
