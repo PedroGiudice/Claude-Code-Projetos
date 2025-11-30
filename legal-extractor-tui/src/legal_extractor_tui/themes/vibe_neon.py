@@ -16,6 +16,8 @@ VIBE_NEON_THEME = Theme(
     error="#ff5555",
     dark=True,
     variables={
+        # CRITICAL: Explicit foreground for CSS variable resolution
+        "foreground": "#f8f8f2",
         # Lighten/Darken variants
         "primary-lighten-1": "#a8f0ff",
         "primary-darken-1": "#6ec8db",
@@ -49,8 +51,16 @@ VIBE_NEON_THEME = Theme(
         "link-color-hover": "#ff79c6",
         "button-foreground": "#f8f8f2",
         "button-focus-text-style": "bold reverse",
-        # Text utilities
+        # Text utilities - CRITICAL for visibility
+        "text": "#f8f8f2",            # Base text color (same as foreground)
         "text-muted": "#6272a4",      # Dracula comment color
         "text-disabled": "#44475a",   # Even more muted
+        # Semantic text colors for auto-contrast
+        "text-primary": "#8be9fd",
+        "text-secondary": "#bd93f9",
+        "text-accent": "#ff79c6",
+        "text-success": "#50fa7b",
+        "text-warning": "#ffb86c",
+        "text-error": "#ff5555",
     },
 )

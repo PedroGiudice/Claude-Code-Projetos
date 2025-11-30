@@ -16,6 +16,8 @@ VIBE_SYNTHWAVE_THEME = Theme(
     error="#ff0055",        # Hot red-pink
     dark=True,
     variables={
+        # CRITICAL: Explicit foreground for CSS variable resolution
+        "foreground": "#f8f8f2",
         # Lighten/Darken variants
         "primary-lighten-1": "#ff33ff",
         "primary-darken-1": "#cc00cc",

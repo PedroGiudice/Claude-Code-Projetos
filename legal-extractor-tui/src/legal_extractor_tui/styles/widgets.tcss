@@ -67,7 +67,7 @@ FileSelector .file-info-label {
 
 FileSelector .file-info-value {
     width: 1fr;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 FileSelector .error {
@@ -423,7 +423,7 @@ ResultsPanel .metadata-label {
 }
 
 ResultsPanel .metadata-value {
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 ResultsPanel .metadata-value.empty {
@@ -469,7 +469,7 @@ ResultsPanel .section-confidence {
 
 ResultsPanel .section-content {
     padding: 1 0;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 ResultsPanel .section-metadata {
@@ -500,7 +500,7 @@ ResultsPanel .export-buttons Button {
 /* Button - Minimal cyberpunk style */
 Button {
     background: #0d0d0d;
-    color: $foreground;
+    color: #f8f8f2;
     border: solid $primary;
     padding: 0 1;
     min-width: 10;
@@ -618,7 +618,7 @@ Input:disabled {
 
 /* Label */
 Label {
-    color: $foreground;
+    color: #f8f8f2;
     padding: 0 0 1 0;
 }
 
@@ -634,7 +634,7 @@ Label.-muted {
 
 /* Static (text display) */
 Static {
-    color: $foreground;
+    color: #f8f8f2;
     background: transparent;
 }
 
@@ -726,7 +726,7 @@ RadioSet RadioButton:focus {
 /* Select - Minimal dropdown */
 Select {
     background: #000000;
-    color: $foreground;
+    color: #f8f8f2;
     border: solid $primary;
     height: 1;
     padding: 0 1;
@@ -739,11 +739,11 @@ Select:focus {
 
 Select SelectCurrent {
     background: #000000;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 Select SelectCurrent Static {
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 Select.-has-value SelectCurrent Static {
@@ -765,13 +765,13 @@ Select > SelectOverlay > OptionList {
 Select OptionList > .option-list--option {
     padding: 0;
     background: #000000;
-    color: $foreground;
+    color: #f8f8f2;
     border-left: solid $primary;
 }
 
 Select OptionList > .option-list--option-hover {
     background: #000000;
-    color: $foreground;
+    color: #f8f8f2;
     border-left: solid $accent;
 }
 
@@ -785,7 +785,7 @@ Select OptionList > .option-list--option-highlighted {
 /* TextArea - Minimal bordered */
 TextArea {
     background: #000000;
-    color: $foreground;
+    color: #f8f8f2;
     border: solid $primary;
     padding: 0;
 }
@@ -922,7 +922,7 @@ StatusBar .separator {
 StatusBar .runtime-metric,
 StatusBar .cpu-metric,
 StatusBar .ram-metric {
-    color: $foreground;
+    color: #f8f8f2;
     padding: 0 1;
 }
 
@@ -948,7 +948,7 @@ StatusBar .status-icon {
 }
 
 StatusBar .status-text {
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 StatusBar .status-error {
@@ -1118,14 +1118,14 @@ ResultViewer .viewer-title {
     width: 1fr;
     content-align: left middle;
     text-style: bold;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 ResultViewer .viewer-source {
     width: auto;
     content-align: right middle;
     text-style: dim italic;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 ResultViewer Markdown {
@@ -1165,7 +1165,7 @@ StageIndicator .stage-name {
 
 StageIndicator .stage-status {
     width: auto;
-    color: $foreground;
+    color: #f8f8f2;
     text-style: dim;
 }
 
@@ -1176,7 +1176,7 @@ StageIndicator ProgressBar {
 StageIndicator .stage-message {
     width: 100%;
     height: 1;
-    color: $foreground;
+    color: #f8f8f2;
     text-style: dim;
     margin-top: 1;
 }
@@ -1194,7 +1194,7 @@ StageIndicator.error .stage-name {
 }
 
 StageIndicator.pending .stage-name {
-    color: $foreground;
+    color: #f8f8f2;
     text-style: dim;
 }
 
@@ -1257,7 +1257,7 @@ PipelineProgress .pipeline-title {
     width: 100%;
     text-align: center;
     text-style: bold;
-    color: $foreground;
+    color: #f8f8f2;
     margin-bottom: 0;
 }
 
@@ -1356,7 +1356,7 @@ SpinnerWidget {
     height: 1;
     padding: 0 1;
     background: transparent;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 /* Spinner status color variants */
@@ -1704,7 +1704,7 @@ PreviewModalScreen {
 
 #preview-text-full {
     width: 100%;
-    color: $foreground;
+    color: #f8f8f2;
 }
 
 .preview-footer {
@@ -1717,4 +1717,57 @@ PreviewModalScreen {
 
 .preview-footer Button {
     margin: 0 1;
+}
+
+/* ==================================================
+   HOTFIX: Force visible text color (END OF FILE = highest priority)
+   Issue: Text invisible in unfocused state
+   Root cause: Unknown CSS inheritance/variable resolution issue
+   ================================================== */
+Static {
+    color: #f8f8f2;
+}
+
+Label {
+    color: #f8f8f2;
+}
+
+Button {
+    color: #f8f8f2;
+}
+
+Input {
+    color: #ffaa00;
+}
+
+Select {
+    color: #f8f8f2;
+}
+
+SelectCurrent {
+    color: #f8f8f2;
+}
+
+SelectCurrent Static {
+    color: #f8f8f2;
+}
+
+OptionList {
+    color: #f8f8f2;
+}
+
+RichLog {
+    color: #f8f8f2;
+}
+
+DataTable {
+    color: #f8f8f2;
+}
+
+Tree {
+    color: #f8f8f2;
+}
+
+TextArea {
+    color: #f8f8f2;
 }

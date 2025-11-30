@@ -16,6 +16,8 @@ MINIMAL_DARK_THEME = Theme(
     error="#f44336",        # Material red
     dark=True,
     variables={
+        # CRITICAL: Explicit foreground for CSS variable resolution
+        "foreground": "#f8f8f2",
         # Lighten/Darken variants
         "primary-lighten-1": "#ffffff",
         "primary-darken-1": "#cccccc",

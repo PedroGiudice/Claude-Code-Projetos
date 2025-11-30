@@ -16,6 +16,8 @@ VIBE_MATRIX_THEME = Theme(
     error="#ff3300",        # Orange-red (still visible on green)
     dark=True,
     variables={
+        # CRITICAL: Explicit foreground for CSS variable resolution
+        "foreground": "#f8f8f2",
         # Lighten/Darken variants
         "primary-lighten-1": "#33ff33",
         "primary-darken-1": "#00cc00",

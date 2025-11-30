@@ -18,6 +18,16 @@ $confidence-low: $error;
    $border, $border-blurred, and many others (see Guia-completo-de-CSS-TCSS-Textual-0.80.0.md)
 */
 
+/* ==================================================
+   HOTFIX: Force foreground color on text widgets
+   Issue: Text invisible due to color inheritance bug in Textual 6.x
+   Solution: Explicitly set color on all text-bearing widgets
+   USING HARDCODED COLOR to bypass variable resolution issues
+   ================================================== */
+Static, Label, Button, Input, TextArea, Select, SelectCurrent, OptionList, RichLog, DataTable, Tree {
+    color: #f8f8f2;  /* Dracula foreground - hardcoded */
+}
+
 /* Reset and base styles */
 Screen {
     background: #000000;
