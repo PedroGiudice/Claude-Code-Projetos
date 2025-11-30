@@ -3,7 +3,7 @@
   "$comment": "Mapeamento declarativo de agentes → ferramentas disponíveis (AUTO-GENERATED)",
   "version": "2.1.0",
   "description": "Auto-discovery system: agents são descobertos automaticamente de .claude/agents/*.md",
-  "generated_at": "2025-11-27T22:42:48.551Z",
+  "generated_at": "2025-11-30T07:39:07.356Z",
   "agents": {
     "Plan": {
       "tools": [
@@ -358,6 +358,49 @@
       "description": "Use this agent when evaluating new development tools, frameworks, or services for the studio. This agent specializes in rapid tool assessment, comparative analysis, and making recommendations that align with the 6-day development cycle philosophy. Examples:\\n\\n<example>\\nContext: Considering a new framework or library",
       "critical_instruction": null
     },
+    "tui-architect": {
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob"
+      ],
+      "description": "TUI Planning Specialist - Designs widget hierarchies, screen layouts, and component specifications. Outputs diagrams and specs ONLY. Does NOT write code.",
+      "critical_instruction": null
+    },
+    "tui-debugger": {
+      "tools": [
+        "Read",
+        "Bash",
+        "Grep",
+        "Glob"
+      ],
+      "description": "TUI Debug Specialist - Diagnoses issues, runs tests, inspects DOM and styles. Does NOT write code - only reports findings.",
+      "critical_instruction": null
+    },
+    "tui-designer": {
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Glob",
+        "Grep"
+      ],
+      "description": "TUI Styling Specialist - Creates and modifies TCSS files and theme definitions ONLY. Does NOT write Python widget logic.",
+      "critical_instruction": null
+    },
+    "tui-developer": {
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "Bash",
+        "Grep",
+        "Glob"
+      ],
+      "description": "TUI Python Specialist - Implements widgets, screens, workers, and message handlers. Does NOT write visual styles (TCSS).",
+      "critical_instruction": null
+    },
     "tui-master": {
       "tools": [
         "Read",
@@ -368,7 +411,7 @@
         "Grep",
         "Glob"
       ],
-      "description": "Specialized agent for Textual TUI development, CSS/TCSS styling, and terminal user interface implementation. Use this agent for creating, debugging, and refactoring Python TUI applications built with Textual framework. Handles theme systems, widget styling, layout patterns, and CSS troubleshooting with deep knowledge of Textual-specific constraints and best practices.",
+      "description": "Generalist TUI agent for Textual framework. Use for simple tasks or when crossing multiple domains (styling + code + debug). For complex work, prefer specialized agents (tui-architect, tui-designer, tui-developer, tui-debugger).",
       "critical_instruction": null
     },
     "web-research-specialist": {
