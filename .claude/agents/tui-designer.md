@@ -99,6 +99,47 @@ HANDOFF para tui-developer:
 - [ ] Bordas usando tipos validos (solid, heavy, etc)
 - [ ] Cores usando variaveis de tema ($primary, $surface)
 - [ ] Unidades validas (sem px, em, rem)
+- [ ] **Se mudanca causa widget invisivel, deferir ao tui-debugger**
+
+---
+
+## VISION AWARENESS
+
+**Voce NAO pode verificar visualmente** se suas mudancas CSS funcionam.
+CSS errado pode fazer widgets colapsar para altura zero (invisiveis).
+
+### Causas Comuns de Widgets Invisiveis
+
+| CSS Errado | Resultado |
+|------------|-----------|
+| `height: auto` em container vazio | Widget colapsa para 0 |
+| `display: none` acidental | Widget desaparece |
+| Cor igual ao background | Texto invisivel |
+| `min-height` faltando | Colapso em layouts flex |
+
+### Quando CSS Causar Problemas
+
+**Voce NAO pode rodar testes** (so escreve CSS).
+**DEFIRA ao tui-debugger:**
+
+```
+HANDOFF para tui-debugger:
+- Mudei o estilo de #my-widget
+- Preciso confirmar que nao colapsou
+- Rodar: pytest tests/test_<widget>.py -v
+```
+
+O tui-debugger vai:
+1. Rodar o vision test
+2. Coletar DOM dump se falhar
+3. Reportar coordenadas exatas do problema
+
+### Referencia
+
+Leia `skills/tui-core/vision-guide.md` para entender:
+- Como testes de geometria funcionam
+- O que `region.height > 0` significa
+- Como CSS causa falhas de visibilidade
 
 ---
 

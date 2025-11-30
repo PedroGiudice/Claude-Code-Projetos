@@ -15,6 +15,7 @@
 | 5 | `widget-catalog.md` | Catalogo de widgets | Ao escolher componentes |
 | 6 | `bug-patterns.md` | Bugs criticos e solucoes | Ao debugar problemas |
 | 7 | `debugging-guide.md` | Workflow de debug | Ao investigar issues |
+| 8 | `vision-guide.md` | **Testes visuais programaticos** | **Ao validar widgets** |
 
 ---
 
@@ -23,9 +24,9 @@
 | Agente | Arquivos Obrigatorios | Arquivos Opcionais |
 |--------|----------------------|-------------------|
 | tui-architect | rules, patterns | widget-catalog |
-| tui-designer | rules, tcss-reference, theme-guide | patterns |
-| tui-developer | rules, patterns, widget-catalog | bug-patterns |
-| tui-debugger | rules, debugging-guide, bug-patterns | todos |
+| tui-designer | rules, tcss-reference, theme-guide, **vision-guide** | patterns |
+| tui-developer | rules, patterns, widget-catalog, **vision-guide** | bug-patterns |
+| tui-debugger | rules, debugging-guide, bug-patterns, **vision-guide** | todos |
 | tui-master | TODOS | - |
 
 ---
@@ -66,6 +67,11 @@
 **Conteudo:** textual console + --dev mode, logging, inspecao de DOM, problemas comuns e solucoes.
 
 **Use quando:** Investigando por que algo nao funciona.
+
+### vision-guide.md (~350 linhas)
+**Conteudo:** Sistema de "Programmatic Vision" para verificar widgets via textual.pilot. Padroes de testes de geometria (widget.region), assertions de visibilidade, DOM dumps automaticos em falhas.
+
+**Use quando:** Escrevendo ou validando widgets. **OBRIGATORIO para tui-developer.**
 
 ---
 

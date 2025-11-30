@@ -206,6 +206,60 @@ class StatusWidget(Static):
 - [ ] Tema aplicado em on_mount(), nao __init__
 - [ ] DEFAULT_CSS minimo (sem estilos visuais)
 - [ ] Imports corretos para versao Textual 6.x
+- [ ] **VISION TEST existe e passa** (ver abaixo)
+
+---
+
+## VISION REQUIREMENT (HARD CONSTRAINT)
+
+**Voce trabalha no escuro.** Voce NAO pode ver se o widget renderiza corretamente.
+Por isso, voce DEVE escrever um teste companion que PROVA que o widget funciona.
+
+### Obrigatorio para CADA widget criado/modificado:
+
+Criar `tests/test_<component>.py` usando `textual.pilot`:
+
+```python
+import pytest
+from legal_extractor_tui.app import LegalExtractorApp
+
+@pytest.mark.parametrize("pilot_app", [LegalExtractorApp], indirect=True)
+async def test_my_widget_renders(pilot_app):
+    """VISION TEST: Prove the widget is visible."""
+    pilot = pilot_app
+
+    # 1. Widget monta
+    widget = pilot.app.query_one("#my-widget")
+    assert widget is not None, "Widget not mounted!"
+
+    # 2. Widget tem dimensoes (NAO invisivel)
+    assert widget.region.height > 0, "Widget collapsed to zero height!"
+    assert widget.region.width > 0, "Widget has zero width!"
+
+    # 3. Filhos criticos presentes
+    assert widget.query_one(".title"), "Title missing!"
+```
+
+### O que o teste DEVE verificar:
+
+1. **Widget monta** - `query_one()` encontra o widget
+2. **Widget tem `region.height > 0`** - NAO colapsou por CSS
+3. **Filhos criticos presentes** - Botoes, labels, etc.
+
+### Executar ANTES de reportar "feito":
+
+```bash
+pytest tests/test_<component>.py -v
+```
+
+**Se o teste falhar, o widget NAO esta pronto.**
+
+### Referencia
+
+Leia `skills/tui-core/vision-guide.md` para:
+- Padroes de teste de geometria
+- Como debugar falhas
+- Assertions helpers disponiveis
 
 ---
 

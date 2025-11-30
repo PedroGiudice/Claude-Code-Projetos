@@ -47,6 +47,75 @@ Relatorio de diagnostico com:
 
 ---
 
+## VISION DIAGNOSIS (HARD CONSTRAINT)
+
+**Quando diagnosticar problemas de layout, NAO adivinhe CSS.**
+Use testes programaticos para obter coordenadas exatas.
+
+### Workflow de Vision Diagnosis
+
+**1. Rodar o vision test com stdout:**
+```bash
+pytest tests/test_<widget>.py -v -s
+```
+
+**2. Se falhar, analisar o DOM dump:**
+```bash
+cat logs/vision_failure.log
+```
+
+**3. Reportar com coordenadas exatas:**
+```
+DIAGNOSTICO VISION
+==================
+Widget: Header
+Problema: height=0 (invisivel)
+Region: (x=0, y=0, width=120, height=0)
+
+DOM Tree Excerpt:
+  Screen
+    └── Header
+        └── Static (logo)       # height=3 ✓
+        └── Static (title)      # height=0 ← PROBLEMA
+        └── Static (status)     # height=1 ✓
+
+Causa Provavel: Static.title tem height:auto sem conteudo
+
+HANDOFF para tui-designer:
+- Adicionar min-height: 1 em .title no widgets.tcss
+```
+
+### Comandos de Vision Diagnosis
+
+```bash
+# Rodar todos vision tests
+./scripts/run_vision.sh
+
+# Rodar teste especifico com output
+pytest tests/test_header.py -v -s
+
+# Ver ultimo failure dump
+cat logs/vision_failure.log
+
+# Ver tree completa de um widget (adicionar ao teste)
+# print(dump_tree(pilot.app))
+```
+
+### O que NUNCA fazer
+
+- ❌ "Provavelmente o CSS esta errado" (adivinhar)
+- ❌ "Tente mudar height para auto" (sem evidencia)
+- ❌ Sugerir fix sem coordenadas exatas
+
+### O que SEMPRE fazer
+
+- ✅ Rodar teste, coletar region coordinates
+- ✅ Analisar DOM tree dump
+- ✅ Reportar numeros exatos (height=0, x=10, etc)
+- ✅ Identificar widget especifico que falhou
+
+---
+
 ## Workflow de Debug
 
 ### 1. Coletar Sintomas
@@ -218,6 +287,7 @@ Verificacao pos-fix:
 
 ## Referencias
 
+- `skills/tui-core/vision-guide.md` - **Guia de Vision Tests (OBRIGATORIO)**
 - `skills/tui-core/debugging-guide.md` - Guia completo
 - `skills/tui-core/bug-patterns.md` - Patterns conhecidos
 - `skills/tui-core/rules.md` - Regras para validar

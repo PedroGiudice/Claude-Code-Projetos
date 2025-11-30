@@ -1215,7 +1215,90 @@ Cada agente e independente. O workflow e documentado no `SQUAD_MANIFEST.md` e se
 
 ---
 
-**Last updated:** 2025-11-28
+## Programmatic Vision - TUI Visual Verification (2025-11-30)
+
+### O Problema: Agentes Cegos
+
+Os agentes TUI trabalhavam "no escuro" - escreviam código mas não podiam ver se:
+- Botões tinham texto visível
+- Widgets colapsaram para altura 0
+- CSS causou elementos invisíveis
+
+**Resultado:** Agentes reportavam "feito" mas widgets não renderizavam.
+
+### A Solução: Evidence-Based Commitment
+
+Agentes **DEVEM provar** que widgets funcionam via testes programáticos.
+
+**Fluxo Novo:**
+```
+tui-developer:
+  1. Escreve widget
+  2. Escreve test_widget.py (OBRIGATÓRIO)
+  3. Executa pytest - verifica region.height > 0
+  4. Só reporta "feito" se teste PASSOU
+```
+
+### Arquitetura Vision Pipeline
+
+| Componente | Arquivo | Função |
+|------------|---------|--------|
+| Retina | `textual.pilot` | Executa app headless |
+| Optic Nerve | `tests/conftest.py` | Fixtures pytest async |
+| Visual Cortex | `skills/tui-core/vision-guide.md` | Manual de geometria |
+| Reflexes | Agent .md updates | Constraints obrigatórios |
+
+### Arquivos Criados
+
+```
+legal-extractor-tui/
+├── tests/
+│   ├── conftest.py           # Fixtures: pilot_app, dump_tree, assertions
+│   └── test_vision_example.py # Testes de exemplo
+└── scripts/
+    └── run_vision.sh          # Script de execução com venv auto
+```
+
+### Constraints Adicionados aos Agentes
+
+**tui-developer.md:**
+- VISION REQUIREMENT: Deve escrever `tests/test_<widget>.py`
+- Teste deve assertar: widget monta, region.height > 0, filhos presentes
+
+**tui-designer.md:**
+- VISION AWARENESS: CSS pode causar widgets invisíveis
+- Deve deferir ao tui-debugger para validação
+
+**tui-debugger.md:**
+- VISION DIAGNOSIS: Não adivinhar CSS
+- Deve rodar testes, coletar DOM dumps, reportar coordenadas exatas
+
+### Knowledge Base Atualizado
+
+- `skills/tui-core/vision-guide.md` - ~350 linhas de documentação
+- `skills/tui-core/KNOWLEDGE_INDEX.md` - vision-guide adicionado como obrigatório
+
+### Validação Realizada
+
+Code review por `code-architecture-reviewer` encontrou 3 issues:
+1. ✅ CORRIGIDO: `dump_tree()` agora usa Rich Console
+2. ✅ CORRIGIDO: `run_vision.sh` ativa venv automaticamente
+3. ⚠️ BAIXO: Hook pode não disparar em alguns edge cases
+
+### Uso pelos Agentes (Automático)
+
+**Humano não precisa rodar comandos manualmente.**
+
+Quando você pedir "crie widget X", o `tui-developer`:
+1. Cria o widget
+2. Cria teste de visão
+3. Executa: `pytest tests/test_widget.py -v`
+4. Se passou: "Widget criado e validado ✓"
+5. Se falhou: Corrige até passar
+
+---
+
+**Last updated:** 2025-11-30
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** `~/claude-work/repos/Claude-Code-Projetos` (WSL2)
 - add explíto e curto que podem aparecer mensagens de erro, mas que não são VERDADEIROS erros de hook.
