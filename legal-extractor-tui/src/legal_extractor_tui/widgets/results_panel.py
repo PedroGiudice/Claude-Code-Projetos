@@ -31,7 +31,6 @@ class ResultsPanel(Vertical):
     """Widget for displaying extraction results.
 
     Shows tabbed view with:
-    - Preview: First 1000 chars of cleaned text
     - Metadata: System detection, stats, confidence
     - Sections: List of detected sections (if analyzed)
 
@@ -63,28 +62,11 @@ class ResultsPanel(Vertical):
                 yield Button("Export JSON", id="export-json", variant="default")
 
         with TabbedContent(id="results-tabs"):
-            with TabPane("Preview", id="tab-preview"):
-                yield self._create_preview_pane()
-
             with TabPane("Metadata", id="tab-metadata"):
                 yield self._create_metadata_pane()
 
             with TabPane("Sections", id="tab-sections"):
                 yield self._create_sections_pane()
-
-    def _create_preview_pane(self) -> Static:
-        """Create preview tab content."""
-        if self.has_result and "text" in self.result_data:
-            preview_text = self.result_data["text"][:1000]
-            if len(self.result_data["text"]) > 1000:
-                preview_text += "\n\n... (truncated)"
-            return Static(preview_text, classes="preview-text", id="preview-text")
-        else:
-            return Static(
-                "No results yet. Process a PDF file to see extracted text here.",
-                classes="empty-message",
-                id="preview-text"
-            )
 
     def _create_metadata_pane(self) -> VerticalScroll:
         """Create metadata tab content."""
@@ -175,36 +157,11 @@ class ResultsPanel(Vertical):
         self.result_data = result
         self.has_result = True
 
-        # Update preview pane
-        self._update_preview_pane()
-
         # Update metadata pane
         self._update_metadata_pane()
 
         # Update sections pane
         self._update_sections_pane()
-
-    def _update_preview_pane(self) -> None:
-        """Update preview tab with new data."""
-        if not self.is_mounted:
-            return
-
-        try:
-            preview_widget = self.query_one("#preview-text", Static)
-
-            # Update content instead of removing and mounting new widget
-            if self.has_result and "text" in self.result_data:
-                preview_text = self.result_data["text"][:1000]
-                if len(self.result_data["text"]) > 1000:
-                    preview_text += "\n\n... (truncated)"
-                preview_widget.update(preview_text)
-                preview_widget.set_classes("preview-text")
-            else:
-                preview_widget.update("No results yet. Process a PDF file to see extracted text here.")
-                preview_widget.set_classes("empty-message")
-        except Exception:
-            # Widget doesn't exist yet, ignore
-            pass
 
     def _update_metadata_pane(self) -> None:
         """Update metadata tab with new data."""
@@ -363,6 +320,5 @@ class ResultsPanel(Vertical):
         self.result_data = {}
         self.has_result = False
 
-        self._update_preview_pane()
         self._update_metadata_pane()
         self._update_sections_pane()

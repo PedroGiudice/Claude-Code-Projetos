@@ -62,6 +62,12 @@ class StageIndicator(Static):
     def compose(self) -> ComposeResult:
         """Compose stage indicator layout."""
         with Horizontal(classes="stage-header"):
+            yield SpinnerWidget(
+                spinner_name="pulse_bar",
+                source="custom",
+                style="cyan",
+                id="stage-spinner"
+            )
             yield Label(self.stage_name, classes="stage-name", id="stage-name")
             yield Label(self.stage_status, classes="stage-status", id="stage-status")
 
@@ -73,12 +79,30 @@ class StageIndicator(Static):
 
         yield Label(self.stage_message, classes="stage-message", id="stage-message")
 
+    def on_mount(self) -> None:
+        """Initialize spinner state when mounted."""
+        # Pause spinner initially (pending state)
+        try:
+            spinner = self.query_one("#stage-spinner", SpinnerWidget)
+            spinner.pause()
+            spinner.set_style("dim")
+        except Exception:
+            pass
+
     def set_active(self) -> None:
         """Mark stage as active/in-progress."""
         self.remove_class("pending", "completed", "error")
         self.add_class("active")
         self.stage_status = "In Progress"
         if self.is_mounted:
+            # Resume spinner
+            try:
+                spinner = self.query_one("#stage-spinner", SpinnerWidget)
+                spinner.resume()
+                spinner.set_style("cyan")
+            except Exception:
+                pass
+
             status_label = self.query_one("#stage-status", Label)
             status_label.update(self.stage_status)
 
@@ -89,6 +113,14 @@ class StageIndicator(Static):
         self.stage_status = "Completed"
         self.stage_progress = 1.0
         if self.is_mounted:
+            # Pause spinner and change to green
+            try:
+                spinner = self.query_one("#stage-spinner", SpinnerWidget)
+                spinner.pause()
+                spinner.set_style("green")
+            except Exception:
+                pass
+
             status_label = self.query_one("#stage-status", Label)
             status_label.update(self.stage_status)
             progress_bar = self.query_one("#stage-progress", ProgressBar)
@@ -106,6 +138,14 @@ class StageIndicator(Static):
         if message:
             self.stage_message = message
         if self.is_mounted:
+            # Pause spinner and change to red
+            try:
+                spinner = self.query_one("#stage-spinner", SpinnerWidget)
+                spinner.pause()
+                spinner.set_style("red")
+            except Exception:
+                pass
+
             status_label = self.query_one("#stage-status", Label)
             status_label.update(self.stage_status)
             message_label = self.query_one("#stage-message", Label)
@@ -318,6 +358,14 @@ class ExtractionProgress(Vertical):
             stage.stage_status = "Pending"
             stage.stage_progress = 0.0
             stage.stage_message = ""
+
+            # Reset spinner to paused/dim state
+            try:
+                spinner = stage.query_one("#stage-spinner", SpinnerWidget)
+                spinner.pause()
+                spinner.set_style("dim")
+            except Exception:
+                pass
 
         # Reset UI
         status_label = self.query_one("#overall-status", Label)

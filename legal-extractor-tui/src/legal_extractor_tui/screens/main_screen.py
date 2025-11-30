@@ -59,7 +59,7 @@ class MainScreen(Screen):
         │ ConfigPanel │                                           │
         │             │  ┌─────────────────────────────────────┐  │
         │             │  │ ResultsPanel                        │  │
-        │             │  │ (tabs: Preview|Metadata|Sections)   │  │
+        │             │  │ (tabs: Metadata|Sections)           │  │
         │             │  │                                     │  │
         │             │  │                                     │  │
         │             │  └─────────────────────────────────────┘  │

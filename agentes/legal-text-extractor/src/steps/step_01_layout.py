@@ -30,6 +30,10 @@ from src.config import (
     LAYOUT_CONFIG,
     LayoutConfig,
     PageType,
+    PageComplexity,
+    COMPLEXITY_ENGINE_MAP,
+    RASTER_QUALITY_THRESHOLDS,
+    RasterQualityThresholds,
     get_output_dir,
 )
 
@@ -42,14 +46,20 @@ class LayoutAnalyzer:
     determinar qual estratégia de extração usar (nativa ou OCR).
     """
 
-    def __init__(self, config: LayoutConfig = LAYOUT_CONFIG):
+    def __init__(
+        self,
+        config: LayoutConfig = LAYOUT_CONFIG,
+        quality_thresholds: RasterQualityThresholds = RASTER_QUALITY_THRESHOLDS
+    ):
         """
         Inicializa o analisador.
 
         Args:
             config: Configuração de layout (thresholds, bins, etc)
+            quality_thresholds: Thresholds para classificação de qualidade raster
         """
         self.config = config
+        self.quality_thresholds = quality_thresholds
 
     def analyze(self, pdf_path: Path) -> dict:
         """
@@ -114,6 +124,10 @@ class LayoutAnalyzer:
             {
                 "page_num": 1,
                 "type": "NATIVE" | "RASTER_NEEDED",
+                "complexity": "native_clean" | "raster_dirty" | etc,
+                "recommended_engine": "pdfplumber" | "tesseract" | "marker",
+                "needs_cleaning": bool,
+                "cleaning_reason": list[str] (opcional),
                 "safe_bbox": [x0, y0, x1, y1],
                 "has_tarja": bool,
                 "tarja_x_cut": float | None,
@@ -154,7 +168,7 @@ class LayoutAnalyzer:
         else:
             page_type = PageType.RASTER_NEEDED
 
-        # Monta resultado
+        # Monta resultado base
         page_data = {
             "page_num": page_num,
             "type": page_type,
@@ -165,6 +179,48 @@ class LayoutAnalyzer:
 
         if has_tarja and tarja_x_cut is not None:
             page_data["tarja_x_cut"] = tarja_x_cut
+
+        # === NOVA FUNCIONALIDADE: Classificação de complexidade ===
+
+        # Estimar qualidade para páginas RASTER
+        quality_metrics = None
+        if page_type == PageType.RASTER_NEEDED:
+            quality_metrics = self._estimate_raster_quality(
+                page, safe_bbox, char_count
+            )
+
+        # Classificar complexidade
+        complexity = self._classify_complexity(page_data, quality_metrics)
+        page_data["complexity"] = complexity
+
+        # Recomendar engine baseado em complexidade
+        recommended_engine = COMPLEXITY_ENGINE_MAP.get(complexity, "pdfplumber")
+        page_data["recommended_engine"] = recommended_engine
+
+        # Determinar se precisa limpeza
+        cleaning_reasons = []
+        needs_cleaning = False
+
+        if has_tarja:
+            cleaning_reasons.append("lateral_stripe_detected")
+            needs_cleaning = True
+
+        if quality_metrics:
+            if quality_metrics.get("has_watermark", False):
+                cleaning_reasons.append("watermark_detected")
+                needs_cleaning = True
+
+            if quality_metrics.get("contrast_score", 1.0) < self.quality_thresholds.low_contrast_threshold:
+                cleaning_reasons.append("low_contrast")
+                needs_cleaning = True
+
+            if quality_metrics.get("noise_level", 0.0) > self.quality_thresholds.high_noise_threshold:
+                cleaning_reasons.append("high_noise")
+                needs_cleaning = True
+
+        page_data["needs_cleaning"] = needs_cleaning
+        if cleaning_reasons:
+            page_data["cleaning_reason"] = cleaning_reasons
 
         return page_data
 
@@ -313,6 +369,114 @@ class LayoutAnalyzer:
 
         return best_boundary
 
+    def _has_judicial_artifacts(self, page_data: dict) -> bool:
+        """
+        Detecta presença de artefatos judiciais (tarjas, carimbos, marcas d'água).
+
+        Args:
+            page_data: Dict com dados da página (retorno de _analyze_page)
+
+        Returns:
+            True se possui artefatos judiciais (tarja lateral, etc)
+        """
+        # Por enquanto, considera apenas detecção de tarja
+        # TODO: Expandir para detectar carimbos e marcas d'água via análise de imagem
+        return page_data.get("has_tarja", False)
+
+    def _estimate_raster_quality(
+        self, page, safe_bbox: list, char_count: int
+    ) -> dict:
+        """
+        Estima qualidade de uma página rasterizada.
+
+        Args:
+            page: Objeto Page do pdfplumber
+            safe_bbox: Bounding box seguro [x0, y0, x1, y1]
+            char_count: Número de caracteres extraídos
+
+        Returns:
+            Dict com métricas de qualidade:
+            {
+                "contrast_score": float (0.0-1.0),
+                "noise_level": float (0.0-1.0),
+                "char_density": float,
+                "has_watermark": bool
+            }
+        """
+        # NOTA: Esta é uma implementação placeholder que retorna valores default
+        # Para implementação completa, seria necessário:
+        # 1. Renderizar página como imagem (via pdf2image ou similar)
+        # 2. Calcular histograma de intensidade -> contrast_score
+        # 3. Calcular variância local de pixels -> noise_level
+        # 4. Detectar padrões repetitivos -> has_watermark
+
+        # Por enquanto, usa heurística baseada apenas em char_count
+        bbox_area = (safe_bbox[2] - safe_bbox[0]) * (safe_bbox[3] - safe_bbox[1])
+        char_density = char_count / bbox_area if bbox_area > 0 else 0.0
+
+        # Heurística simples: páginas com poucos chars podem ser degradadas
+        if char_density < 0.0001:  # Muito poucos chars
+            return {
+                "contrast_score": 0.3,  # Baixo contraste presumido
+                "noise_level": 0.7,     # Alto ruído presumido
+                "char_density": char_density,
+                "has_watermark": False  # Não detectável sem análise de imagem
+            }
+        else:
+            return {
+                "contrast_score": 0.85,  # Contraste razoável presumido
+                "noise_level": 0.3,      # Baixo ruído presumido
+                "char_density": char_density,
+                "has_watermark": False
+            }
+
+    def _classify_complexity(
+        self, page_data: dict, quality_metrics: dict | None = None
+    ) -> str:
+        """
+        Classifica complexidade da página com granularidade.
+
+        Args:
+            page_data: Dict com dados da página (retorno de _analyze_page)
+            quality_metrics: Métricas de qualidade raster (opcional)
+
+        Returns:
+            String de PageComplexity (ex: "native_clean", "raster_dirty")
+        """
+        page_type = page_data["type"]
+
+        # NATIVE pages: verificar artefatos judiciais
+        if page_type == PageType.NATIVE:
+            if self._has_judicial_artifacts(page_data):
+                return PageComplexity.NATIVE_WITH_ARTIFACTS
+            return PageComplexity.NATIVE_CLEAN
+
+        # RASTER_NEEDED pages: classificar por qualidade
+        if quality_metrics is None:
+            # Fallback: se não há métricas, assume RASTER_DIRTY como default
+            return PageComplexity.RASTER_DIRTY
+
+        contrast = quality_metrics.get("contrast_score", 0.5)
+        noise = quality_metrics.get("noise_level", 0.5)
+        has_watermark = quality_metrics.get("has_watermark", False)
+
+        # RASTER_CLEAN: alto contraste e sem artefatos
+        if (
+            contrast > self.quality_thresholds.high_contrast_threshold
+            and not has_watermark
+        ):
+            return PageComplexity.RASTER_CLEAN
+
+        # RASTER_DEGRADED: baixo contraste ou muito ruído
+        if (
+            contrast < self.quality_thresholds.low_contrast_threshold
+            or noise > self.quality_thresholds.high_noise_threshold
+        ):
+            return PageComplexity.RASTER_DEGRADED
+
+        # RASTER_DIRTY: caso intermediário (marca d'água, ruído moderado)
+        return PageComplexity.RASTER_DIRTY
+
     def save(self, layout: dict, output_path: Path) -> None:
         """
         Salva layout.json no disco.
@@ -392,5 +556,31 @@ if __name__ == "__main__":
         typer.echo(f"  • NATIVE: {native_count} páginas")
         typer.echo(f"  • RASTER_NEEDED: {raster_count} páginas")
         typer.echo(f"  • Com tarja: {tarja_count} páginas")
+
+        # Estatísticas de complexidade
+        typer.echo("\n📊 Complexidade:")
+        complexity_counts = {}
+        for page in layout["pages"]:
+            complexity = page.get("complexity", "unknown")
+            complexity_counts[complexity] = complexity_counts.get(complexity, 0) + 1
+
+        for complexity, count in sorted(complexity_counts.items()):
+            typer.echo(f"  • {complexity}: {count} páginas")
+
+        # Estatísticas de engines recomendados
+        typer.echo("\n🔧 Engines recomendados:")
+        engine_counts = {}
+        for page in layout["pages"]:
+            engine = page.get("recommended_engine", "unknown")
+            engine_counts[engine] = engine_counts.get(engine, 0) + 1
+
+        for engine, count in sorted(engine_counts.items()):
+            typer.echo(f"  • {engine}: {count} páginas")
+
+        # Páginas que precisam limpeza
+        needs_cleaning_count = sum(
+            1 for p in layout["pages"] if p.get("needs_cleaning", False)
+        )
+        typer.echo(f"\n🧹 Páginas que precisam limpeza: {needs_cleaning_count}")
 
     app()

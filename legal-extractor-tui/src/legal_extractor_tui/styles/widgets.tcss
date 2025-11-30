@@ -19,11 +19,11 @@ FileSelector:focus-within {
 }
 
 FileSelector .selector-title {
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
     margin-bottom: 0;
     padding-bottom: 0;
-    border-bottom: solid $primary;
+    border-bottom: solid #8be9fd;
 }
 
 FileSelector .file-input-container {
@@ -54,13 +54,13 @@ FileSelector .file-info-row {
 
 FileSelector .file-info-label {
     width: 12;
-    color: $secondary;
+    color: #bd93f9;  /* EXPLICIT PURPLE */
     text-style: bold;
 }
 
 FileSelector .file-info-value {
     width: 1fr;
-    color: $foreground;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
 }
 
 FileSelector .error {
@@ -117,21 +117,21 @@ SystemSelector:focus-within {
 }
 
 SystemSelector .selector-title {
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
 }
 
 SystemSelector Select {
-    color: $foreground;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
 }
 
 SystemSelector Select SelectCurrent {
-    color: $foreground;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
     background: #000000;
 }
 
 SystemSelector Select SelectCurrent Static {
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
 }
 
 SystemSelector .system-description {
@@ -485,45 +485,47 @@ ResultsPanel .export-buttons Button {
    ================================================== */
 
 /* Button - Minimal cyberpunk style */
+/* FORCE EXPLICIT COLORS - NO VARIABLES */
 Button {
     background: #0d0d0d;
-    color: $foreground;
-    border: solid $primary;
+    color: #8be9fd;  /* EXPLICIT CYAN - always visible */
+    border: solid #8be9fd;
     padding: 0 1;
     min-width: 10;
     height: 1;
+    text-style: bold;
 }
 
 Button:hover {
     background: #0d0d0d;
-    border: solid $accent;
-    color: $accent;
+    border: solid #ff79c6;  /* EXPLICIT PINK */
+    color: #ff79c6;
 }
 
 Button:focus {
     background: #0d0d0d;
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
-    border: solid $accent;
+    border: solid #ff79c6;
 }
 
 Button.-primary {
     background: #0d0d0d;
-    color: $primary;
-    border: solid $primary;
+    color: #8be9fd;  /* EXPLICIT CYAN */
+    border: solid #8be9fd;
     text-style: bold;
 }
 
 Button.-primary:hover {
     background: #0d0d0d;
-    color: $accent;
-    border: solid $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
+    border: solid #ff79c6;
 }
 
 Button.-primary:focus {
     background: #0d0d0d;
-    color: $accent;
-    border: solid $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
+    border: solid #ff79c6;
 }
 
 Button.-success {
@@ -563,95 +565,111 @@ Button.-warning:hover {
 }
 
 Button:disabled {
-    background: $surface 50%;
-    color: $foreground 50%;
+    background: #44475a;  /* EXPLICIT SURFACE */
+    color: #6272a4;  /* EXPLICIT MUTED */
     text-style: dim;
-    border: solid $primary-darken-1;
+    border: solid #44475a;
+}
+
+/* FORCE button text/labels to be visible */
+Button > Label {
+    color: #8be9fd;  /* EXPLICIT CYAN */
+}
+
+Button:hover > Label {
+    color: #ff79c6;  /* EXPLICIT PINK */
+}
+
+Button:focus > Label {
+    color: #ff79c6;  /* EXPLICIT PINK */
 }
 
 /* Input - Minimal style */
+/* FORCE EXPLICIT COLORS */
 Input {
     background: #000000;
-    color: $foreground;
-    border: solid $primary;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    border: solid #8be9fd;
     padding: 0 1;
     height: 1;
 }
 
 Input:focus {
-    border: solid $accent;
+    border: solid #ff79c6;  /* EXPLICIT PINK */
     background: #000000;
 }
 
 Input.-error {
-    border: solid $error;
+    border: solid #ff5555;  /* EXPLICIT RED */
 }
 
 Input.-success {
-    border: solid $success;
+    border: solid #50fa7b;  /* EXPLICIT GREEN */
 }
 
 Input .input-placeholder {
     text-style: dim;
-    color: $foreground 60%;
+    color: #6272a4;  /* EXPLICIT MUTED */
 }
 
 Input:disabled {
-    background: $surface 50%;
-    color: $foreground 50%;
+    background: #44475a;  /* EXPLICIT SURFACE */
+    color: #6272a4;  /* EXPLICIT MUTED */
     text-style: dim;
 }
 
 /* Label */
+/* FORCE EXPLICIT COLORS */
 Label {
-    color: $foreground;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND - always visible */
     padding: 0 0 1 0;
 }
 
 Label.-required {
-    color: $error;
+    color: #ff5555;  /* EXPLICIT RED */
     text-style: bold;
 }
 
 Label.-muted {
     text-style: dim;
-    color: $foreground 70%;
+    color: #6272a4;  /* EXPLICIT MUTED */
 }
 
 /* Static (text display) */
+/* FORCE EXPLICIT COLORS */
 Static {
-    color: $foreground;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
     background: transparent;
 }
 
 Static.-highlight {
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
 }
 
 Static.-muted {
     text-style: dim;
-    color: $foreground 70%;
+    color: #6272a4;  /* EXPLICIT MUTED */
 }
 
 Static.-primary {
-    color: $primary;
+    color: #8be9fd;  /* EXPLICIT CYAN */
 }
 
 Static.-secondary {
-    color: $secondary;
+    color: #bd93f9;  /* EXPLICIT PURPLE */
 }
 
 Static.-error {
-    color: $error;
+    color: #ff5555;  /* EXPLICIT RED */
 }
 
 Static.-success {
-    color: $success;
+    color: #50fa7b;  /* EXPLICIT GREEN */
 }
 
 Static.-warning {
-    color: $warning;
+    color: #ffb86c;  /* EXPLICIT ORANGE */
 }
 
 /* Switch - Minimal toggle */
@@ -710,39 +728,51 @@ RadioSet RadioButton:focus {
 }
 
 /* Select - Minimal dropdown */
+/* FORCE EXPLICIT COLORS */
 Select {
     background: #000000;
-    color: $foreground;
-    border: solid $primary;
+    color: #8be9fd;  /* EXPLICIT CYAN */
+    border: solid #8be9fd;
     height: 1;
     padding: 0 1;
 }
 
 Select:focus {
-    border: solid $accent;
+    border: solid #ff79c6;  /* EXPLICIT PINK */
     background: #000000;
 }
 
 Select SelectCurrent {
     background: #000000;
-    color: $foreground;
+    color: #8be9fd;  /* EXPLICIT CYAN */
 }
 
 Select SelectCurrent Static {
-    color: $foreground;
+    color: #8be9fd;  /* EXPLICIT CYAN */
+    text-style: bold;
 }
 
 Select.-has-value SelectCurrent Static {
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
+}
+
+/* FORCE Select labels visible */
+Select > Label {
+    color: #8be9fd;  /* EXPLICIT CYAN */
+}
+
+Select:focus > Label {
+    color: #ff79c6;  /* EXPLICIT PINK */
 }
 
 Select SelectOverlay {
     background: #0d0d0d;
-    border: solid $accent;
+    border: solid #ff79c6;  /* EXPLICIT PINK */
 }
 
 /* Select OptionList - Dropdown options */
+/* FORCE EXPLICIT COLORS */
 Select > SelectOverlay > OptionList {
     background: #000000;
     border: none;
@@ -751,21 +781,21 @@ Select > SelectOverlay > OptionList {
 Select OptionList > .option-list--option {
     padding: 0;
     background: #000000;
-    color: $foreground;
-    border-left: solid $primary;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    border-left: solid #8be9fd;
 }
 
 Select OptionList > .option-list--option-hover {
     background: #000000;
-    color: $foreground;
-    border-left: solid $accent;
+    color: #f8f8f2;  /* EXPLICIT FOREGROUND */
+    border-left: solid #ff79c6;  /* EXPLICIT PINK */
 }
 
 Select OptionList > .option-list--option-highlighted {
     background: #000000;
-    color: $accent;
+    color: #ff79c6;  /* EXPLICIT PINK */
     text-style: bold;
-    border-left: solid $accent;
+    border-left: solid #ff79c6;
 }
 
 /* TextArea - Minimal bordered */
@@ -779,6 +809,43 @@ TextArea {
 TextArea:focus {
     border: solid $accent;
     background: #000000;
+}
+
+/* TabbedContent - Minimal tabs */
+/* FORCE EXPLICIT COLORS FOR TABS */
+TabbedContent {
+    background: #0d0d0d;
+}
+
+TabbedContent Tabs {
+    background: #0d0d0d;
+    border-bottom: solid #8be9fd;
+}
+
+TabbedContent Tab {
+    background: #000000;
+    color: #8be9fd;  /* EXPLICIT CYAN */
+    border: solid #8be9fd;
+    padding: 0 2;
+    text-style: bold;
+}
+
+TabbedContent Tab:hover {
+    background: #0d0d0d;
+    color: #ff79c6;  /* EXPLICIT PINK */
+    border: solid #ff79c6;
+}
+
+TabbedContent Tab.-active {
+    background: #000000;
+    color: #ff79c6;  /* EXPLICIT PINK - active tab */
+    border: solid #ff79c6;
+    text-style: bold;
+}
+
+TabbedContent TabPane {
+    background: #000000;
+    padding: 0;
 }
 
 /* DataTable - Minimal grid */

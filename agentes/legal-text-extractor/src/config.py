@@ -129,6 +129,44 @@ class PageType:
     RASTER_NEEDED = "RASTER_NEEDED"  # Precisa OCR (scan/imagem)
 
 
+class PageComplexity:
+    """Classificação granular de complexidade de páginas."""
+    NATIVE_CLEAN = "native_clean"                     # Texto nativo, sem artefatos
+    NATIVE_WITH_ARTIFACTS = "native_with_artifacts"   # Texto nativo + tarjas/carimbos
+    RASTER_CLEAN = "raster_clean"                     # Scan limpo
+    RASTER_DIRTY = "raster_dirty"                     # Scan com marca d'água/carimbos
+    RASTER_DEGRADED = "raster_degraded"               # Scan muito sujo/degradado
+
+
+# Mapeamento de complexidade para engines recomendados
+COMPLEXITY_ENGINE_MAP = {
+    PageComplexity.NATIVE_CLEAN: "pdfplumber",
+    PageComplexity.NATIVE_WITH_ARTIFACTS: "pdfplumber",
+    PageComplexity.RASTER_CLEAN: "tesseract",
+    PageComplexity.RASTER_DIRTY: "marker",
+    PageComplexity.RASTER_DEGRADED: "marker",
+}
+
+
+# Thresholds para classificação de qualidade de raster
+@dataclass(frozen=True)
+class RasterQualityThresholds:
+    """Thresholds para classificar qualidade de páginas rasterizadas."""
+
+    # Contrast score (0.0-1.0) - baseado em análise de histograma
+    high_contrast_threshold: float = 0.8  # Acima = CLEAN
+    low_contrast_threshold: float = 0.4   # Abaixo = DEGRADED
+
+    # Noise level (0.0-1.0) - baseado em variância de pixels
+    high_noise_threshold: float = 0.6     # Acima = DEGRADED
+
+    # Char density (chars por área) - indica qualidade de extração
+    min_clean_density: float = 0.5        # Abaixo pode indicar degradação
+
+
+RASTER_QUALITY_THRESHOLDS = RasterQualityThresholds()
+
+
 # =============================================================================
 # HELPERS
 # =============================================================================
