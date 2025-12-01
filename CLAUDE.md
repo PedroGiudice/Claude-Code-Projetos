@@ -1298,7 +1298,80 @@ Quando você pedir "crie widget X", o `tui-developer`:
 
 ---
 
-**Last updated:** 2025-11-30
+## Legal Extractor CLI (2025-12-01)
+
+### Overview
+
+CLI simplificada para extração de texto de PDFs jurídicos usando Rich + Typer (substituindo a TUI complexa com Textual).
+
+**Localização:** `legal-extractor-cli/`
+**Commit:** `edafbe5`
+
+### Arquitetura
+
+```
+legal-extractor-cli/          # CLI (front-end)
+├── src/legal_extractor_cli/
+│   ├── cli.py                # Typer commands: extract, info, batch
+│   ├── extractor.py          # Wrapper - chama legal-text-extractor
+│   └── logo.py               # ASCII logo
+└── .venv/                    # Ambiente virtual
+
+agentes/legal-text-extractor/ # Extrator (back-end) - NÃO MODIFICAR
+├── src/engines/              # pdfplumber, tesseract, marker
+├── src/steps/                # Pipeline: layout, vision, extract, classify
+└── main.py                   # Removido Anthropic SDK (legacy)
+```
+
+### Comandos
+
+```bash
+cd legal-extractor-cli
+source .venv/bin/activate
+
+legal-extract extract <pdf>           # Extrai texto
+legal-extract extract <pdf> --quiet   # Sem logo
+legal-extract info                    # Sistema e engines disponíveis
+legal-extract batch <dir>             # Múltiplos PDFs
+```
+
+### Testes Realizados
+
+| PDF | Tamanho | Páginas | Tempo | Resultado |
+|-----|---------|---------|-------|-----------|
+| fixture_test.pdf | 177KB | 3 | 0.3s | ✓ 3,101 chars |
+| 1057607-11.2024.8.26.0002.pdf | 25MB | 291 | 38.9s | ✓ 422,861 chars |
+
+### Próximos Passos (PENDENTE)
+
+1. **Testar limites do Marker no PC Trabalho (16GB RAM)**
+   - Verificar se Marker está disponível
+   - Testar com PDFs grandes (500+ páginas)
+   - Medir consumo de RAM durante extração
+
+2. **Testar com PDFs sujos/escaneados**
+   - PDFs com manchas, carimbos, anotações
+   - Verificar escalonamento automático: pdfplumber → Tesseract → Marker
+   - Medir confiança de extração OCR
+
+3. **Testar cenários de falha**
+   - PDF corrompido
+   - PDF protegido por senha
+   - PDF sem texto (100% imagem)
+
+### Modificações no Extrator
+
+**main.py:**
+- Removido import de `anthropic` SDK (decisão antiga, nunca deveria estar lá)
+- Removido `SectionAnalyzer` (usava Claude API)
+- Criado `Section` dataclass local
+
+**tesseract_engine.py:**
+- Corrigido type annotation: `"np.ndarray"` (string literal)
+
+---
+
+**Last updated:** 2025-12-01
 **Maintained by:** PedroGiudice
 **For Claude Code instances operating in:** `~/claude-work/repos/Claude-Code-Projetos` (WSL2)
 - add explíto e curto que podem aparecer mensagens de erro, mas que não são VERDADEIROS erros de hook.
