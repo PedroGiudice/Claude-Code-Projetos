@@ -1342,12 +1342,23 @@ legal-extract batch <dir>             # Múltiplos PDFs
 | fixture_test.pdf | 177KB | 3 | 0.3s | ✓ 3,101 chars |
 | 1057607-11.2024.8.26.0002.pdf | 25MB | 291 | 38.9s | ✓ 422,861 chars |
 
+### Progresso (2025-12-01)
+
+**✓ Marker instalado e funcionando:**
+- `pip install marker-pdf` no venv da CLI
+- Engines disponíveis: pdfplumber + Tesseract + Marker
+- WSL2 RAM: 10GB configurado em `.wslconfig` (suficiente para Marker ~4GB)
+
+**✓ Hook fix (aa74950):**
+- `context-collector-lite.js` e `lib/validations.js`
+- Erro corrigido: "Cannot read properties of undefined (reading 'includes')"
+
 ### Próximos Passos (PENDENTE)
 
-1. **Testar limites do Marker no PC Trabalho (16GB RAM)**
-   - Verificar se Marker está disponível
-   - Testar com PDFs grandes (500+ páginas)
+1. **Testar limites do Marker com PDFs grandes**
+   - PDFs 500+ páginas
    - Medir consumo de RAM durante extração
+   - Verificar se 10GB WSL é suficiente para PDFs muito grandes
 
 2. **Testar com PDFs sujos/escaneados**
    - PDFs com manchas, carimbos, anotações
