@@ -184,24 +184,25 @@ function validateCorporateEnv(context) {
 
 async function runValidations(context, validationConfig) {
   const results = [];
+  const enabled = validationConfig?.enabled || [];
 
-  if (validationConfig.enabled.includes('venv')) {
+  if (enabled.includes('venv')) {
     results.push(validateVenv(context));
   }
 
-  if (validationConfig.enabled.includes('git-status')) {
-    results.push(validateGitStatus(context, validationConfig.thresholds));
+  if (enabled.includes('git-status')) {
+    results.push(validateGitStatus(context, validationConfig?.thresholds || {}));
   }
 
-  if (validationConfig.enabled.includes('data-layer')) {
+  if (enabled.includes('data-layer')) {
     results.push(await validateDataLayer(context));
   }
 
-  if (validationConfig.enabled.includes('deps')) {
-    results.push(await validateDependencyDrift(context, validationConfig.thresholds));
+  if (enabled.includes('deps')) {
+    results.push(await validateDependencyDrift(context, validationConfig?.thresholds || {}));
   }
 
-  if (validationConfig.enabled.includes('corporate')) {
+  if (enabled.includes('corporate')) {
     results.push(validateCorporateEnv(context));
   }
 

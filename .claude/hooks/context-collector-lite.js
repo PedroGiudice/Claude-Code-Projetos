@@ -117,7 +117,8 @@ async function main() {
     }
 
     // 2. AESTHETIC ENFORCEMENT (só se git commit detectado)
-    if (context.prompt && context.prompt.toLowerCase().includes('git commit')) {
+    const promptText = context.prompt || '';
+    if (promptText.toLowerCase().includes('git commit')) {
       const aesthetic = await enforceAesthetics(context);
       if (!aesthetic.passed) {
         parts.push(`${aesthetic.violations?.join(' | ') || 'Aesthetic violation'}`);
