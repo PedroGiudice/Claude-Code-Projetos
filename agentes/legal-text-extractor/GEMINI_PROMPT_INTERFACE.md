@@ -6,6 +6,69 @@ Você vai criar uma interface/aplicação para executar o **Legal Text Extractor
 
 ---
 
+## ⚠️ ESTADO ATUAL DO SISTEMA
+
+> **IMPORTANTE**: O sistema tem DUAS APIs disponíveis. Leia com atenção:
+
+### API 1: `LegalTextExtractor` (main.py) - FUNCIONAL MAS LIMITADA
+- ✅ Extração de PDFs com texto nativo (PDFPlumber)
+- ✅ Limpeza semântica com detecção de sistema judicial
+- ❌ NÃO suporta PDFs escaneados (lança `NotImplementedError`)
+- ❌ NÃO usa Marker (apenas PDFPlumber)
+
+### API 2: `PipelineOrchestrator` - ARQUITETURA COMPLETA, IMPLEMENTAÇÃO PARCIAL
+- ✅ Pipeline de 4 estágios (steps implementados)
+- ✅ PDFPlumber funcional
+- ✅ Tesseract OCR funcional
+- ❌ **Marker é STUB** (NotImplementedError) - requer implementação
+- ✅ Context Store para aprendizado
+- ⚠️ `_extract_page_text` é PLACEHOLDER (extrai todas páginas, não individual)
+
+### 🚨 TAREFA OBRIGATÓRIA: IMPLEMENTAR MARKER ENGINE
+
+O Marker é o engine MAIS IMPORTANTE do sistema. Está como STUB mas a implementação é SIMPLES.
+
+**Arquivo:** `src/engines/marker_engine.py`
+**Linhas 106-127:** Código comentado pronto para usar
+
+```python
+# IMPLEMENTAÇÃO NECESSÁRIA (descomentar e ajustar):
+from marker.convert import convert_single_pdf
+from marker.models import load_all_models
+
+def extract(self, pdf_path: Path) -> ExtractionResult:
+    models = load_all_models()
+    full_text, images, metadata = convert_single_pdf(
+        str(pdf_path),
+        models,
+        batch_multiplier=1,  # Ajustar baseado em RAM
+    )
+
+    return ExtractionResult(
+        text=full_text,
+        pages=metadata.get("pages", 0),
+        engine_used=self.name,
+        confidence=0.95,
+        metadata={
+            "markdown": full_text,
+            "images_extracted": len(images),
+        },
+    )
+```
+
+**ANTES de criar a interface:**
+1. Implementar `extract()` no `marker_engine.py`
+2. Atualizar `min_ram_gb` de 8.0 para 10.0
+3. Testar com PDF complexo
+
+### RECOMENDAÇÃO PARA INTERFACE
+Use `PipelineOrchestrator` para a interface:
+1. Arquitetura extensível para quando Marker for implementado
+2. PDFPlumber + Tesseract funcionam AGORA
+3. Context Store para aprendizado
+
+---
+
 ## 1. VISÃO GERAL DO SISTEMA
 
 ### O que é
@@ -86,51 +149,63 @@ PDF Original
 
 ```
 legal-text-extractor/
-├── main.py                          # Entry point principal
+├── main.py                          # Entry point (API simples)
 ├── requirements.txt                 # Dependências Python
 ├── src/
 │   ├── config.py                    # Configurações centralizadas
-│   ├── steps/
-│   │   ├── step_01_layout.py        # Análise de layout
-│   │   ├── step_02_vision.py        # Processamento de imagem
-│   │   ├── step_03_extract.py       # Extração de texto
-│   │   └── step_04_classify.py      # Classificação semântica
-│   ├── engines/
+│   │
+│   ├── steps/                       # PIPELINE DE 4 ESTÁGIOS
+│   │   ├── step_01_layout.py        # Cartógrafo (19KB)
+│   │   ├── step_02_vision.py        # Saneador (12KB)
+│   │   ├── step_03_extract.py       # Extrator (17KB)
+│   │   └── step_04_classify.py      # Bibliotecário (10KB)
+│   │
+│   ├── engines/                     # MOTORES DE EXTRAÇÃO
 │   │   ├── base.py                  # Interface ExtractionEngine
-│   │   ├── pdfplumber_engine.py     # Engine nativa (0.5GB RAM)
-│   │   ├── tesseract_engine.py      # OCR (1GB RAM)
-│   │   ├── marker_engine.py         # Engine PREMIUM (10-12GB RAM)
-│   │   ├── engine_selector.py       # Seleção automática
+│   │   ├── pdfplumber_engine.py     # ✅ Funcional (0.5GB RAM)
+│   │   ├── tesseract_engine.py      # ✅ Funcional (1GB RAM)
+│   │   ├── marker_engine.py         # ⚠️ STUB - IMPLEMENTAR! (10-12GB)
 │   │   ├── selector.py              # Escalação progressiva
 │   │   └── cleaning_engine.py       # Limpeza adaptativa
-│   ├── core/
-│   │   ├── cleaner.py               # DocumentCleaner principal
+│   │
+│   ├── core/                        # LÓGICA PRINCIPAL
+│   │   ├── cleaner.py               # DocumentCleaner
 │   │   ├── detector.py              # Detecção de sistema judicial
 │   │   ├── patterns.py              # 75+ padrões regex
-│   │   ├── normalizer.py            # Normalização de texto
-│   │   └── intelligence/
+│   │   └── intelligence/            # Módulos de IA
 │   │       ├── segmenter.py         # Segmentação de peças
-│   │       ├── definitions.py       # Taxonomia legal
-│   │       ├── cleaner_advanced.py  # Limpeza avançada
-│   │       └── boundary_detector.py # Detecção de limites
-│   ├── context/
-│   │   ├── store.py                 # ContextStore (aprendizado)
+│   │       └── definitions.py       # Taxonomia legal
+│   │
+│   ├── context/                     # APRENDIZADO
+│   │   ├── store.py                 # ContextStore (SQLite)
 │   │   ├── models.py                # Data models
 │   │   └── signature.py             # Cálculo de assinaturas
-│   ├── exporters/
+│   │
+│   ├── extractors/                  # EXTRATORES LEGADOS
+│   │   ├── text_extractor.py        # Extração de texto
+│   │   └── ocr_extractor.py         # ⚠️ NotImplementedError
+│   │
+│   ├── exporters/                   # EXPORTAÇÃO
 │   │   ├── text.py                  # Export .txt
 │   │   ├── markdown.py              # Export .md
 │   │   └── json.py                  # Export .json
-│   └── pipeline/
-│       └── orchestrator.py          # Orquestrador completo
+│   │
+│   ├── pipeline/                    # ORQUESTRAÇÃO
+│   │   └── orchestrator.py          # PipelineOrchestrator (usar este!)
+│   │
+│   ├── analyzers/                   # Analisadores auxiliares
+│   ├── learning/                    # A/B testing, métricas
+│   ├── memory/                      # Sessões de memória
+│   ├── prompts/                     # Templates de prompts
+│   └── schemas/                     # Schemas de validação
+│
 ├── inputs/                          # PDFs de entrada
 ├── outputs/                         # Resultados processados
 │   └── {doc_id}/
 │       ├── layout.json
 │       ├── images/
 │       ├── final.md
-│       ├── semantic_structure.json
-│       └── final_tagged.md
+│       └── semantic_structure.json
 └── tests/                           # Testes unitários
 ```
 
@@ -358,9 +433,18 @@ numpy>=1.24.0
 # OCR
 pytesseract>=0.3.10
 
-# Outros
+# Marker Engine (PREMIUM - requer 10-12GB RAM)
+marker-pdf>=1.0.0
+
+# Sistema
 psutil>=5.9.0
 ```
+
+> **NOTA**: O `marker-pdf` deve ser instalado separadamente:
+> ```bash
+> pip install marker-pdf
+> ```
+> Instalação demora ~5min e baixa modelos de ML (~2GB).
 
 ### Requisitos de Sistema
 ```bash
