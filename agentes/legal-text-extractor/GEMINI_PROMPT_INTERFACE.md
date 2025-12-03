@@ -16,55 +16,18 @@ Você vai criar uma interface/aplicação para executar o **Legal Text Extractor
 - ❌ NÃO suporta PDFs escaneados (lança `NotImplementedError`)
 - ❌ NÃO usa Marker (apenas PDFPlumber)
 
-### API 2: `PipelineOrchestrator` - ARQUITETURA COMPLETA, IMPLEMENTAÇÃO PARCIAL
+### API 2: `PipelineOrchestrator` - ARQUITETURA COMPLETA
 - ✅ Pipeline de 4 estágios (steps implementados)
 - ✅ PDFPlumber funcional
 - ✅ Tesseract OCR funcional
-- ❌ **Marker é STUB** (NotImplementedError) - requer implementação
+- ✅ **Marker funcional** (requer 10GB RAM)
 - ✅ Context Store para aprendizado
 - ⚠️ `_extract_page_text` é PLACEHOLDER (extrai todas páginas, não individual)
 
-### 🚨 TAREFA OBRIGATÓRIA: IMPLEMENTAR MARKER ENGINE
-
-O Marker é o engine MAIS IMPORTANTE do sistema. Está como STUB mas a implementação é SIMPLES.
-
-**Arquivo:** `src/engines/marker_engine.py`
-**Linhas 106-127:** Código comentado pronto para usar
-
-```python
-# IMPLEMENTAÇÃO NECESSÁRIA (descomentar e ajustar):
-from marker.convert import convert_single_pdf
-from marker.models import load_all_models
-
-def extract(self, pdf_path: Path) -> ExtractionResult:
-    models = load_all_models()
-    full_text, images, metadata = convert_single_pdf(
-        str(pdf_path),
-        models,
-        batch_multiplier=1,  # Ajustar baseado em RAM
-    )
-
-    return ExtractionResult(
-        text=full_text,
-        pages=metadata.get("pages", 0),
-        engine_used=self.name,
-        confidence=0.95,
-        metadata={
-            "markdown": full_text,
-            "images_extracted": len(images),
-        },
-    )
-```
-
-**ANTES de criar a interface:**
-1. Implementar `extract()` no `marker_engine.py`
-2. Atualizar `min_ram_gb` de 8.0 para 10.0
-3. Testar com PDF complexo
-
 ### RECOMENDAÇÃO PARA INTERFACE
 Use `PipelineOrchestrator` para a interface:
-1. Arquitetura extensível para quando Marker for implementado
-2. PDFPlumber + Tesseract funcionam AGORA
+1. Todos os 3 engines funcionam (PDFPlumber, Tesseract, Marker)
+2. Marker é o engine PREMIUM para PDFs complexos
 3. Context Store para aprendizado
 
 ---
@@ -164,7 +127,7 @@ legal-text-extractor/
 │   │   ├── base.py                  # Interface ExtractionEngine
 │   │   ├── pdfplumber_engine.py     # ✅ Funcional (0.5GB RAM)
 │   │   ├── tesseract_engine.py      # ✅ Funcional (1GB RAM)
-│   │   ├── marker_engine.py         # ⚠️ STUB - IMPLEMENTAR! (10-12GB)
+│   │   ├── marker_engine.py         # ✅ Engine PREMIUM (10GB RAM)
 │   │   ├── selector.py              # Escalação progressiva
 │   │   └── cleaning_engine.py       # Limpeza adaptativa
 │   │
