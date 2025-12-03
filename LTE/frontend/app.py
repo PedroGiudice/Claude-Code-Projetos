@@ -5,10 +5,10 @@ import tempfile
 from pathlib import Path
 import pandas as pd
 
-# Path setup for legal-text-extractor module
-EXTRACTOR_PATH = Path(__file__).parent / "agentes" / "legal-text-extractor"
-if str(EXTRACTOR_PATH) not in sys.path:
-    sys.path.insert(0, str(EXTRACTOR_PATH))
+# Path setup for backend module (LTE/backend)
+BACKEND_PATH = Path(__file__).parent.parent / "backend"
+if str(BACKEND_PATH) not in sys.path:
+    sys.path.insert(0, str(BACKEND_PATH))
 
 from src.pipeline.orchestrator import PipelineOrchestrator, PipelineResult
 

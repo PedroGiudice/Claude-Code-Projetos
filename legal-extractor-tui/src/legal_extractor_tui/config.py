@@ -7,8 +7,8 @@ APP_NAME = "Legal Extractor TUI"
 APP_VERSION = "0.1.0"
 APP_DESCRIPTION = "Extract and clean text from Brazilian legal documents"
 
-# Paths
-LEGAL_EXTRACTOR_PATH = Path("/home/cmr-auto/claude-work/repos/Claude-Code-Projetos/agentes/legal-text-extractor")
+# Paths - relative to project root
+LEGAL_EXTRACTOR_PATH = Path(__file__).parent.parent.parent.parent / "LTE" / "backend"
 STYLES_DIR = Path(__file__).parent / "styles"
 
 # Supported judicial systems

@@ -20,8 +20,8 @@ from legal_extractor_tui.messages.extractor_messages import (
 )
 from legal_extractor_tui.workers.base_worker import BaseWorker
 
-# Add legal-text-extractor to path
-LEGAL_EXTRACTOR_PATH = Path(__file__).parent.parent.parent.parent.parent / "agentes" / "legal-text-extractor"
+# Add LTE backend to path
+LEGAL_EXTRACTOR_PATH = Path(__file__).parent.parent.parent.parent.parent / "LTE" / "backend"
 if LEGAL_EXTRACTOR_PATH not in [Path(p) for p in sys.path]:
     sys.path.insert(0, str(LEGAL_EXTRACTOR_PATH))
 
