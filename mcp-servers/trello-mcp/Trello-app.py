@@ -3,18 +3,29 @@ import os
 import re
 import math
 import logging
+import sys
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
 
-# Local Imports (Assumed available in src/)
+# --- PATH SETUP FOR BACKEND IMPORTS ---
+# Ensure the backend src/ directory is discoverable regardless of CWD
+_app_dir = Path(__file__).resolve().parent
+_src_dir = _app_dir / "src"
+if _src_dir.exists() and str(_app_dir) not in sys.path:
+    sys.path.insert(0, str(_app_dir))
+
+# Local Imports (Backend MCP)
 try:
     from src.trello_client import TrelloClient, TrelloAPIError
     from src.models import EnvironmentSettings, BatchCardsInput
-except ImportError:
-    # Fallback/Mock for standalone UI testing
-    pass
+except ImportError as e:
+    import streamlit as st
+    st.error(f"[CRITICAL] Backend não encontrado: {e}")
+    st.info("Verifique se mcp-servers/trello-mcp/src/ existe com models.py e trello_client.py")
+    st.stop()
 
 # --- CONFIGURATION & SETUP ---
 load_dotenv()
@@ -109,6 +120,25 @@ def log_message(msg: str):
     if 'system_logs' not in st.session_state:
         st.session_state.system_logs = []
     st.session_state.system_logs.append(msg)
+
+def validate_board_id(board_id: str) -> bool:
+    """
+    Validates Trello board ID format.
+
+    Trello accepts:
+    - Short links: 8+ alphanumeric characters (e.g., 'k7H3nXyz')
+    - Full IDs: 24 hexadecimal characters (e.g., '507f1f77bcf86cd799439011')
+    """
+    if not board_id or not isinstance(board_id, str):
+        return False
+    board_id = board_id.strip()
+    # Full 24-char hex ID
+    if re.match(r'^[a-fA-F0-9]{24}$', board_id):
+        return True
+    # Short link (8+ alphanumeric chars)
+    if len(board_id) >= 8 and re.match(r'^[a-zA-Z0-9]+$', board_id):
+        return True
+    return False
 
 def extract_legal_data(text: str) -> Dict[str, Any]:
     """Extracts legal entities using regex."""
@@ -234,6 +264,8 @@ def main():
     if btn_execute:
         if not api_key or not token or not board_id:
             st.error("ERROR: MISSING CREDENTIALS OR TARGET.")
+        elif not validate_board_id(board_id):
+            st.error("ERROR: INVALID BOARD_ID FORMAT. Use 8+ char short link or 24 hex ID.")
         else:
             st.session_state.system_logs = []
             
@@ -246,7 +278,7 @@ def main():
                         st.session_state.df = df
                         st.success("OPERATION COMPLETE.")
                         # Refresh logs
-                        st.experimental_rerun()
+                        st.rerun()
                 except Exception as e:
                     st.error(f"RUNTIME ERROR: {str(e)}")
 
