@@ -27,6 +27,11 @@
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/vibe-log-safe-wrapper.sh sessionstart",
             "_note": "Vibe-log: capture session on startup (graceful skip if not authenticated - Claude Code Web compatible)"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/scripts/sync-agents.sh",
+            "_note": "Sync agents from repo (.claude/agents/) to global (~/.claude/agents/)"
           }
         ]
       }

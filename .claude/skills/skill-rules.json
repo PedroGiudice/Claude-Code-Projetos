@@ -67,17 +67,25 @@
       "type": "quality",
       "enforcement": "suggest",
       "priority": "critical",
-      "description": "Brainstorming Ideas Into Designs",
+      "description": "Brainstorming Ideas Into Designs - Use before implementation to refine ideas through collaborative questioning",
       "promptTriggers": {
         "keywords": [
           "brainstorm",
           "ideation",
           "exploring options",
-          "idea refinement"
+          "idea refinement",
+          "plan mode",
+          "planning mode",
+          "design feature",
+          "think through",
+          "explore approaches"
         ],
         "intentPatterns": [
           "(brainstorm|explore).*?(idea|option|approach)",
-          "help.*?(refine|develop).*?(idea)"
+          "help.*?(refine|develop).*?(idea)",
+          "(plan|design).*?(feature|implementation)",
+          "(think|explore).*?(through|options)",
+          "before.*?(implement|build|code)"
         ]
       }
     },
@@ -824,16 +832,25 @@
       "type": "quality",
       "enforcement": "suggest",
       "priority": "critical",
-      "description": "Writing Plans",
+      "description": "Writing Plans - Creates detailed implementation plans for engineers with exact file paths and bite-sized tasks",
       "promptTriggers": {
         "keywords": [
           "write plan",
           "create plan",
-          "planning document"
+          "planning document",
+          "implementation plan",
+          "plan mode",
+          "planning mode",
+          "step by step",
+          "task breakdown",
+          "detailed plan"
         ],
         "intentPatterns": [
           "(write|create|draft).*?(plan)",
-          "plan.*?(document|specification)"
+          "plan.*?(document|specification)",
+          "(plan|break.down).*?(implementation|task)",
+          "(step|task).*?(by|breakdown)",
+          "detailed.*?(plan|steps)"
         ]
       }
     },

@@ -1,33 +1,66 @@
 # Agents
 
-**Status:** Consolidados em `~/.claude/agents/` (global)
+**Status:** Fonte da verdade em `.claude/agents/` (repo), sync automatico para global
+
+---
+
+## Arquitetura
+
+```
+.claude/agents/           (FONTE - versionado no git)
+    ↓ sync-agents.sh
+~/.claude/agents/         (DERIVADO - global, auto-discovery)
+```
+
+- **Fonte:** `.claude/agents/` (este diretorio)
+- **Global:** `~/.claude/agents/` (sincronizado via hook SessionStart)
+
+### Sincronizacao
+
+Automatica no inicio de cada sessao. Manual:
+
+```bash
+.claude/scripts/sync-agents.sh
+```
+
+---
+
+## Agente de Planejamento
+
+**`plan-with-skills`** - Alternativa ao Plan Mode nativo com skills integradas:
+- Skill `brainstorming` (ideacao e design)
+- Skill `writing-plans` (planos detalhados)
+
+```
+Use o agente plan-with-skills para planejar [feature]
+```
 
 ---
 
 ## Estrutura Atual
 
-Todos os 59 agentes foram movidos para a pasta global do usuário:
-
 ```
-~/.claude/agents/
-├── tui-*.md           (5)  # TUI specialists
-├── legal-*.md         (2)  # Legal extraction
-├── *-legal.md         (5)  # Legal project (PT-BR)
-├── *-lst97.md         (27) # LST97 collection
-├── *-studio.md        (5)  # Studio collection
-├── *-ui.md            (2)  # UI specialists
-└── outros             (13) # Development, meta, etc
+.claude/agents/
+├── plan-with-skills.md  (1)  # Planning specialist
+├── tui-*.md             (5)  # TUI specialists
+├── legal-*.md           (2)  # Legal extraction
+├── *-legal.md           (5)  # Legal project (PT-BR)
+├── *-lst97.md           (27) # LST97 collection
+├── *-studio.md          (5)  # Studio collection
+├── *-ui.md              (2)  # UI specialists
+└── outros               (14) # Development, meta, etc
 ```
 
-**Total: 59 agentes**
+**Total: 61 agentes**
 
 ---
 
-## Por que Global?
+## Por que Repo como Fonte?
 
-1. **Disponibilidade:** Agentes disponíveis em qualquer projeto Claude Code
-2. **Manutenção:** Um único lugar para atualizar
-3. **Descoberta:** Claude Code descobre automaticamente de `~/.claude/agents/`
+1. **Versionamento:** Agentes versionados com git
+2. **Portabilidade:** Agentes acessiveis no Claude Code Web
+3. **Backup:** Git e historico de mudancas
+4. **Sync:** Hook automatico sincroniza para global
 
 ---
 
