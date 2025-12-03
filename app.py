@@ -1,5 +1,6 @@
 import streamlit as st
 import sys
+import os
 import tempfile
 from pathlib import Path
 import pandas as pd
@@ -58,16 +59,19 @@ def save_uploaded_file_to_temp(uploaded_file) -> Path:
     """
     Save Streamlit uploaded file (BytesIO) to a temporary file.
 
+    Uses tempfile.NamedTemporaryFile to create a unique file path,
+    avoiding conflicts in concurrent usage scenarios.
+
     Args:
         uploaded_file: Streamlit UploadedFile object (BytesIO-like)
 
     Returns:
         Path to the temporary file
     """
-    temp_path = Path(tempfile.gettempdir()) / "legal_extractor_input.pdf"
-    with open(temp_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return temp_path
+    # Create unique temp file to avoid concurrent user conflicts
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix="legal_extractor_") as tmp:
+        tmp.write(uploaded_file.getbuffer())
+        return Path(tmp.name)
 
 
 def map_result_to_session_state(result: PipelineResult) -> dict:
@@ -126,6 +130,8 @@ st.title(">> LEGAL_EXTRACTOR_V1")
 with st.sidebar:
     st.header(">> INPUT_ZONE")
     uploaded_file = st.file_uploader("UPLOAD_TARGET [PDF]", type=['pdf'])
+    # System selection (reserved for future ContextStore integration)
+    # When context_db_path is provided, this will be passed to caso_info
     system = st.selectbox("JUDICIAL_SYSTEM", ["AUTO_DETECT", "PJE", "ESAJ", "STF"])
     process_btn = st.button(">> EXECUTE PIPELINE", use_container_width=True)
 
@@ -195,6 +201,11 @@ if process_btn:
             finally:
                 # Cleanup: Clear marker cache to free memory
                 orchestrator.clear_marker_cache(temp_file_path)
+                # Remove temp file to avoid disk clutter
+                try:
+                    os.unlink(temp_file_path)
+                except OSError:
+                    pass  # Ignore if file already removed
 
 # 6. RESULTS DISPLAY
 if 'results' in st.session_state:

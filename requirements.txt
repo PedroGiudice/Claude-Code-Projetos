@@ -16,3 +16,10 @@ typing_extensions==4.15.0
 tzdata==2025.2
 xlrd==2.0.2
 xlsxwriter==3.2.9
+
+# Streamlit UI dependencies
+streamlit>=1.32.0
+
+# Legal Text Extractor core dependencies
+pdfplumber>=0.11.0
+pdfminer.six>=20231228
