@@ -1,429 +1,88 @@
 # CLAUDE.md
 
-This file provides operational guidance to Claude Code when working with code in this repository.
+Instrucoes operacionais para Claude Code neste repositorio.
+
+**Arquitetura:** Ver `ARCHITECTURE.md` (North Star)
+**Licoes:** Ver `DISASTER_HISTORY.md`
 
 ---
 
-## Critical Architectural Rules
+## Regras Criticas
 
-### Three-Layer Separation (Inviolable)
+### 1. Sempre Usar venv
+```bash
+cd agentes/<nome>
+source .venv/bin/activate
+python main.py
+```
 
-This project enforces strict separation between three layers. Violating this separation caused 3 days of system failure (see DISASTER_HISTORY.md).
+### 2. Nunca Commitar
+- `.venv/`, `__pycache__/`
+- Arquivos de dados (`*.pdf`, `*.log`)
 
-**LAYER 1: CODE**
-- Location: `~/claude-work/repos/Claude-Code-Projetos`
-- Contents: Python source files, configuration files, documentation
-- Version control: Git (mandatory)
-- Portability: Synchronized via `git push`/`git pull`
+### 3. Paths Dinamicos
+```python
+from shared.utils.path_utils import get_data_dir
+data = get_data_dir('oab-watcher', 'downloads')
+```
 
-**LAYER 2: ENVIRONMENT**
-- Location: Within each agent directory (e.g., `agentes/oab-watcher/.venv/`)
-- Contents: Python interpreter, installed packages (pip)
-- Version control: NEVER (must be in .gitignore)
-- Portability: Recreated via `requirements.txt` on each machine
-
-**LAYER 3: DATA**
-- Location: `~/claude-code-data` or external storage
-- Contents: Downloads, logs, outputs, processed data
-- Version control: NEVER
-- Portability: Physical transport or environment variables
-
-**BLOCKING RULE:** Code MUST NEVER be placed in data directories. Data MUST NEVER be committed to Git.
+### 4. Skills Custom
+- `skills/` = custom (requer SKILL.md)
+- `.claude/skills/` = managed (nao modificar)
 
 ---
 
-## Hook Validation Protocol
+## Estrutura
 
-After impactful codebase changes (hooks, dependencies, configs), verify hook execution logs.
+```
+agentes/           # Agentes Python (oab-watcher, djen-tracker, legal-lens)
+comandos/          # Utilitarios (fetch-doc, parse-legal, validate-id)
+mcp-servers/       # Servidores MCP (trello-mcp)
+legal-extractor-*/ # Ferramentas de extracao PDF
+shared/            # Codigo compartilhado
+skills/            # Skills custom
+.claude/           # Config Claude Code (agents, hooks, skills managed)
+```
 
-### Validation Commands
+---
+
+## MCP: trello-mcp
 
 ```bash
-# Check hook execution logs
+trello-ui  # alias em ~/.bashrc
+```
+
+Backend: `src/`, Frontend: `Trello-app.py`
+
+---
+
+## Debugging
+
+Tecnica dos 5 Porques para bugs nao-triviais:
+1. Sintoma
+2. Por que? (imediato)
+3. Por que? (profundo)
+4. Por que? (mais profundo)
+5. Por que? **CAUSA RAIZ** <- Corrigir apenas isto
+
+---
+
+## Hooks
+
+Validar apos mudancas:
+```bash
 tail -50 ~/.vibe-log/hooks.log
-cat .claude/monitoring/logs/hooks.log
-cat .claude/hooks/lib/skill-tracking.log
-
-# Verify all hook files exist
-cat .claude/settings.json | jq -r '.hooks[][] | .hooks[] | .command'
-
-# Test critical hooks manually
-python3 .claude/hooks/improve-prompt.py < test-input.json
-node .claude/hooks/context-collector.js
 ```
 
-### Red Flags
-
-- `MODULE_NOT_FOUND` errors: Missing dependency or wrong path
-- `Another hook execution is already in progress`: Vibe-log concurrency (benign)
-- `command not found`: Script not executable or missing shebang
-- Silent failures: Hook returns non-zero exit but marked as "Success"
+Red flags: `MODULE_NOT_FOUND`, `command not found`, falhas silenciosas
 
 ---
 
-## Project Structure
+## Agentes Discovery
 
-```
-Claude-Code-Projetos/
-├── agentes/           # Autonomous monitoring agents (long-running)
-│   ├── oab-watcher/   # Monitors OAB daily journal
-│   ├── djen-tracker/  # Monitors Electronic Justice Daily
-│   └── legal-lens/    # Analyzes legal publications
-│
-├── mcp-servers/       # Model Context Protocol servers
-│   └── trello-mcp/    # Trello integration with Streamlit frontend
-│
-├── comandos/          # Reusable utility commands (single-purpose tools)
-│   ├── fetch-doc/     # Downloads documents from specific sources
-│   ├── extract-core/  # Extracts core information from documents
-│   ├── validate-id/   # Validates identifiers (CPF, CNPJ, OAB)
-│   ├── parse-legal/   # Parses legal texts
-│   └── send-alert/    # Sends alerts via email/webhook
-│
-├── skills/            # Claude Code skills (PROJECT-SPECIFIC, CUSTOM)
-│   └── ...            # Each MUST have SKILL.md to be functional
-│
-├── .claude/           # Claude Code configuration (MANAGED, SETTINGS)
-│   ├── skills/        # Managed/official skills (DO NOT add custom skills here)
-│   │   ├── anthropic-skills/  # Official Anthropic skills collection
-│   │   └── superpowers/       # Advanced Claude Code capabilities
-│   ├── hooks/         # Execution hooks
-│   ├── agents/        # Agent definitions (.md files)
-│   └── statusline/    # Statusline UI configuration
-│
-└── shared/            # Shared code between projects
-    ├── utils/         # Utility functions (logging, path management)
-    └── models/        # Data models
-```
+Agentes descobertos de `.claude/agents/*.md` no inicio da sessao.
+Novo agente? Reinicie a sessao.
 
 ---
 
-## MCP Servers
-
-### trello-mcp
-
-Production-grade Trello MCP Server with Streamlit frontend.
-
-**Location:** `mcp-servers/trello-mcp/`
-
-**Components:**
-- `src/` - Backend: TrelloClient, models, MCP server
-- `Trello-app.py` - Frontend Streamlit (CLI theme)
-- `run-ui.sh` - Script de execucao
-- `.env` - Credenciais (TRELLO_API_KEY, TRELLO_API_TOKEN)
-
-**Execucao:**
-```bash
-trello-ui  # alias configurado em ~/.bashrc
-# ou
-cd mcp-servers/trello-mcp && ./run-ui.sh
-```
-
-**Funcionalidades:**
-- Dropdown dinamico de boards (API real)
-- Extracao regex de dados juridicos (CPF, CNPJ, OAB, R$, CEP, telefone, email)
-- Export CSV e JSON
-- Metricas visuais e graficos
-- Progress bar durante pipeline
-
-**Decisao arquitetural:** Frontend usa requisicoes diretas via `client._request()` para evitar conflitos com modelos Pydantic do backend que tem `extra="forbid"`.
-
----
-
-## Workflow: Gemini AI Studio para Frontend
-
-**Contexto:** Desenvolvimento de frontends Streamlit pode ser acelerado 10x usando Gemini AI Studio para gerar codigo inicial.
-
-### Processo
-
-1. **Preparacao do contexto**
-   - Adicionar tab SOURCE no frontend existente que exibe o proprio codigo
-   - Isso permite ao Gemini "ver" o codigo atual
-
-2. **Geracao no Gemini AI Studio**
-   - Enviar screenshot da interface atual
-   - Pedir melhorias esteticas especificas
-   - Gemini gera codigo Python completo
-
-3. **Salvamento**
-   - Salvar output do Gemini como arquivo na pasta do projeto (ex: `Newapp.py`)
-   - NAO colar codigo diretamente no chat
-
-4. **Mesclagem (Claude Code)**
-   - Claude le o arquivo gerado
-   - Identifica melhorias esteticas vs funcionalidade
-   - Mescla: visual do Gemini + logica funcional existente
-   - Remove tab SOURCE (era apenas ferramenta de trabalho)
-
-5. **Limpeza**
-   - Deletar arquivos intermediarios
-   - Manter apenas versao final consolidada
-
-### Exemplo Real (trello-mcp)
-
-- Gemini gerou: ASCII header, sidebar organizada, CSS melhorado, progress bar, metricas visuais
-- Claude preservou: integracao TrelloClient, requisicoes async, extracao regex, exports
-- Resultado: frontend completo em ~30 minutos vs estimativa de 4-6 horas manual
-
-### Quando Usar
-
-- Frontends Streamlit com tema visual especifico
-- Melhorias de UX/UI em interfaces existentes
-- Prototipagem rapida de dashboards
-
-### Quando NAO Usar
-
-- Logica de negocio complexa
-- Integracoes com APIs especificas
-- Codigo que requer conhecimento profundo do backend
-
----
-
-## Path Management
-
-Code must access data directories using:
-
-1. **Environment variables** (for cross-machine compatibility)
-2. **shared/utils/path_utils.py** (centralized path management)
-3. **Relative paths** (when appropriate)
-
-**NEVER use hardcoded absolute paths.**
-
-Example from `shared/utils/path_utils.py`:
-
-```python
-import os
-from pathlib import Path
-
-def get_data_dir(agent_name: str, subdir: str = "") -> Path:
-    """Returns path to data directory for given agent."""
-    data_root = Path(os.getenv('CLAUDE_DATA_ROOT', '~/claude-code-data'))
-    agent_data = data_root / 'agentes' / agent_name
-
-    if subdir:
-        return agent_data / subdir
-    return agent_data
-```
-
-Usage:
-
-```python
-from shared.utils.path_utils import get_data_dir
-
-downloads_dir = get_data_dir('oab-watcher', 'downloads')
-output_file = downloads_dir / 'publicacao_2025-11-07.pdf'
-```
-
----
-
-## Prohibited Actions (BLOCKING)
-
-These actions must be refused with reference to DISASTER_HISTORY.md:
-
-### Custom Skills in .claude/skills/
-
-```bash
-# BLOCKED - Custom skills MUST go in skills/, NOT .claude/skills/
-mv my-custom-skill .claude/skills/  # WRONG
-
-# CORRECT - Custom skills in skills/ root
-mv my-custom-skill skills/  # CORRECT
-```
-
-**Why this is blocked:**
-- `.claude/skills/` = Managed/official skills (anthropic-skills, superpowers)
-- `skills/` = Project-specific custom skills
-- Mixing them causes count confusion and breaks statusline tracking
-- Each skill in `skills/` MUST have `SKILL.md` to be functional
-
-### Code to Data Directories
-
-```bash
-# BLOCKED - Caused 3-day disaster (see DISASTER_HISTORY.md)
-cp *.py ~/claude-code-data/
-mv projeto ~/claude-code-data/projetos/
-```
-
-### Python Execution Without venv
-
-```bash
-# BLOCKED - Causes version conflicts between machines
-pip install library  # without .venv activated
-python main.py       # without .venv activated
-
-# CORRECT
-cd agentes/agent-name
-source .venv/bin/activate
-pip install library
-python main.py
-```
-
-### Hardcoded Paths in Configuration/Hooks
-
-```python
-# BLOCKED - Breaks when moving between machines
-LOG_DIR = "/home/user/projetos/logs"
-
-# CORRECT - Use environment variables or path_utils
-from shared.utils.path_utils import get_data_dir
-LOG_DIR = get_data_dir('oab-watcher', 'logs')
-```
-
-### Committing .venv to Git
-
-```bash
-# BLOCKED - Environment is machine-specific
-git add .venv/
-
-# CORRECT - Ensure .gitignore includes:
-# .venv/
-# venv/
-# __pycache__/
-```
-
----
-
-## Debugging Methodology
-
-**Historical Context:** 3 days were spent debugging symptoms without identifying the root cause. See DISASTER_HISTORY.md for details.
-
-### Mandatory Approach: 5 Whys
-
-When encountering a non-trivial bug:
-
-1. **Symptom:** [Describe observed behavior]
-2. **Why 1?** [Immediate cause]
-3. **Why 2?** [Deeper cause]
-4. **Why 3?** [Even deeper]
-5. **Why 4?** [Almost at root]
-6. **Why 5?** **[ROOT CAUSE]**
-
-**Only address the root cause.** Fixing symptoms leads to infinite iterations.
-
----
-
-## Virtual Environment Requirements
-
-Virtual environments are mandatory, not optional. Historical evidence shows that global Python installations cause version conflicts and dependency contamination.
-
-### Creation
-
-```bash
-cd agentes/agent-name
-python -m venv .venv
-```
-
-### Activation Verification
-
-```bash
-# Activate
-source .venv/bin/activate  # Linux/WSL2
-
-# Verify
-which python  # MUST show path containing .venv
-pip list      # MUST show only project dependencies, not global packages
-```
-
-### Execution Pattern
-
-```bash
-# Step 1: Navigate to project
-cd ~/claude-work/repos/Claude-Code-Projetos/agentes/agent-name
-
-# Step 2: Activate venv
-source .venv/bin/activate
-
-# Step 3: Verify activation
-# (venv) appears in prompt
-
-# Step 4: Install dependencies if needed
-pip install -r requirements.txt
-
-# Step 5: Execute script
-python main.py
-```
-
----
-
-## When Making Architectural Changes
-
-Before proposing or implementing any architectural change:
-
-1. **Read DISASTER_HISTORY.md** to understand what went wrong before
-2. **Validate against three-layer separation** (Code/Environment/Data)
-3. **Test thoroughly** in clean environment (fresh clone + venv setup)
-4. **Document the decision** in this file (CLAUDE.md)
-5. **Update README.md** if user-facing
-
----
-
-## WSL2 Environment
-
-**Current Platform:** Ubuntu 24.04 LTS (WSL2)
-
-### Directory Structure
-
-- Repository: `~/claude-work/repos/Claude-Code-Projetos`
-- Data: `~/claude-code-data` (or external storage)
-
-### Essential Commands
-
-```bash
-# Navigate to project
-cd ~/claude-work/repos/Claude-Code-Projetos
-
-# Activate agent venv
-cd agentes/agent-name
-source .venv/bin/activate
-
-# Activate global venv (for linting, type checking)
-cd ~/claude-work/repos/Claude-Code-Projetos
-source .venv/bin/activate
-pytest
-ruff check .
-mypy .
-
-# Validate hooks manually
-node .claude/hooks/invoke-legal-braniac-hybrid.js
-node .claude/hooks/session-context-hybrid.js
-```
-
-### Platform Differences
-
-| Action | Windows | WSL2 |
-|--------|---------|------|
-| Activate venv | `.venv\Scripts\activate` | `source .venv/bin/activate` |
-| Path separator | `\` (backslash) | `/` (forward slash) |
-| Line endings | CRLF | LF |
-
----
-
-## Custom Agents Discovery
-
-The Claude Code discovers agents automatically from `.md` files in:
-- `.claude/agents/` (project-level)
-- `~/.claude/agents/` (user-level global)
-
-**CRITICAL:** Discovery happens at session start. If you create an agent during a session, it will NOT be available until you restart Claude Code.
-
-### Workflow
-
-1. Create the file `.claude/agents/agent-name.md`
-2. **Restart the Claude Code session** (close and reopen)
-3. The agent will be available
-
----
-
-## References
-
-- **README.md** - User-facing setup instructions and project overview
-- **DISASTER_HISTORY.md** - Detailed account of 3-day architectural disaster and lessons learned
-- **WSL_SETUP.md** - WSL2 migration documentation
-- **QUICK-REFERENCE.md** - Quick reference for WSL2 development
-- **CHANGELOG.md** - Change history
-
----
-
-**Last updated:** 2025-12-03
-**Maintained by:** PedroGiudice
-**For Claude Code instances operating in:** `~/claude-work/repos/Claude-Code-Projetos` (WSL2)
+**Ultima atualizacao:** 2025-12-04
