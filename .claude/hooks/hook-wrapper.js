@@ -17,8 +17,11 @@ const { spawn } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
 
-// Import last-used tracker (moved to deprecated backup)
-const lastUsedTracker = require('../statusline-deprecated-backup/lib/last-used-tracker.js');
+// Stub for removed last-used tracker (functionality deprecated)
+const lastUsedTracker = {
+  updateHook: () => {},
+  updateOrchestrator: () => {}
+};
 
 /**
  * Main entry point

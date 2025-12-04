@@ -83,8 +83,10 @@ def build_context() -> str:
 
 
 def main():
+    import select
     try:
-        json.load(sys.stdin)
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            json.load(sys.stdin)
     except Exception:
         pass
 
