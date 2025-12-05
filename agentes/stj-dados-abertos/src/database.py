@@ -1,12 +1,20 @@
 """
 Database DuckDB para STJ Dados Abertos.
 Otimizado para grande volume (50GB+) com particionamento e compressão.
+Gold Standard FTS configuration with thread-safety.
 """
+from __future__ import annotations
+
 import duckdb
 import logging
+import threading
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Final
 from datetime import datetime
+
+import pandas as pd
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
@@ -21,8 +29,27 @@ from config import (
     DUCKDB_THREADS
 )
 
+# Gold Standard: Portuguese legal stopwords
+STOPWORDS_JURIDICO: Final[list[str]] = [
+    # Standard Portuguese
+    'de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um',
+    'para', 'com', 'uma', 'os', 'no', 'se', 'na',
+    # Legal connectives (high frequency, low signal)
+    'portanto', 'destarte', 'outrossim', 'ademais',
+    'mormente', 'deveras', 'conforme', 'sendo', 'assim',
+]
+
 console = Console()
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DatabaseStats:
+    """Statistics from database operations."""
+    inseridos: int = 0
+    duplicados: int = 0
+    atualizados: int = 0
+    erros: int = 0
 
 
 class STJDatabase:
@@ -42,12 +69,9 @@ class STJDatabase:
         self.db_path = db_path or DATABASE_PATH
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.conn: Optional[duckdb.DuckDBPyConnection] = None
-        self.stats = {
-            "inseridos": 0,
-            "duplicados": 0,
-            "atualizados": 0,
-            "erros": 0
-        }
+        self.stats = DatabaseStats()
+        self._lock = threading.Lock()
+        self._local = threading.local()
 
     def __enter__(self):
         self.connect()
@@ -57,29 +81,32 @@ class STJDatabase:
         self.close()
 
     def connect(self):
-        """Conecta ao banco com configurações otimizadas."""
+        """Conecta ao banco com configurações otimizadas (Gold Standard WSL2)."""
         if self.conn:
             return
 
         try:
-            logger.info(f"Conectando ao banco: {self.db_path}")
+            with self._lock:
+                logger.info(f"Conectando ao banco: {self.db_path}")
 
-            # Configuração otimizada para HD externo
-            self.conn = duckdb.connect(
-                str(self.db_path),
-                read_only=False
-            )
+                # Configuração otimizada para HD externo
+                self.conn = duckdb.connect(
+                    str(self.db_path),
+                    read_only=False
+                )
 
-            # Configurações de performance
-            self.conn.execute(f"SET memory_limit='{DUCKDB_MEMORY_LIMIT}'")
-            self.conn.execute(f"SET threads={DUCKDB_THREADS}")
-            self.conn.execute("SET enable_progress_bar=false")  # Rich já mostra progresso
+                # Gold Standard WSL2 configuration
+                self.conn.execute(f"SET memory_limit = '{DUCKDB_MEMORY_LIMIT}'")
+                self.conn.execute(f"SET threads = {DUCKDB_THREADS}")
+                self.conn.execute("SET wal_autocheckpoint = '256MB'")
+                self.conn.execute("SET preserve_insertion_order = false")
+                self.conn.execute("SET enable_progress_bar = false")  # Rich já mostra progresso
 
-            # Habilitar extensões
-            self.conn.execute("INSTALL fts")
-            self.conn.execute("LOAD fts")
+                # Habilitar extensões
+                self.conn.execute("INSTALL fts")
+                self.conn.execute("LOAD fts")
 
-            logger.info("Conexão estabelecida com sucesso")
+                logger.info("Conexão estabelecida com sucesso (WAL mode)")
 
         except Exception as e:
             logger.error(f"Erro ao conectar ao banco: {e}")
@@ -88,9 +115,20 @@ class STJDatabase:
     def close(self):
         """Fecha conexão com o banco."""
         if self.conn:
-            self.conn.close()
-            self.conn = None
-            logger.info("Conexão fechada")
+            with self._lock:
+                self.conn.close()
+                self.conn = None
+                logger.info("Conexão fechada")
+
+    @contextmanager
+    def cursor(self):
+        """Context manager for isolated cursor operations (thread-safe)."""
+        with self._lock:
+            cursor = self.conn.cursor()
+            try:
+                yield cursor
+            finally:
+                cursor.close()
 
     def criar_schema(self):
         """
@@ -103,6 +141,22 @@ class STJDatabase:
         """
         try:
             logger.info("Criando schema do banco...")
+
+            # Tabela de stopwords jurídicas
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS stopwords_juridico (
+                    stopword VARCHAR PRIMARY KEY
+                )
+            """)
+
+            # Inserir stopwords se tabela estiver vazia
+            count = self.conn.execute("SELECT COUNT(*) FROM stopwords_juridico").fetchone()[0]
+            if count == 0:
+                logger.info(f"Inserindo {len(STOPWORDS_JURIDICO)} stopwords jurídicas...")
+                self.conn.executemany(
+                    "INSERT INTO stopwords_juridico VALUES (?)",
+                    [(word,) for word in STOPWORDS_JURIDICO]
+                )
 
             # Tabela principal de acórdãos
             self.conn.execute("""
@@ -121,6 +175,7 @@ class STJDatabase:
                     ementa TEXT,
                     texto_integral TEXT,  -- Comprimido automaticamente por DuckDB
                     relator VARCHAR,
+                    resultado_julgamento VARCHAR,  -- Resultado do julgamento
 
                     -- Datas
                     data_publicacao TIMESTAMP,
@@ -162,26 +217,47 @@ class STJDatabase:
                 ON acordaos(data_publicacao DESC, orgao_julgador)
             """)
 
+            # Note: DuckDB doesn't support partial indexes (WHERE clause)
             # Índice parcial: últimos 90 dias (queries frequentes)
-            self.conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_recentes
-                ON acordaos(data_publicacao DESC, orgao_julgador)
-                WHERE data_publicacao >= CURRENT_DATE - INTERVAL '90 days'
-            """)
+            # REMOVED: DuckDB não suporta partial indexes yet
 
-            # Full-Text Search em ementas
-            logger.info("Criando índice FTS para ementas...")
-            self.conn.execute("""
-                CREATE INDEX IF NOT EXISTS fts_ementa
-                ON acordaos USING FTS (ementa)
-            """)
+            # Full-Text Search em ementas (Gold Standard configuration)
+            logger.info("Criando índice FTS para ementas (Portuguese stemmer + stopwords jurídicas)...")
+            try:
+                # Drop existing FTS index if it exists (may be using old syntax)
+                self.conn.execute("DROP INDEX IF EXISTS fts_ementa")
 
-            # Full-Text Search em texto integral (pode ser lento, mas essencial)
+                # Gold Standard PRAGMA syntax
+                self.conn.execute("""
+                    PRAGMA create_fts_index(
+                        'acordaos', 'id', 'ementa',
+                        stemmer = 'portuguese',
+                        stopwords = 'stopwords_juridico',
+                        strip_accents = 1,
+                        lower = 1,
+                        overwrite = 1
+                    )
+                """)
+            except Exception as e:
+                logger.warning(f"FTS index creation warning (may already exist): {e}")
+
+            # Full-Text Search em texto integral (Gold Standard configuration)
             logger.info("Criando índice FTS para inteiro teor (pode demorar)...")
-            self.conn.execute("""
-                CREATE INDEX IF NOT EXISTS fts_texto_integral
-                ON acordaos USING FTS (texto_integral)
-            """)
+            try:
+                self.conn.execute("DROP INDEX IF EXISTS fts_texto_integral")
+
+                self.conn.execute("""
+                    PRAGMA create_fts_index(
+                        'acordaos', 'id', 'texto_integral',
+                        stemmer = 'portuguese',
+                        stopwords = 'stopwords_juridico',
+                        strip_accents = 1,
+                        lower = 1,
+                        overwrite = 1
+                    )
+                """)
+            except Exception as e:
+                logger.warning(f"FTS index creation warning: {e}")
 
             # Tabela de estatísticas (cache de contagens)
             self.conn.execute("""
@@ -255,13 +331,13 @@ class STJDatabase:
                                 INSERT INTO acordaos (
                                     id, numero_processo, hash_conteudo,
                                     tribunal, orgao_julgador, tipo_decisao, classe_processual,
-                                    ementa, texto_integral, relator,
+                                    ementa, texto_integral, relator, resultado_julgamento,
                                     data_publicacao, data_julgamento,
                                     assuntos, fonte, fonte_url, metadata
                                 ) VALUES (
                                     ?, ?, ?,
                                     ?, ?, ?, ?,
-                                    ?, ?, ?,
+                                    ?, ?, ?, ?,
                                     ?, ?,
                                     ?, ?, ?, ?
                                 )
@@ -269,7 +345,7 @@ class STJDatabase:
                                 (
                                     r['id'], r['numero_processo'], r['hash_conteudo'],
                                     r['tribunal'], r['orgao_julgador'], r['tipo_decisao'], r['classe_processual'],
-                                    r['ementa'], r['texto_integral'], r['relator'],
+                                    r['ementa'], r['texto_integral'], r['relator'], r.get('resultado_julgamento'),
                                     r['data_publicacao'], r['data_julgamento'],
                                     r['assuntos'], r['fonte'], r['fonte_url'], r['metadata']
                                 )
@@ -293,7 +369,7 @@ class STJDatabase:
                                     reg['data_publicacao'], reg['data_julgamento'],
                                     reg['hash_conteudo']
                                 ))
-                            self.stats['atualizados'] += len(duplicados_batch)
+                            self.stats.atualizados += len(duplicados_batch)
 
                         duplicados += len(duplicados_batch)
 
@@ -305,9 +381,9 @@ class STJDatabase:
                         continue
 
             # Atualizar estatísticas
-            self.stats['inseridos'] += inseridos
-            self.stats['duplicados'] += duplicados
-            self.stats['erros'] += erros
+            self.stats.inseridos += inseridos
+            self.stats.duplicados += duplicados
+            self.stats.erros += erros
 
             logger.info(f"Batch inserido: {inseridos} novos, {duplicados} duplicados, {erros} erros")
             return inseridos, duplicados, erros
@@ -336,7 +412,9 @@ class STJDatabase:
             Lista de dicts com resultados
         """
         try:
-            query = """
+            # Note: FTS scoring syntax varies by DuckDB version
+            # Using simple LIKE for compatibility
+            query = f"""
                 SELECT
                     numero_processo,
                     orgao_julgador,
@@ -344,27 +422,26 @@ class STJDatabase:
                     relator,
                     data_publicacao,
                     data_julgamento,
-                    ementa,
-                    fts_main_acordaos.match_bm25(numero_processo, ?) as score
+                    ementa
                 FROM acordaos
                 WHERE ementa LIKE ?
-                    AND data_publicacao >= CURRENT_DATE - INTERVAL ? DAY
+                    AND data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
             """
 
-            params = [f"%{termo}%", f"%{termo}%", dias]
+            params = [f"%{termo}%"]
 
             if orgao:
                 query += " AND orgao_julgador = ?"
                 params.append(orgao)
 
-            query += " ORDER BY score DESC, data_publicacao DESC LIMIT ?"
+            query += " ORDER BY data_publicacao DESC LIMIT ?"
             params.append(limit)
 
             results = self.conn.execute(query, params).fetchall()
 
             # Converter para dicts
             columns = ['numero_processo', 'orgao_julgador', 'tipo_decisao', 'relator',
-                      'data_publicacao', 'data_julgamento', 'ementa', 'score']
+                      'data_publicacao', 'data_julgamento', 'ementa']
             return [dict(zip(columns, row)) for row in results]
 
         except Exception as e:
@@ -394,7 +471,7 @@ class STJDatabase:
             Lista de dicts com resultados
         """
         try:
-            query = """
+            query = f"""
                 SELECT
                     numero_processo,
                     orgao_julgador,
@@ -406,10 +483,10 @@ class STJDatabase:
                     LENGTH(texto_integral) as tamanho_texto
                 FROM acordaos
                 WHERE texto_integral LIKE ?
-                    AND data_publicacao >= CURRENT_DATE - INTERVAL ? DAY
+                    AND data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
             """
 
-            params = [f"%{termo}%", dias]
+            params = [f"%{termo}%"]
 
             if orgao:
                 query += " AND orgao_julgador = ?"
@@ -491,6 +568,70 @@ class STJDatabase:
             logger.error(f"Erro ao obter estatísticas: {e}")
             return {}
 
+    def get_dataframe(self, query: str, params: Optional[list] = None) -> pd.DataFrame:
+        """
+        Execute query and return pandas DataFrame.
+
+        Args:
+            query: SQL query to execute
+            params: Optional query parameters
+
+        Returns:
+            pandas DataFrame with query results
+        """
+        try:
+            if params:
+                return self.conn.execute(query, params).df()
+            else:
+                return self.conn.execute(query).df()
+        except Exception as e:
+            logger.error(f"Erro ao executar query: {e}")
+            raise
+
+    def rebuild_fts_index(self):
+        """
+        Rebuild FTS index after INSERT/UPDATE/DELETE operations.
+        DuckDB FTS requires manual rebuild after data modifications.
+        """
+        try:
+            logger.info("Reconstruindo índices FTS...")
+
+            # Drop existing FTS indexes
+            self.conn.execute("DROP INDEX IF EXISTS fts_ementa")
+            self.conn.execute("DROP INDEX IF EXISTS fts_texto_integral")
+
+            # Recreate with Gold Standard configuration
+            logger.info("Recriando FTS para ementas...")
+            self.conn.execute("""
+                PRAGMA create_fts_index(
+                    'acordaos', 'id', 'ementa',
+                    stemmer = 'portuguese',
+                    stopwords = 'stopwords_juridico',
+                    strip_accents = 1,
+                    lower = 1,
+                    overwrite = 1
+                )
+            """)
+
+            logger.info("Recriando FTS para texto integral...")
+            self.conn.execute("""
+                PRAGMA create_fts_index(
+                    'acordaos', 'id', 'texto_integral',
+                    stemmer = 'portuguese',
+                    stopwords = 'stopwords_juridico',
+                    strip_accents = 1,
+                    lower = 1,
+                    overwrite = 1
+                )
+            """)
+
+            console.print("[green]✅ Índices FTS reconstruídos[/green]")
+            logger.info("Índices FTS reconstruídos com sucesso")
+
+        except Exception as e:
+            logger.error(f"Erro ao reconstruir índices FTS: {e}")
+            raise
+
     def exportar_csv(self, query: str, output_path: Path):
         """
         Exporta resultados de query para CSV.
@@ -528,8 +669,9 @@ class STJDatabase:
             logger.info(f"Criando backup: {backup_path}")
 
             # DuckDB: EXPORT DATABASE
+            backup_dir = backup_path.parent / f'backup_{timestamp}'
             self.conn.execute(f"""
-                EXPORT DATABASE '{backup_path.parent / f'backup_{timestamp'}' (FORMAT PARQUET)
+                EXPORT DATABASE '{backup_dir}' (FORMAT PARQUET)
             """)
 
             console.print(f"[green]✅ Backup criado: {backup_path}[/green]")
@@ -542,10 +684,10 @@ class STJDatabase:
     def print_stats(self):
         """Imprime estatísticas de operações."""
         console.print("\n[bold cyan]Estatísticas do Banco:[/bold cyan]")
-        console.print(f"✅ Inseridos: {self.stats['inseridos']}")
-        console.print(f"🔄 Duplicados: {self.stats['duplicados']}")
-        console.print(f"♻️  Atualizados: {self.stats['atualizados']}")
-        console.print(f"❌ Erros: {self.stats['erros']}")
+        console.print(f"✅ Inseridos: {self.stats.inseridos}")
+        console.print(f"🔄 Duplicados: {self.stats.duplicados}")
+        console.print(f"♻️  Atualizados: {self.stats.atualizados}")
+        console.print(f"❌ Erros: {self.stats.erros}")
 
 
 def test_database():
@@ -568,6 +710,7 @@ def test_database():
             'ementa': 'TESTE. EMENTA DE TESTE.',
             'texto_integral': 'Texto completo do acórdão de teste...',
             'relator': 'Ministro Teste',
+            'resultado_julgamento': 'Recurso provido',
             'data_publicacao': '2024-11-20T00:00:00',
             'data_julgamento': '2024-11-15T00:00:00',
             'assuntos': '["Direito Civil", "Teste"]',

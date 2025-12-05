@@ -1,78 +1,54 @@
 """
 Configuração do sistema STJ Dados Abertos
+
+Sistema de armazenamento local simplificado.
+Todos os dados são armazenados em data/ dentro do projeto.
 """
+from __future__ import annotations
+
 import os
+import shutil
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Final, TypedDict
 
-# Paths configuration
-PROJECT_ROOT = Path(__file__).parent
-SRC_DIR = PROJECT_ROOT / "src"
 
-# ARQUITETURA HÍBRIDA: Índices no SSD, Dados no HD
-# Performance comprovada: índices no SSD são 125x mais rápidos para random reads
-import shutil
+# Type definitions
+class OrgaoConfig(TypedDict):
+    """Configuração de um órgão julgador."""
+    name: str
+    path: str
+    priority: int
 
-# CAMADA 1: ÍNDICES (SSD - Rápido, 2-5GB)
-# Índices DuckDB, metadados, cache - tudo que precisa acesso rápido
-INDEX_PATH = Path.home() / "stj-indices"
-INDEX_PATH.mkdir(exist_ok=True)
 
-# CAMADA 2: DADOS (HD Externo - Grande capacidade, 50GB+)
-# Documentos completos, JSONs, backups - tudo que ocupa muito espaço
-EXTERNAL_DRIVE = None
-drive_info = []
+# Project structure
+PROJECT_ROOT: Final[Path] = Path(__file__).parent
+SRC_DIR: Final[Path] = PROJECT_ROOT / "src"
+DATA_ROOT: Final[Path] = PROJECT_ROOT / "data"
 
-# Detectar HD externo com mais espaço
-for drive_letter in ['d', 'e', 'f', 'g', 'h']:
-    mount_point = Path(f"/mnt/{drive_letter}")
-    if mount_point.exists() and os.access(mount_point, os.W_OK):
-        try:
-            usage = shutil.disk_usage(mount_point)
-            free_gb = usage.free / (1024**3)
-            drive_info.append((mount_point, free_gb))
-        except:
-            continue
+# Data directories (all local)
+STAGING_DIR: Final[Path] = DATA_ROOT / "staging"
+ARCHIVE_DIR: Final[Path] = DATA_ROOT / "archive"
+DATABASE_DIR: Final[Path] = DATA_ROOT / "database"
+LOGS_DIR: Final[Path] = DATA_ROOT / "logs"
+METADATA_DIR: Final[Path] = DATA_ROOT / "metadata"
 
-# Escolher drive com mais espaço livre (mínimo 50GB para dados)
-MIN_SPACE_GB = 50
-for drive, free_gb in sorted(drive_info, key=lambda x: x[1], reverse=True):
-    if free_gb >= MIN_SPACE_GB:
-        EXTERNAL_DRIVE = drive
-        print(f"✅ HD externo detectado: {drive} ({free_gb:.1f}GB livres)")
-        break
+# Database paths
+DATABASE_PATH: Final[Path] = DATABASE_DIR / "stj.duckdb"
+DATABASE_BACKUP_DIR: Final[Path] = DATABASE_DIR / "backups"
+METADATA_DB_PATH: Final[Path] = METADATA_DIR / "metadata.db"
+STATS_PATH: Final[Path] = METADATA_DIR / "stats.json"
 
-if not EXTERNAL_DRIVE:
-    print("⚠️  HD externo não encontrado! Usando /tmp temporariamente.")
-    print("   AVISO: Performance será degradada sem HD externo!")
-    EXTERNAL_DRIVE = Path("/tmp/stj-data-temp")
-    EXTERNAL_DRIVE.mkdir(exist_ok=True)
-
-# Paths híbridos
-DATA_ROOT = EXTERNAL_DRIVE / "juridico-data" / "stj"  # HD: Dados grandes
-INDEX_DB_PATH = INDEX_PATH / "stj.duckdb"             # SSD: Índices DuckDB
-METADATA_DB_PATH = INDEX_PATH / "metadata.db"         # SSD: Cache metadados
-STATS_PATH = INDEX_PATH / "stats.json"                # SSD: Estatísticas
-STAGING_DIR = DATA_ROOT / "staging"
-ARCHIVE_DIR = DATA_ROOT / "archive"
-DATABASE_DIR = DATA_ROOT / "database"
-LOGS_DIR = DATA_ROOT / "logs"
-
-# Create directories if they don't exist
-for dir_path in [STAGING_DIR, ARCHIVE_DIR, DATABASE_DIR, LOGS_DIR]:
+# Create all necessary directories
+for dir_path in [STAGING_DIR, ARCHIVE_DIR, DATABASE_DIR, LOGS_DIR,
+                 METADATA_DIR, DATABASE_BACKUP_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
-# Database configuration
-DATABASE_PATH = DATABASE_DIR / "stj.duckdb"
-DATABASE_BACKUP_DIR = DATABASE_DIR / "backups"
-DATABASE_BACKUP_DIR.mkdir(exist_ok=True)
-
 # STJ Dados Abertos URLs
-STJ_BASE_URL = "https://www.stj.jus.br/sites/portalp/SiteAssets/documentos/noticias/abertos/"
+STJ_BASE_URL: Final[str] = "https://www.stj.jus.br/sites/portalp/SiteAssets/documentos/noticias/abertos/"
 
 # Datasets de Acórdãos por Órgão Julgador
-ORGAOS_JULGADORES = {
+ORGAOS_JULGADORES: Final[dict[str, OrgaoConfig]] = {
     "corte_especial": {
         "name": "Corte Especial",
         "path": "CorteEspecial",
@@ -126,30 +102,30 @@ ORGAOS_JULGADORES = {
 }
 
 # Download configuration
-DEFAULT_TIMEOUT = 30  # seconds
-DEFAULT_RETRY_ATTEMPTS = 3
-DEFAULT_RETRY_DELAY = 5  # seconds
-CONCURRENT_DOWNLOADS = 4  # Parallel downloads
-BATCH_SIZE = 1000  # Records per transaction
+DEFAULT_TIMEOUT: Final[int] = 30  # seconds
+DEFAULT_RETRY_ATTEMPTS: Final[int] = 3
+DEFAULT_RETRY_DELAY: Final[int] = 5  # seconds
+CONCURRENT_DOWNLOADS: Final[int] = 4  # Parallel downloads
+BATCH_SIZE: Final[int] = 1000  # Records per transaction
 
 # Date ranges
-MIN_DATE = datetime(2022, 5, 1)  # STJ data starts from May 2022
-MAX_DAYS_MVP = 30  # MVP: Last 30 days only
+MIN_DATE: Final[datetime] = datetime(2022, 5, 1)  # STJ data starts from May 2022
+MAX_DAYS_MVP: Final[int] = 30  # MVP: Last 30 days only
 
 # Logging
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOG_FILE = LOGS_DIR / f"stj_{datetime.now():%Y%m}.log"
+LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "INFO")
+LOG_FORMAT: Final[str] = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FILE: Final[Path] = LOGS_DIR / f"stj_{datetime.now():%Y%m}.log"
 
 # Performance settings
-DUCKDB_MEMORY_LIMIT = "4GB"  # DuckDB memory limit
-DUCKDB_THREADS = 4  # Number of threads for DuckDB
-CHUNK_SIZE = 10000  # Process records in chunks
+DUCKDB_MEMORY_LIMIT: Final[str] = "4GB"  # DuckDB memory limit
+DUCKDB_THREADS: Final[int] = 4  # Number of threads for DuckDB
+CHUNK_SIZE: Final[int] = 10000  # Process records in chunks
 
 # Schema monitoring
-SCHEMA_VERSION = "1.0.0"
-SCHEMA_CHECK_ENABLED = True
-SCHEMA_FIELDS_EXPECTED = [
+SCHEMA_VERSION: Final[str] = "1.0.0"
+SCHEMA_CHECK_ENABLED: Final[bool] = True
+SCHEMA_FIELDS_EXPECTED: Final[list[str]] = [
     "id",
     "numeroProcesso",
     "dataPublicacao",
@@ -160,15 +136,24 @@ SCHEMA_FIELDS_EXPECTED = [
     "textoIntegral"
 ]
 
-def get_date_range_urls(start_date: datetime, end_date: datetime, orgao: str) -> list:
+
+def get_date_range_urls(start_date: datetime, end_date: datetime, orgao: str) -> list[dict[str, str | int]]:
     """
     Gera URLs para download de JSONs em um período.
 
     STJ organiza por ano/mês, ex:
     - 2024/202401.json (Janeiro 2024)
     - 2024/202402.json (Fevereiro 2024)
+
+    Args:
+        start_date: Data inicial do período
+        end_date: Data final do período
+        orgao: Chave do órgão julgador em ORGAOS_JULGADORES
+
+    Returns:
+        Lista de dicionários com url, year, month, orgao, filename
     """
-    urls = []
+    urls: list[dict[str, str | int]] = []
     current = start_date.replace(day=1)
 
     while current <= end_date:
@@ -193,9 +178,13 @@ def get_date_range_urls(start_date: datetime, end_date: datetime, orgao: str) ->
 
     return urls
 
-def get_mvp_urls() -> list:
+
+def get_mvp_urls() -> list[dict[str, str | int]]:
     """
     Retorna URLs para MVP (últimos 30 dias, Corte Especial apenas).
+
+    Returns:
+        Lista de URLs para download do MVP
     """
     end_date = datetime.now()
     start_date = end_date - timedelta(days=MAX_DAYS_MVP)
@@ -203,78 +192,29 @@ def get_mvp_urls() -> list:
     # Para MVP, pegar apenas Corte Especial (mais importante)
     return get_date_range_urls(start_date, end_date, "corte_especial")
 
-def validar_configuracao_hibrida() -> bool:
+
+def get_storage_info() -> dict[str, str | float | bool]:
     """
-    Valida se a configuração híbrida está funcionando.
+    Retorna informações sobre armazenamento local.
 
     Returns:
-        bool: True se tudo OK, False se há problemas
+        Dicionário com informações de espaço e uso do DATA_ROOT
     """
-    errors = []
-
-    # Verificar índices no SSD
-    if not INDEX_PATH.exists():
-        errors.append(f"❌ Diretório de índices não existe: {INDEX_PATH}")
-    elif not os.access(INDEX_PATH, os.W_OK):
-        errors.append(f"❌ Sem permissão de escrita em: {INDEX_PATH}")
-
-    # Verificar HD externo
-    if not DATA_ROOT.exists():
-        errors.append(f"❌ Diretório de dados não existe: {DATA_ROOT}")
-    elif not os.access(DATA_ROOT, os.W_OK):
-        errors.append(f"❌ Sem permissão de escrita em: {DATA_ROOT}")
-
-    # Verificar espaço disponível
-    try:
-        # SSD (índices)
-        ssd_usage = shutil.disk_usage(INDEX_PATH)
-        ssd_free_gb = ssd_usage.free / (1024**3)
-        if ssd_free_gb < 5:
-            errors.append(f"⚠️  SSD com pouco espaço: {ssd_free_gb:.1f}GB livres (mínimo: 5GB)")
-
-        # HD (dados)
-        hd_usage = shutil.disk_usage(DATA_ROOT)
-        hd_free_gb = hd_usage.free / (1024**3)
-        if hd_free_gb < 50:
-            errors.append(f"⚠️  HD com pouco espaço: {hd_free_gb:.1f}GB livres (mínimo: 50GB)")
-    except:
-        errors.append("❌ Erro ao verificar espaço em disco")
-
-    if errors:
-        print("\n".join(errors))
-        return False
-
-    print(f"✅ Configuração híbrida validada:")
-    print(f"   - Índices (SSD): {INDEX_PATH} ({ssd_free_gb:.1f}GB livres)")
-    print(f"   - Dados (HD): {DATA_ROOT} ({hd_free_gb:.1f}GB livres)")
-    return True
-
-def get_storage_info() -> dict:
-    """
-    Retorna informações sobre armazenamento híbrido.
-
-    Returns:
-        dict: Informações de espaço e uso
-    """
-    info = {
-        "ssd": {"path": str(INDEX_PATH), "free_gb": 0, "used_gb": 0},
-        "hd": {"path": str(DATA_ROOT), "free_gb": 0, "used_gb": 0},
+    info: dict[str, str | float | bool] = {
+        "path": str(DATA_ROOT),
+        "free_gb": 0.0,
+        "used_gb": 0.0,
+        "total_gb": 0.0,
         "valid": False
     }
 
     try:
-        # SSD
-        ssd_usage = shutil.disk_usage(INDEX_PATH)
-        info["ssd"]["free_gb"] = ssd_usage.free / (1024**3)
-        info["ssd"]["used_gb"] = ssd_usage.used / (1024**3)
-
-        # HD
-        hd_usage = shutil.disk_usage(DATA_ROOT)
-        info["hd"]["free_gb"] = hd_usage.free / (1024**3)
-        info["hd"]["used_gb"] = hd_usage.used / (1024**3)
-
+        usage = shutil.disk_usage(DATA_ROOT)
+        info["free_gb"] = usage.free / (1024**3)
+        info["used_gb"] = usage.used / (1024**3)
+        info["total_gb"] = usage.total / (1024**3)
         info["valid"] = True
-    except:
+    except Exception:
         pass
 
     return info

@@ -2,11 +2,15 @@
 Downloader para STJ Dados Abertos
 Baixa JSONs de acórdãos organizados por órgão julgador e mês
 """
+from __future__ import annotations
+
+import hashlib
 import json
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Final
 import httpx
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 from rich.console import Console
@@ -25,6 +29,83 @@ from config import (
 console = Console()
 logger = logging.getLogger(__name__)
 
+# Constants
+CHUNK_SIZE: Final[int] = 8192  # For hash computation
+
+
+@dataclass
+class DownloadStats:
+    """Statistics for download operations."""
+    downloaded: int = 0
+    failed: int = 0
+    skipped: int = 0
+    not_found: int = 0  # 404s tracked separately (expected behavior)
+
+
+def validate_json_integrity(file_path: Path) -> bool:
+    """
+    Validate JSON file integrity.
+
+    Checks:
+    1. File exists and is not empty
+    2. Content is valid JSON
+    3. Content is list or dict (expected STJ format)
+
+    Args:
+        file_path: Path to JSON file to validate
+
+    Returns:
+        True if file is valid, False otherwise
+    """
+    try:
+        # Check file exists
+        if not file_path.exists():
+            logger.error(f"File does not exist: {file_path}")
+            return False
+
+        # Check file is not empty
+        if file_path.stat().st_size == 0:
+            logger.error(f"File is empty: {file_path}")
+            return False
+
+        # Validate JSON content
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # Check if data is list or dict (expected STJ formats)
+        if not isinstance(data, (list, dict)):
+            logger.error(f"JSON content is neither list nor dict: {file_path}")
+            return False
+
+        return True
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in {file_path}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error validating {file_path}: {e}")
+        return False
+
+
+def compute_sha256(file_path: Path) -> str:
+    """
+    Compute SHA256 hash of file contents.
+
+    Args:
+        file_path: Path to file to hash
+
+    Returns:
+        Hexadecimal SHA256 hash string
+    """
+    sha256_hash = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+        # Read file in chunks to handle large files efficiently
+        for chunk in iter(lambda: f.read(CHUNK_SIZE), b""):
+            sha256_hash.update(chunk)
+
+    return sha256_hash.hexdigest()
+
 
 class STJDownloader:
     """
@@ -41,7 +122,8 @@ class STJDownloader:
         self.staging_dir = staging_dir or STAGING_DIR
         self.staging_dir.mkdir(parents=True, exist_ok=True)
         self.client = httpx.Client(timeout=DEFAULT_TIMEOUT)
-        self.stats = {"downloaded": 0, "failed": 0, "skipped": 0}
+        self.stats = DownloadStats()
+        self._checksums: dict[str, str] = {}  # filename -> sha256 hash
 
     def __enter__(self):
         return self
@@ -55,7 +137,7 @@ class STJDownloader:
     )
     def download_json(self, url: str, filename: str, force: bool = False) -> Optional[Path]:
         """
-        Baixa um arquivo JSON do STJ.
+        Baixa um arquivo JSON do STJ com validação completa de integridade.
 
         Args:
             url: URL do arquivo JSON
@@ -63,52 +145,80 @@ class STJDownloader:
             force: Sobrescrever se já existir
 
         Returns:
-            Path do arquivo baixado ou None se falhou
+            Path do arquivo baixado ou None se falhou/404
         """
         output_path = self.staging_dir / filename
 
         # Skip se já existe (a menos que force=True)
         if output_path.exists() and not force:
             logger.info(f"Arquivo já existe, pulando: {filename}")
-            self.stats["skipped"] += 1
+            self.stats.skipped += 1
             return output_path
 
         try:
             logger.info(f"Baixando: {url}")
             response = self.client.get(url)
 
+            # Handle 404 as INFO (expected for empty months)
             if response.status_code == 404:
-                logger.warning(f"Arquivo não encontrado (404): {url}")
-                # Não é erro - alguns meses podem não ter dados
+                logger.info(f"Arquivo não encontrado (404): {url} - expected for empty months")
+                self.stats.not_found += 1
                 return None
 
             response.raise_for_status()
 
-            # Validar se é JSON válido
-            data = response.json()
+            # Validate JSON BEFORE saving to disk
+            try:
+                data = response.json()
+            except json.JSONDecodeError as e:
+                logger.error(f"Resposta não é JSON válido de {url}: {e}")
+                self.stats.failed += 1
+                raise
 
-            # Salvar arquivo
+            # Validate data structure (must be list or dict)
+            if not isinstance(data, (list, dict)):
+                logger.error(f"JSON content is neither list nor dict from {url}")
+                self.stats.failed += 1
+                raise ValueError("Invalid JSON structure: expected list or dict")
+
+            # Save to disk
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            self.stats["downloaded"] += 1
-            logger.info(f"Baixado com sucesso: {filename} ({len(data)} registros)")
+            # Validate integrity AFTER saving
+            if not validate_json_integrity(output_path):
+                logger.error(f"File failed integrity check after save: {filename}")
+                output_path.unlink(missing_ok=True)  # Delete corrupted file
+                self.stats.failed += 1
+                raise ValueError("File failed post-save integrity validation")
+
+            # Compute and store SHA256 checksum
+            checksum = compute_sha256(output_path)
+            self._checksums[filename] = checksum
+
+            self.stats.downloaded += 1
+            record_count = len(data) if isinstance(data, list) else "dict"
+            logger.info(f"Baixado com sucesso: {filename} ({record_count} registros, SHA256: {checksum[:8]}...)")
             return output_path
 
+        except httpx.HTTPStatusError as e:
+            # Log other HTTP errors (non-404) as ERROR
+            logger.error(f"Erro HTTP ao baixar {url}: {e.response.status_code} - {e}")
+            self.stats.failed += 1
+            raise
         except httpx.HTTPError as e:
             logger.error(f"Erro HTTP ao baixar {url}: {e}")
-            self.stats["failed"] += 1
+            self.stats.failed += 1
             raise
         except json.JSONDecodeError as e:
-            logger.error(f"Resposta não é JSON válido de {url}: {e}")
-            self.stats["failed"] += 1
+            # Already logged above, just re-raise
             raise
         except Exception as e:
             logger.error(f"Erro inesperado ao baixar {url}: {e}")
-            self.stats["failed"] += 1
+            self.stats.failed += 1
             raise
 
-    def download_batch(self, url_configs: List[Dict], show_progress: bool = True) -> List[Path]:
+    def download_batch(self, url_configs: list[dict], show_progress: bool = True) -> list[Path]:
         """
         Baixa múltiplos arquivos em sequência com progress bar.
 
@@ -156,7 +266,19 @@ class STJDownloader:
 
         return downloaded_files
 
-    def get_staging_files(self, pattern: str = "*.json") -> List[Path]:
+    def get_checksum(self, filename: str) -> Optional[str]:
+        """
+        Get SHA256 checksum for a downloaded file.
+
+        Args:
+            filename: Name of the file
+
+        Returns:
+            SHA256 hash string or None if not found
+        """
+        return self._checksums.get(filename)
+
+    def get_staging_files(self, pattern: str = "*.json") -> list[Path]:
         """
         Lista arquivos no diretório staging.
 
@@ -190,9 +312,10 @@ class STJDownloader:
     def print_stats(self):
         """Imprime estatísticas do download."""
         console.print("\n[bold cyan]Estatísticas de Download:[/bold cyan]")
-        console.print(f"✅ Baixados: {self.stats['downloaded']}")
-        console.print(f"⏭️  Pulados: {self.stats['skipped']}")
-        console.print(f"❌ Falhas: {self.stats['failed']}")
+        console.print(f"✅ Baixados: {self.stats.downloaded}")
+        console.print(f"⏭️  Pulados: {self.stats.skipped}")
+        console.print(f"ℹ️  Não encontrados (404): {self.stats.not_found}")
+        console.print(f"❌ Falhas: {self.stats.failed}")
 
 
 def test_download_single():
