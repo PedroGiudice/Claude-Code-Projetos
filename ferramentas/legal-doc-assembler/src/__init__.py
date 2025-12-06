@@ -5,7 +5,7 @@ A deterministic Python library for rendering Brazilian legal documents using
 docxtpl (Jinja2 for MS Word) with fault-tolerant template processing.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Claude Code Projetos"
 
 from .normalizers import (
