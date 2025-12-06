@@ -101,5 +101,6 @@ Novo agente? Reinicie a sessao.
 
 ---
 
-**Ultima atualizacao:** 2025-12-04
+**Ultima atualizacao:** 2025-12-05
+- `stj-dados-abertos`: Data Lakehouse Dashboard funcional (Streamlit + DuckDB) - download retroativo 2022-hoje
 - Regra 5: Gemini obrigatorio para context offloading (>500 linhas ou multiplos arquivos)

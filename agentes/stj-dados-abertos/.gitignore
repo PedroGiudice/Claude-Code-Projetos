@@ -1,0 +1,11 @@
+# Runtime data
+data/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
