@@ -105,6 +105,7 @@ Novo agente? Reinicie a sessao.
 
 ## Team
 
+- **PGR** = Pedro (dono do projeto)
 - **LGP** = Leo (contribuidor ativo, socio do projeto)
 
 ---
