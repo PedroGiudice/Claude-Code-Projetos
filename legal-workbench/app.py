@@ -163,6 +163,28 @@ def main():
                 st.session_state.active_module = mod["id"]
                 st.rerun()
 
+        st.markdown("#### TOOLS")
+        st.markdown(
+            '''
+            <a href="http://localhost:3001" target="_blank" style="
+                display: block;
+                padding: 0.5rem 1rem;
+                margin: 0.25rem 0;
+                background-color: #0f172a;
+                border: 1px solid #1e293b;
+                border-radius: 4px;
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 0.875rem;
+                transition: all 0.2s;
+            " onmouseover="this.style.backgroundColor='#1e293b'; this.style.borderColor='#475569'; this.style.color='#f1f5f9';"
+               onmouseout="this.style.backgroundColor='#0f172a'; this.style.borderColor='#1e293b'; this.style.color='#94a3b8';">
+                Claude Code UI
+            </a>
+            ''',
+            unsafe_allow_html=True
+        )
+
         st.markdown("---")
         st.code(f"PATH: {DATA_PATH}", language="text")
 
