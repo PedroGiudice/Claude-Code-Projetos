@@ -35,10 +35,26 @@ if (-not $WSL_USERNAME) {
     return
 }
 
-# Auto-detect Claude Code path
-$CLAUDE_PATH = (wsl -- which claude 2>$null).Trim()
+# Auto-detect Claude Code path (using bash -lc to load profile)
+$CLAUDE_PATH = (wsl -- bash -lc "which claude" 2>$null)
+if ($CLAUDE_PATH) { $CLAUDE_PATH = $CLAUDE_PATH.Trim() }
 if (-not $CLAUDE_PATH) {
-    $CLAUDE_PATH = "/home/$WSL_USERNAME/.npm-global/bin/claude"
+    # Fallback: check common locations
+    $commonPaths = @(
+        "/home/$WSL_USERNAME/.local/bin/claude",
+        "/home/$WSL_USERNAME/.npm-global/bin/claude",
+        "/usr/local/bin/claude"
+    )
+    foreach ($path in $commonPaths) {
+        $exists = wsl -- test -f $path "&&" echo "yes" 2>$null
+        if ($exists -eq "yes") {
+            $CLAUDE_PATH = $path
+            break
+        }
+    }
+}
+if (-not $CLAUDE_PATH) {
+    $CLAUDE_PATH = "/home/$WSL_USERNAME/.local/bin/claude"
 }
 
 # Auto-detect project directory (procura Claude-Code-Projetos)

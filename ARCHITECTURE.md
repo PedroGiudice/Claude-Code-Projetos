@@ -11,7 +11,7 @@ Sistema de automacao juridica brasileira com agentes Python.
 | Camada | Local | Git |
 |--------|-------|-----|
 | **Codigo** | `~/claude-work/repos/Claude-Code-Projetos/` | Sim |
-| **Ambiente** | `agentes/*/.venv/`, `ferramentas/*/.venv/` | Nunca |
+| **Ambiente** | `agentes/*/.venv/` | Nunca |
 | **Dados** | `~/claude-code-data/` | Nunca |
 
 **Violacao desta regra causou 3 dias de sistema inoperavel.** Ver `DISASTER_HISTORY.md`.
@@ -37,26 +37,23 @@ python main.py
 
 ```
 Claude-Code-Projetos/
-├── agentes/              # Agentes Python autonomos (monitoramento continuo)
-│   ├── oab-watcher/      # Monitora Diario OAB
-│   ├── djen-tracker/     # Monitora DJEN
-│   └── legal-lens/       # Analise NLP
-├── ferramentas/          # Ferramentas Python (processamento sob demanda)
-│   ├── legal-text-extractor/  # Extracao de texto de PDFs juridicos
-│   ├── stj-dados-abertos/     # Coleta dados STJ via API
-│   ├── legal-doc-assembler/   # Montagem de documentos juridicos
-│   ├── claude-ui/             # Interface grafica Claude Code
-│   └── trello-mcp/            # Servidor MCP Trello
-├── comandos/             # Utilitarios single-purpose
+├── agentes/              # Agentes autonomos (monitoramento continuo)
+│   ├── oab-watcher/      # Diario OAB
+│   ├── djen-tracker/     # DJEN
+│   ├── legal-lens/       # Analise NLP
+│   ├── legal-rag/        # RAG juridico
+│   ├── jurisprudencia-collector/  # Coleta jurisprudencia
+│   ├── legal-articles-finder/     # Busca artigos
+│   └── aesthetic-master/ # Formatacao/estetica
+├── comandos/             # CLI utilitarios (extract-core, fetch-doc, parse-legal, send-alert, validate-id)
 ├── mcp-servers/          # Servidores MCP (djen-mcp-server)
-├── legal-extractor-cli/  # CLI extracao de PDFs
-├── legal-extractor-tui/  # TUI extracao de PDFs
-├── shared/               # Codigo compartilhado
-├── skills/               # Skills custom do projeto
-└── .claude/              # Config Claude Code
-    ├── agents/           # Definicoes de agentes
-    ├── hooks/            # Hooks de execucao
-    └── skills/           # Skills managed
+├── legal-extractor-cli/  # CLI extracao PDFs
+├── legal-extractor-tui/  # TUI extracao PDFs
+├── legal-workbench/      # Ambiente de trabalho legal
+├── shared/               # Codigo compartilhado (utils, memory)
+├── skills/               # Skills custom
+├── docs/                 # Documentacao
+└── .claude/              # Config (agents, hooks, skills managed)
 ```
 
 ---
@@ -64,30 +61,16 @@ Claude-Code-Projetos/
 ## Decisoes Arquiteturais
 
 ### ADR-001: Python + venv por Agente
-- **Decisao:** Cada agente tem seu proprio `.venv`
-- **Razao:** Isolamento de dependencias, evita conflitos de versao
-- **Consequencia:** `requirements.txt` obrigatorio por agente
+Cada agente tem `.venv` isolado. `requirements.txt` obrigatorio.
 
 ### ADR-002: Dados Fora do Repositorio
-- **Decisao:** Dados em `~/claude-code-data/`, nunca em Git
-- **Razao:** Logs e downloads podem ser grandes e sensiveis
-- **Consequencia:** Usar `shared/utils/path_utils.py` para paths
+Dados em `~/claude-code-data/`, nunca em Git. Usar `shared/utils/path_utils.py`.
 
 ### ADR-003: Hooks Nao-Bloqueantes
-- **Decisao:** Hooks devem ter timeout <500ms
-- **Razao:** Hooks lentos travam a sessao Claude Code
-- **Consequencia:** Usar async, caching, graceful degradation
+Hooks com timeout <500ms. Usar async, caching, graceful degradation.
 
 ### ADR-004: Skills em Duas Camadas
-- **Decisao:** `skills/` = custom, `.claude/skills/` = managed
-- **Razao:** Separar skills do projeto de skills oficiais
-- **Consequencia:** Nunca colocar skills custom em `.claude/skills/`
-
-### ADR-005: Separacao Agentes vs Ferramentas
-- **Decisao:** `agentes/` = monitoramento autonomo, `ferramentas/` = processamento sob demanda
-- **Razao:** Agentes (oab-watcher, djen-tracker) executam continuamente; ferramentas (legal-text-extractor) sao invocadas pontualmente
-- **Consequencia:** Novos modulos devem ser classificados pela natureza (autonomo vs sob demanda)
-- **Data:** 2025-12-07
+`skills/` = custom, `.claude/skills/` = managed. Nunca misturar.
 
 ---
 
@@ -106,3 +89,12 @@ Claude-Code-Projetos/
 ## Stack
 
 Python 3.11 | Node.js v22 | Ubuntu 24.04 (WSL2) | Git | Claude Code
+
+---
+
+**Ultima atualizacao:** 2025-12-07
+- Removido diretorio `ferramentas/` (nao existe)
+- Adicionados agentes: `legal-rag`, `jurisprudencia-collector`, `legal-articles-finder`, `aesthetic-master`
+- Adicionados diretorios: `legal-workbench/`, `docs/`
+- Comandos atualizados com lista real
+- Condensado ADRs para <100 linhas
