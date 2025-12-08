@@ -46,6 +46,14 @@ find src/ -name "*.py" | xargs cat | gemini -m gemini-2.5-flash "Liste classes e
 
 **Por que:** Poupa tokens, mantem contexto limpo, acelera analise.
 
+## Gemini DPP (Data Ingestion)
+
+**Comando:** `comandos/dpp "instruction" [file]`
+**Funcao:** Ingestao de contexto imparcial e checagem de fatos em runtime.
+**Ferramentas:** Chrome DevTools (frontend), Cloud Run (infra), ADK (orquestracao).
+**Output:** Relatorios XML estruturados (fatos, nao opinioes).
+**Uso:** Acionar para analise estrutural, snapshots de UI ou logs de infra antes de iniciar correcoes.
+
 ---
 
 ## Estrutura

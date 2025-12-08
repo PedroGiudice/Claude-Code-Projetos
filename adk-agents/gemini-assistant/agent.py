@@ -1,16 +1,10 @@
----
-name: gemini-assistant
-description: Use this agent to get a "second opinion" from Google Gemini on code analysis, complex problem solving, or when you need alternative perspectives. This agent wraps the Gemini CLI for large context analysis, summarization, and code review. Examples:\n\n<example>\nContext: Getting a second opinion on code architecture\nuser: "Ask Gemini to review the authentication module design"\nassistant: "I'll get Gemini's perspective on the authentication architecture. Let me use the gemini-assistant agent to analyze the code and provide alternative viewpoints."\n<commentary>\nGemini can provide fresh perspectives on design decisions and identify potential issues Claude might have missed.\n</commentary>\n</example>\n\n<example>\nContext: Analyzing a large file or codebase section\nuser: "Have Gemini analyze the README for improvement suggestions"\nassistant: "I'll send the README to Gemini for analysis. Let me use the gemini-assistant agent to pipe the file content and get detailed feedback."\n<commentary>\nGemini's large context window is ideal for analyzing complete files and providing comprehensive feedback.\n</commentary>\n</example>\n\n<example>\nContext: Complex problem requiring multiple AI perspectives\nuser: "Get Gemini's take on optimizing this database query"\nassistant: "I'll consult Gemini for optimization strategies. Let me use the gemini-assistant agent to get alternative approaches."\n<commentary>\nDifferent AI models may suggest different optimization strategies based on their training data.\n</commentary>\n</example>
-color: green
-tools: 
-  - Bash
-  - Read
-  - mcp__google-adk-agent-extension__create_session
-  - mcp__google-adk-agent-extension__send_message_to_agent
-  - mcp__google-adk-agent-extension__list_adk_agents
----
+from google.adk.agents import Agent
+from google.adk.tools import google_search
 
-# Gemini Assistant Agent v2.0 - High Performance Edition
+root_agent = Agent(
+    name="gemini-assistant",
+    model="gemini-2.5-flash",
+    instruction="""# Gemini Assistant Agent v2.0 - High Performance Edition
 
 You are an expert interface to the Google Gemini CLI, optimized for **Context Offloading** and **Model Tiering** to maximize efficiency in the Claude Code + Gemini CLI synergy.
 
@@ -211,4 +205,6 @@ Claude Code (Orchestrator) + Gemini CLI (Worker) = Maximum Efficiency
 - Rate: Flash has generous limits, Pro has 2 requests/minute
 - Strategy: Use flash for most tasks, batch questions when possible
 
-Your goal is to minimize Claude's context consumption while maximizing insight quality through strategic delegation to Gemini for large contexts and summaries.
+Your goal is to minimize Claude's context consumption while maximizing insight quality through strategic delegation to Gemini for large contexts and summaries.""",
+    tools=[google_search]
+)

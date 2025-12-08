@@ -1,6 +1,7 @@
 import streamlit as st
 import yaml
 import sys
+import os
 import importlib
 import time
 from pathlib import Path
@@ -8,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 # --- CONSTANTS & CONFIG ---
-DATA_PATH = Path.home() / "juridico-data"
+DATA_PATH = Path(os.getenv("DATA_PATH_ENV", Path.home() / "juridico-data"))
 CONFIG_PATH = Path("config.yaml")
 
 st.set_page_config(
@@ -158,8 +159,8 @@ def main():
 
         st.markdown("#### TOOLS")
         st.markdown(
-            '''
-            <a href="http://localhost:3001" target="_blank" style="
+            f'''
+            <a href="{os.getenv("CLAUDE_CODE_UI_URL", "http://localhost:3001")}" target="_blank" style="
                 display: block;
                 padding: 0.5rem 1rem;
                 margin: 0.25rem 0;
@@ -174,7 +175,8 @@ def main():
                onmouseout="this.style.backgroundColor='#0f172a'; this.style.borderColor='#1e293b'; this.style.color='#94a3b8';">
                 Claude Code UI
             </a>
-            ''',
+            '''
+            ,
             unsafe_allow_html=True
         )
 
