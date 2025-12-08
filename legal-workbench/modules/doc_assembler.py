@@ -8,13 +8,13 @@ import zipfile
 import tempfile
 from typing import Dict, Any, Optional, List
 
-# Add tools directory to path for backend import
-tool_path = Path(__file__).parent.parent / "ferramentas"
-sys.path.append(str(tool_path))
+# Add backend directory to path (directory has hyphen, can't import directly)
+backend_path = Path(__file__).parent.parent / "ferramentas" / "legal-doc-assembler"
+sys.path.insert(0, str(backend_path))
 
-from legal_doc_assembler.src.engine import DocumentEngine
-from legal_doc_assembler.src.batch_engine import BatchProcessor
-from legal_doc_assembler.src.normalizers import normalize_all
+from src.engine import DocumentEngine
+from src.batch_engine import BatchProcessor
+from src.normalizers import normalize_all
 
 
 def render():
