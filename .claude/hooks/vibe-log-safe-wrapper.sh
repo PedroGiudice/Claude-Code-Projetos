@@ -18,5 +18,5 @@ if ! grep -q '"token"' "$HOME/.vibe-log/config.json" 2>/dev/null; then
   exit 0
 fi
 
-# Autenticado - executar vibe-log
-npx vibe-log-cli send --silent --hook-trigger="$HOOK_TRIGGER" --hook-version=1.0.0
+# Autenticado - executar vibe-log (--silent suprime output em hooks)
+npx vibe-log-cli send --silent

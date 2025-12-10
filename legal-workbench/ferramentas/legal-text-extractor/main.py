@@ -2,6 +2,10 @@
 Legal Text Extractor - Sistema de Extração de Texto Jurídico
 
 Entry point e API principal do sistema.
+
+Architecture (Marker-only):
+- PDFPlumberEngine: PDFs com texto nativo (rápido, leve)
+- MarkerEngine: PDFs escaneados (OCR de alta qualidade, ~10GB RAM)
 """
 import logging
 import time
@@ -9,8 +13,8 @@ from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
 
-from src.extractors.text_extractor import TextExtractor
-from src.extractors.ocr_extractor import OCRExtractor
+from src.engines.pdfplumber_engine import PDFPlumberEngine
+from src.engines.marker_engine import MarkerEngine
 from src.core.cleaner import DocumentCleaner
 from src.exporters.text import TextExporter
 from src.exporters.markdown import MarkdownExporter
@@ -42,29 +46,52 @@ class ExtractionResult:
     final_length: int
     reduction_pct: float
     patterns_removed: list[str]
+    engine_used: str = "unknown"
 
 
 class LegalTextExtractor:
     """
     Sistema de extração de texto jurídico.
 
-    Combina extração de texto e limpeza semântica.
+    Pipeline:
+    1. Detecta tipo de PDF (nativo vs escaneado)
+    2. Se nativo → PDFPlumber (rápido)
+    3. Se escaneado → Marker (OCR de alta qualidade)
+    4. Limpeza semântica do texto extraído
     """
 
     def __init__(self):
-        self.text_extractor = TextExtractor()
-        self.ocr_extractor = OCRExtractor()
+        self.pdfplumber_engine = PDFPlumberEngine()
+        self.marker_engine = MarkerEngine()
         self.cleaner = DocumentCleaner()
         self.txt_exporter = TextExporter()
         self.md_exporter = MarkdownExporter()
         self.json_exporter = JSONExporter()
+
+    def _is_scanned(self, pdf_path: Path) -> bool:
+        """
+        Detecta se PDF é escaneado (sem texto nativo).
+
+        Usa pdfplumber para verificar densidade de texto.
+        """
+        import pdfplumber
+
+        with pdfplumber.open(pdf_path) as pdf:
+            if len(pdf.pages) == 0:
+                return True
+
+            # Verifica primeira página
+            text = pdf.pages[0].extract_text()
+            # Se tem menos de 50 caracteres, provavelmente é escaneado
+            return not text or len(text.strip()) < 50
 
     def process_pdf(
         self,
         pdf_path: Path | str,
         system: str | None = None,
         blacklist: list[str] | None = None,
-        output_format: str = "text"  # "text", "markdown", "json"
+        output_format: str = "text",  # "text", "markdown", "json"
+        force_ocr: bool = False,
     ) -> ExtractionResult:
         """
         Processa PDF completo.
@@ -74,6 +101,7 @@ class LegalTextExtractor:
             system: Sistema judicial (None = auto-detect)
             blacklist: Termos customizados a remover
             output_format: Formato de saída ("text", "markdown", "json")
+            force_ocr: Forçar uso de Marker mesmo para PDFs nativos
 
         Returns:
             ExtractionResult com texto limpo e metadados
@@ -84,18 +112,31 @@ class LegalTextExtractor:
         logger.info(f"=== PROCESSANDO: {pdf_path.name} ===")
         logger.info(f"Tamanho do arquivo: {pdf_path.stat().st_size / 1024 / 1024:.2f} MB")
 
-        # 1. Extrai texto
+        # 1. Detecta tipo e extrai texto
         logger.info("1/2 Extraindo texto do PDF...")
         extract_start = time.time()
 
-        if self.text_extractor.is_scanned(pdf_path):
-            logger.warning("PDF escaneado detectado - OCR não implementado (Fase 2)")
-            raise NotImplementedError("OCR not implemented yet (Fase 2)")
+        is_scanned = self._is_scanned(pdf_path)
+        use_ocr = is_scanned or force_ocr
 
-        raw_text = self.text_extractor.extract(pdf_path)
+        if use_ocr:
+            logger.info("PDF escaneado detectado - usando Marker OCR")
+
+            if not self.marker_engine.is_available():
+                ok, reason = self.marker_engine.check_resources()
+                raise RuntimeError(f"Marker não disponível: {reason}")
+
+            engine_result = self.marker_engine.extract(pdf_path)
+            engine_used = "marker"
+        else:
+            logger.info("PDF com texto nativo - usando PDFPlumber")
+            engine_result = self.pdfplumber_engine.extract(pdf_path)
+            engine_used = "pdfplumber"
+
+        raw_text = engine_result.text
         extract_time = time.time() - extract_start
 
-        logger.info(f"✓ Texto extraído: {len(raw_text):,} caracteres ({extract_time:.2f}s)")
+        logger.info(f"✓ Texto extraído via {engine_used}: {len(raw_text):,} caracteres ({extract_time:.2f}s)")
 
         # 2. Limpa texto
         logger.info("2/2 Limpando documento...")
@@ -137,7 +178,8 @@ class LegalTextExtractor:
             original_length=cleaning_result.stats.original_length,
             final_length=cleaning_result.stats.final_length,
             reduction_pct=cleaning_result.stats.reduction_pct,
-            patterns_removed=cleaning_result.stats.patterns_removed
+            patterns_removed=cleaning_result.stats.patterns_removed,
+            engine_used=engine_used,
         )
 
     def save(self, result: ExtractionResult, output_path: Path | str, format: str = "text"):
@@ -156,7 +198,8 @@ class LegalTextExtractor:
             "system_name": result.system_name,
             "confidence": result.confidence,
             "reduction_pct": result.reduction_pct,
-            "patterns_removed_count": len(result.patterns_removed)
+            "patterns_removed_count": len(result.patterns_removed),
+            "engine_used": result.engine_used,
         }
 
         if format == "text":
@@ -188,7 +231,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: python main.py <pdf_file>")
+        print("Usage: python main.py <pdf_file> [--force-ocr]")
         sys.exit(1)
 
     # Configurar logging (console + arquivo)
@@ -207,13 +250,15 @@ if __name__ == "__main__":
     logger.info(f"Log salvo em: {log_file}")
 
     pdf_file = Path(sys.argv[1])
+    force_ocr = "--force-ocr" in sys.argv
 
     extractor = LegalTextExtractor()
-    result = extractor.process_pdf(pdf_file, separate_sections=False)
+    result = extractor.process_pdf(pdf_file, force_ocr=force_ocr)
 
     print(f"\n{'='*60}")
     print(f"RESULTADO - {pdf_file.name}")
     print(f"{'='*60}")
+    print(f"Engine: {result.engine_used}")
     print(f"Sistema: {result.system_name} ({result.confidence}%)")
     print(f"Redução: {result.reduction_pct:.1f}%")
     print(f"Seções: {len(result.sections)}")

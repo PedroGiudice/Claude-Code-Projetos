@@ -5,11 +5,11 @@ from pathlib import Path
 import sys
 import time
 
-# Adiciona o diretório de ferramentas ao path para importação do backend
-tool_path = Path(__file__).parent.parent / "ferramentas"
-sys.path.append(str(tool_path))
+# Adiciona o diretório do backend ao path (diretório tem hífen, não pode ser importado direto)
+backend_path = Path(__file__).parent.parent / "ferramentas" / "legal-text-extractor"
+sys.path.insert(0, str(backend_path))
 
-from legal_text_extractor.main import LegalTextExtractor, ExtractionResult
+from main import LegalTextExtractor, ExtractionResult
 
 def render():
     """Renders the Streamlit UI for the Text Extractor module."""

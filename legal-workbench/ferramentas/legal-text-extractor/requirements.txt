@@ -31,7 +31,7 @@ pydantic==2.12.4
 pydantic_core==2.41.5
 Pygments==2.19.2
 pypdfium2==5.0.0
-pytesseract==0.3.13
+# pytesseract removed - using marker-pdf for OCR
 pytest==9.0.1
 pytest-cov==7.0.0
 reportlab==4.4.5
@@ -43,11 +43,8 @@ typer==0.20.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 
-# Vision Pipeline (step_02)
-pdf2image>=1.16.0
-opencv-python-headless>=4.8.0
-numpy>=1.24.0
-
-# Marker Engine dependencies
+# Marker Engine dependencies (OCR for scanned PDFs)
+# Requires ~10GB RAM
+marker-pdf>=1.0.0
 img2pdf>=0.5.0
 psutil>=5.9.0
