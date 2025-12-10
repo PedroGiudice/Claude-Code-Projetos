@@ -1,28 +1,28 @@
 """
-Step 04: O Bibliotecario - Classificador Semantico de Pecas Processuais.
+Step 04: O Bibliotecário - Classificador Semântico com Gemini.
+
+Este módulo reimplementa o Step 04 usando Gemini 2.5 Flash para:
+1. Classificar peças processuais (12 categorias)
+2. Limpar ruído contextual (SEM condensar)
+3. Gerar output estruturado
 
 Pipeline:
-1. Carrega final.md (output do Step 03)
-2. Aplica limpeza avancada (cleaner_advanced)
-3. Segmenta em blocos logicos (segmenter)
-4. Gera semantic_structure.json
-5. Atualiza final.md com tags semanticas
+    final.md → Gemini (classificação) → Gemini (limpeza) → Outputs
 
 Uso CLI:
     python -m src.steps.step_04_classify --input-md outputs/doc/final.md
-    python -m src.steps.step_04_classify --output-dir outputs/doc
 
 Uso API:
-    from src.steps.step_04_classify import SemanticClassifier
-    classifier = SemanticClassifier()
-    result = classifier.classify("outputs/doc/final.md")
+    from src.steps.step_04_classify import GeminiBibliotecario
+    bibliotecario = GeminiBibliotecario()
+    result = bibliotecario.process("outputs/doc/final.md")
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -30,87 +30,114 @@ from typing import TypedDict
 
 import typer
 
-# Adiciona src ao path para imports relativos
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Imports relativos para compatibilidade
+try:
+    from src.gemini import GeminiClient, GeminiConfig
+    from src.gemini.prompts import build_classification_prompt, build_cleaning_prompt
+    from src.gemini.schemas import (
+        ClassificationResult,
+        CleanedSection,
+        CleaningResult,
+        PecaType,
+        SectionClassification,
+    )
+except ImportError:
+    # Fallback para imports absolutos quando rodando como script
+    import sys
+    from pathlib import Path as _Path
+    sys.path.insert(0, str(_Path(__file__).parent.parent.parent))
+    from src.gemini import GeminiClient, GeminiConfig
+    from src.gemini.prompts import build_classification_prompt, build_cleaning_prompt
+    from src.gemini.schemas import (
+        ClassificationResult,
+        CleanedSection,
+        CleaningResult,
+        PecaType,
+        SectionClassification,
+    )
 
-from src.core.intelligence.cleaner_advanced import AdvancedCleaner, CleaningStats
-from src.core.intelligence.definitions import get_taxonomy, reload_taxonomy
-from src.core.intelligence.segmenter import (
-    DocumentSegmenter,
-    PageClassification,
-    SectionInfo,
-    SegmentationResult,
-)
+logger = logging.getLogger(__name__)
 
 
-class ClassificationOutput(TypedDict):
-    """Estrutura do output JSON."""
+class ProcessingOutput(TypedDict):
+    """Output completo do processamento."""
 
     doc_id: str
     processed_at: str
     version: str
-    total_pages: int
-    total_sections: int
-    pages: list[PageClassification]
-    sections: list[SectionInfo]
-    cleaning_stats: dict | None
-    taxonomy_version: str
+    classification: ClassificationResult
+    cleaning: CleaningResult | None
+    output_files: dict[str, str]
 
 
 @dataclass
-class ClassifierConfig:
-    """Configuracao do classificador."""
+class BibliotecarioConfig:
+    """Configuração do Bibliotecário."""
 
-    apply_cleaning: bool = True
-    include_masking: bool = False
-    generate_tagged_md: bool = True
+    # Gemini
+    model: str = "gemini-2.5-flash"
+    timeout_seconds: int = 300
+
+    # Processamento
+    skip_cleaning: bool = False
+    generate_cleaned_md: bool = True
+
+    # Validação
     min_confidence: float = 0.3
 
 
 @dataclass
-class SemanticClassifier:
+class GeminiBibliotecario:
     """
-    Classificador semantico de documentos juridicos.
+    Classificador e limpador de documentos jurídicos usando Gemini.
 
-    Orquestra limpeza avancada e segmentacao para produzir
-    estrutura semantica de um documento processual.
+    Este é o orquestrador principal do Step 04. Ele:
+    1. Recebe final.md do Step 03
+    2. Envia para Gemini para classificação
+    3. Opcionalmente envia para limpeza
+    4. Valida outputs com Pydantic
+    5. Gera arquivos de output
+
+    Example:
+        >>> bibliotecario = GeminiBibliotecario()
+        >>> result = bibliotecario.process(Path("outputs/doc/final.md"))
+        >>> print(f"Seções: {result['classification'].total_sections}")
     """
 
-    config: ClassifierConfig = field(default_factory=ClassifierConfig)
-
-    # Componentes (lazy initialization)
-    _cleaner: AdvancedCleaner | None = field(default=None, repr=False)
-    _segmenter: DocumentSegmenter | None = field(default=None, repr=False)
+    config: BibliotecarioConfig = field(default_factory=BibliotecarioConfig)
+    _client: GeminiClient | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
-        """Inicializa componentes."""
-        self._cleaner = AdvancedCleaner(
-            include_masking=self.config.include_masking,
-            preserve_structure=True,
+        """Inicializa cliente Gemini."""
+        gemini_config = GeminiConfig(
+            model=self.config.model,
+            timeout_seconds=self.config.timeout_seconds,
         )
-        self._segmenter = DocumentSegmenter(
-            min_confidence=self.config.min_confidence,
-        )
+        self._client = GeminiClient(config=gemini_config)
 
-    def classify(
+    def process(
         self,
         input_md: Path | str,
         output_dir: Path | str | None = None,
-    ) -> ClassificationOutput:
+    ) -> ProcessingOutput:
         """
-        Classifica um documento e gera outputs.
+        Processa documento completo.
 
         Args:
-            input_md: Caminho para final.md
-            output_dir: Diretorio para outputs (default: mesmo de input)
+            input_md: Caminho para final.md (output do Step 03)
+            output_dir: Diretório para outputs (default: mesmo de input)
 
         Returns:
-            ClassificationOutput com resultados
+            ProcessingOutput com classificação e limpeza
+
+        Raises:
+            FileNotFoundError: Se input_md não existe
+            RuntimeError: Se Gemini falhar na classificação
         """
         input_path = Path(input_md)
 
         if not input_path.exists():
-            raise FileNotFoundError(f"Arquivo nao encontrado: {input_path}")
+            raise FileNotFoundError(f"Arquivo não encontrado: {input_path}")
 
         # Define output directory
         if output_dir is None:
@@ -119,106 +146,330 @@ class SemanticClassifier:
             output_path = Path(output_dir)
             output_path.mkdir(parents=True, exist_ok=True)
 
-        # Extrai doc_id do path
+        # Extrai doc_id do nome do diretório
         doc_id = output_path.name
 
-        # Le conteudo
-        markdown_content = input_path.read_text(encoding="utf-8")
+        logger.info(f"[Step 04] Processando: {input_path}")
+        logger.info(f"[Step 04] Doc ID: {doc_id}")
+        logger.info(f"[Step 04] Modelo: {self.config.model}")
 
-        # Step 1: Limpeza avancada
-        cleaning_stats = None
-        if self.config.apply_cleaning:
-            cleaned_content = self._cleaner.clean_markdown(markdown_content)
-            # TODO: Implementar tracking de stats por pagina
-        else:
-            cleaned_content = markdown_content
+        # Step 1: Classificação (obrigatória)
+        classification = self._classify(input_path, doc_id)
 
-        # Step 2: Segmentacao
-        segmentation = self._segmenter.segment(cleaned_content, doc_id=doc_id)
+        # Step 2: Limpeza (opcional)
+        cleaning = None
+        if not self.config.skip_cleaning:
+            cleaning = self._clean(input_path, classification)
 
-        # Step 3: Monta output
-        taxonomy = get_taxonomy()
-        output = ClassificationOutput(
-            doc_id=doc_id,
-            processed_at=datetime.now().isoformat(),
-            version="1.0.0",
-            total_pages=segmentation["total_pages"],
-            total_sections=segmentation["total_sections"],
-            pages=segmentation["pages"],
-            sections=segmentation["sections"],
-            cleaning_stats=cleaning_stats,
-            taxonomy_version=taxonomy.version,
+        # Step 3: Gerar outputs
+        output_files = self._generate_outputs(
+            output_path, classification, cleaning, input_path
         )
 
-        # Step 4: Salva semantic_structure.json
-        json_output_path = output_path / "semantic_structure.json"
-        self._save_json(output, json_output_path)
+        logger.info(f"[Step 04] Concluído! {len(output_files)} arquivos gerados")
 
-        # Step 5: Gera MD taggeado
-        if self.config.generate_tagged_md:
-            tagged_md = self._generate_tagged_markdown(cleaned_content, segmentation)
-            tagged_md_path = output_path / "final_tagged.md"
-            tagged_md_path.write_text(tagged_md, encoding="utf-8")
+        return ProcessingOutput(
+            doc_id=doc_id,
+            processed_at=datetime.now().isoformat(),
+            version="2.0.0",  # Nova versão com Gemini
+            classification=classification,
+            cleaning=cleaning,
+            output_files=output_files,
+        )
 
-        return output
+    def _classify(self, input_path: Path, doc_id: str) -> ClassificationResult:
+        """
+        Executa classificação via Gemini.
 
-    def _save_json(self, output: ClassificationOutput, path: Path) -> None:
-        """Salva output como JSON formatado."""
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(output, f, ensure_ascii=False, indent=2)
+        Args:
+            input_path: Caminho do arquivo final.md
+            doc_id: ID do documento
 
-    def _generate_tagged_markdown(
+        Returns:
+            ClassificationResult validado
+
+        Raises:
+            RuntimeError: Se Gemini falhar
+            ValueError: Se output não for JSON válido
+        """
+        logger.info("[Step 04] Fase 1: Classificação semântica via Gemini...")
+
+        prompt = build_classification_prompt(doc_id)
+
+        response = self._client.process_file(
+            file_path=input_path,
+            prompt=prompt,
+            output_format="json",
+        )
+
+        if not response.success:
+            raise RuntimeError(f"Gemini falhou na classificação: {response.error}")
+
+        # Parse e valida JSON
+        try:
+            data = json.loads(response.text)
+            logger.debug(f"JSON parseado: {len(data.get('sections', []))} seções")
+        except json.JSONDecodeError as e:
+            logger.error(f"Output não é JSON válido: {e}")
+            logger.error(f"Response text (primeiros 500 chars): {response.text[:500]}")
+            raise ValueError(f"Gemini retornou JSON inválido: {e}")
+
+        # Converte para Pydantic models
+        try:
+            sections = []
+            for s in data.get("sections", []):
+                sections.append(SectionClassification(
+                    section_id=s["section_id"],
+                    type=PecaType(s["type"]),
+                    title=s.get("title", "Sem título")[:200],
+                    start_page=s["start_page"],
+                    end_page=s["end_page"],
+                    confidence=s.get("confidence", 0.5),
+                    reasoning=s.get("reasoning", "Sem justificativa")[:500],
+                ))
+
+            result = ClassificationResult(
+                doc_id=data.get("doc_id", doc_id),
+                total_pages=data.get("total_pages", 0),
+                total_sections=len(sections),
+                sections=sections,
+                summary=data.get("summary", "Documento jurídico")[:500],
+            )
+
+            logger.info(f"[Step 04] Classificação: {result.total_sections} seções identificadas")
+            for s in result.sections:
+                logger.info(
+                    f"  - Seção {s.section_id}: {s.type.value} "
+                    f"(págs {s.start_page}-{s.end_page}, conf={s.confidence:.2f})"
+                )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Erro ao criar ClassificationResult: {e}")
+            logger.error(f"Data: {json.dumps(data, indent=2)[:1000]}")
+            raise
+
+    def _clean(
+        self, input_path: Path, classification: ClassificationResult
+    ) -> CleaningResult:
+        """
+        Executa limpeza contextual via Gemini.
+
+        Args:
+            input_path: Caminho do arquivo
+            classification: Resultado da classificação prévia
+
+        Returns:
+            CleaningResult (pode ter sections vazias se falhar)
+        """
+        logger.info("[Step 04] Fase 2: Limpeza contextual via Gemini...")
+
+        # Prepara resumo da classificação para contexto
+        classification_summary = "\n".join([
+            f"Seção {s.section_id}: {s.type.value} (páginas {s.start_page}-{s.end_page})"
+            for s in classification.sections
+        ])
+
+        prompt = build_cleaning_prompt(classification_summary)
+
+        response = self._client.process_file(
+            file_path=input_path,
+            prompt=prompt,
+            output_format="json",
+        )
+
+        if not response.success:
+            logger.warning(f"Gemini falhou na limpeza: {response.error}")
+            # Retorna resultado vazio mas não falha todo o processo
+            return CleaningResult(
+                doc_id=classification.doc_id,
+                sections=[],
+                total_chars_original=0,
+                total_chars_cleaned=0,
+                reduction_percent=0.0,
+            )
+
+        try:
+            data = json.loads(response.text)
+
+            sections = []
+            for s in data.get("sections", []):
+                sections.append(CleanedSection(
+                    section_id=s["section_id"],
+                    type=PecaType(s["type"]),
+                    content=s.get("content", ""),
+                    noise_removed=s.get("noise_removed", [])[:5],
+                ))
+
+            result = CleaningResult(
+                doc_id=classification.doc_id,
+                sections=sections,
+                total_chars_original=data.get("total_chars_original", 0),
+                total_chars_cleaned=data.get("total_chars_cleaned", 0),
+                reduction_percent=data.get("reduction_percent", 0.0),
+            )
+
+            logger.info(
+                f"[Step 04] Limpeza: {result.reduction_percent:.1f}% redução "
+                f"({result.total_chars_original:,} → {result.total_chars_cleaned:,} chars)"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.warning(f"Erro ao parsear limpeza: {e}")
+            return CleaningResult(
+                doc_id=classification.doc_id,
+                sections=[],
+                total_chars_original=0,
+                total_chars_cleaned=0,
+                reduction_percent=0.0,
+            )
+
+    def _generate_outputs(
         self,
-        markdown_content: str,
-        segmentation: SegmentationResult,
+        output_path: Path,
+        classification: ClassificationResult,
+        cleaning: CleaningResult | None,
+        input_path: Path,
+    ) -> dict[str, str]:
+        """
+        Gera arquivos de output.
+
+        Args:
+            output_path: Diretório de output
+            classification: Resultado da classificação
+            cleaning: Resultado da limpeza (pode ser None)
+            input_path: Arquivo original para gerar tagged
+
+        Returns:
+            Dict com nomes e caminhos dos arquivos gerados
+        """
+        output_files = {}
+
+        # 1. semantic_structure.json (sempre gerado)
+        structure_path = output_path / "semantic_structure.json"
+        structure_data = {
+            "doc_id": classification.doc_id,
+            "processed_at": datetime.now().isoformat(),
+            "processor": "gemini-bibliotecario",
+            "processor_version": "2.0.0",
+            "model": self.config.model,
+            "total_pages": classification.total_pages,
+            "total_sections": classification.total_sections,
+            "summary": classification.summary,
+            "sections": [
+                {
+                    "section_id": s.section_id,
+                    "type": s.type.value,
+                    "title": s.title,
+                    "start_page": s.start_page,
+                    "end_page": s.end_page,
+                    "confidence": s.confidence,
+                    "reasoning": s.reasoning,
+                }
+                for s in classification.sections
+            ],
+        }
+
+        with open(structure_path, "w", encoding="utf-8") as f:
+            json.dump(structure_data, f, ensure_ascii=False, indent=2)
+        output_files["semantic_structure.json"] = str(structure_path)
+        logger.info(f"[Step 04] Gerado: {structure_path.name}")
+
+        # 2. final_tagged.md (sempre gerado)
+        tagged_md_path = output_path / "final_tagged.md"
+        original_content = input_path.read_text(encoding="utf-8")
+        tagged_content = self._build_tagged_markdown(original_content, classification)
+        tagged_md_path.write_text(tagged_content, encoding="utf-8")
+        output_files["final_tagged.md"] = str(tagged_md_path)
+        logger.info(f"[Step 04] Gerado: {tagged_md_path.name}")
+
+        # 3. final_cleaned.md (opcional, se limpeza foi executada com sucesso)
+        if cleaning and cleaning.sections and self.config.generate_cleaned_md:
+            cleaned_md_path = output_path / "final_cleaned.md"
+            cleaned_content = self._build_cleaned_markdown(classification, cleaning)
+            cleaned_md_path.write_text(cleaned_content, encoding="utf-8")
+            output_files["final_cleaned.md"] = str(cleaned_md_path)
+            logger.info(f"[Step 04] Gerado: {cleaned_md_path.name}")
+
+        return output_files
+
+    def _build_tagged_markdown(
+        self,
+        original_content: str,
+        classification: ClassificationResult,
     ) -> str:
         """
-        Gera markdown com tags semanticas.
+        Adiciona tags semânticas ao markdown original.
 
         Transforma:
             ## [[PAGE_001]] [TYPE: NATIVE]
 
         Em:
-            ## [[PAGE_001]] [TYPE: NATIVE] [SEMANTIC: PETICAO_INICIAL] [CONF: 0.85]
-
-        Args:
-            markdown_content: Conteudo original
-            segmentation: Resultado da segmentacao
-
-        Returns:
-            Markdown com tags semanticas
+            ## [[PAGE_001]] [TYPE: NATIVE] [SEMANTIC: PETICAO_INICIAL] [CONF: 0.95]
         """
-        # Cria mapa de pagina -> classificacao
-        page_map = {p["page"]: p for p in segmentation["pages"]}
+        # Cria mapa de página → seção
+        page_to_section: dict[int, SectionClassification] = {}
+        for section in classification.sections:
+            for page in range(section.start_page, section.end_page + 1):
+                page_to_section[page] = section
 
-        # Pattern para identificar headers de pagina
+        # Pattern para headers de página
         page_pattern = re.compile(
             r"(##\s*\[\[PAGE_(\d+)\]\]\s*\[TYPE:\s*\w+\])",
             re.IGNORECASE,
         )
 
         def replace_header(match: re.Match) -> str:
-            """Adiciona tags semanticas ao header."""
             original = match.group(1)
             page_num = int(match.group(2))
 
-            if page_num in page_map:
-                page_info = page_map[page_num]
-                semantic_type = page_info["type"]
-                confidence = page_info["confidence"]
+            if page_num in page_to_section:
+                section = page_to_section[page_num]
+                tagged = f"{original} [SEMANTIC: {section.type.value}] [CONF: {section.confidence:.2f}]"
 
-                # Adiciona tags
-                tagged = f"{original} [SEMANTIC: {semantic_type}] [CONF: {confidence}]"
-
-                # Marca inicio de secao se aplicavel
-                if page_info["is_section_start"]:
-                    tagged = f"\n---\n### INICIO DE SECAO: {semantic_type}\n{tagged}"
+                # Marca início de seção
+                if page_num == section.start_page:
+                    tagged = f"\n---\n### SEÇÃO {section.section_id}: {section.type.value}\n> {section.title}\n\n{tagged}"
 
                 return tagged
 
             return original
 
-        return page_pattern.sub(replace_header, markdown_content)
+        return page_pattern.sub(replace_header, original_content)
+
+    def _build_cleaned_markdown(
+        self,
+        classification: ClassificationResult,
+        cleaning: CleaningResult,
+    ) -> str:
+        """Constrói markdown limpo a partir das seções limpas."""
+        lines = [
+            f"# {classification.doc_id}",
+            "",
+            f"> Processado por Gemini Bibliotecário v2.0.0",
+            f"> {classification.total_sections} seções | "
+            f"{cleaning.reduction_percent:.1f}% redução de ruído",
+            "",
+            f"**Resumo:** {classification.summary}",
+            "",
+            "---",
+            "",
+        ]
+
+        for section in cleaning.sections:
+            lines.extend([
+                f"## [{section.section_id}] {section.type.value}",
+                "",
+                section.content,
+                "",
+                "---",
+                "",
+            ])
+
+        return "\n".join(lines)
 
 
 # =============================================================================
@@ -227,136 +478,98 @@ class SemanticClassifier:
 
 app = typer.Typer(
     name="step_04_classify",
-    help="Step 04: Classificador Semantico (O Bibliotecario)",
+    help="Step 04: Bibliotecário Semântico com Gemini",
 )
 
 
 @app.command()
 def classify(
     input_md: Path = typer.Option(
-        None,
+        ...,
         "--input-md",
         "-i",
-        help="Caminho para final.md",
+        help="Caminho para final.md (output do Step 03)",
     ),
     output_dir: Path = typer.Option(
         None,
         "--output-dir",
         "-o",
-        help="Diretorio para outputs (default: mesmo de input)",
+        help="Diretório para outputs (default: mesmo de input)",
     ),
-    no_clean: bool = typer.Option(
+    skip_cleaning: bool = typer.Option(
         False,
-        "--no-clean",
-        help="Desabilita limpeza avancada",
+        "--skip-cleaning",
+        help="Pula etapa de limpeza (só classifica)",
     ),
-    mask_pii: bool = typer.Option(
-        False,
-        "--mask-pii",
-        help="Mascara CPF/CNPJ/Email/Telefone",
-    ),
-    no_tagged_md: bool = typer.Option(
-        False,
-        "--no-tagged-md",
-        help="Nao gera final_tagged.md",
-    ),
-    min_confidence: float = typer.Option(
-        0.3,
-        "--min-confidence",
-        "-c",
-        help="Confianca minima para classificacao (0.0-1.0)",
+    model: str = typer.Option(
+        "gemini-2.5-flash",
+        "--model",
+        "-m",
+        help="Modelo Gemini (gemini-2.5-flash ou gemini-2.5-pro)",
     ),
 ) -> None:
     """
-    Classifica documento juridico e gera estrutura semantica.
+    Classifica documento jurídico usando Gemini.
+
+    Este comando substitui a classificação baseada em regex por
+    classificação semântica via LLM (Gemini 2.5 Flash/Pro).
 
     Exemplo:
         python -m src.steps.step_04_classify -i outputs/doc/final.md
+        python -m src.steps.step_04_classify -i outputs/doc/final.md --skip-cleaning
+        python -m src.steps.step_04_classify -i outputs/doc/final.md -m gemini-2.5-pro
     """
-    # Valida input
-    if input_md is None:
-        typer.echo("Erro: --input-md e obrigatorio", err=True)
-        raise typer.Exit(1)
-
     if not input_md.exists():
-        typer.echo(f"Erro: arquivo nao encontrado: {input_md}", err=True)
+        typer.echo(f"Erro: arquivo não encontrado: {input_md}", err=True)
         raise typer.Exit(1)
 
-    # Configura
-    config = ClassifierConfig(
-        apply_cleaning=not no_clean,
-        include_masking=mask_pii,
-        generate_tagged_md=not no_tagged_md,
-        min_confidence=min_confidence,
+    config = BibliotecarioConfig(
+        model=model,
+        skip_cleaning=skip_cleaning,
     )
 
-    classifier = SemanticClassifier(config=config)
+    bibliotecario = GeminiBibliotecario(config=config)
 
-    typer.echo(f"[Step 04] Processando: {input_md}")
-    typer.echo(f"[Step 04] Limpeza: {'SIM' if config.apply_cleaning else 'NAO'}")
-    typer.echo(f"[Step 04] Mascaramento PII: {'SIM' if config.include_masking else 'NAO'}")
+    typer.echo(f"[Step 04] Bibliotecário Semântico v2.0.0 (Gemini)")
+    typer.echo(f"[Step 04] Input: {input_md}")
+    typer.echo(f"[Step 04] Modelo: {model}")
+    typer.echo(f"[Step 04] Limpeza: {'DESABILITADA' if skip_cleaning else 'HABILITADA'}")
+    typer.echo("")
 
     try:
-        result = classifier.classify(input_md, output_dir)
+        result = bibliotecario.process(input_md, output_dir)
 
-        typer.echo(f"\n[Step 04] Concluido!")
-        typer.echo(f"  - Doc ID: {result['doc_id']}")
-        typer.echo(f"  - Total paginas: {result['total_pages']}")
-        typer.echo(f"  - Total secoes: {result['total_sections']}")
-        typer.echo(f"  - Taxonomia: v{result['taxonomy_version']}")
+        typer.echo("")
+        typer.echo(f"[Step 04] ✓ Processamento concluído!")
+        typer.echo(f"  Doc ID: {result['doc_id']}")
+        typer.echo(f"  Seções: {result['classification'].total_sections}")
+        typer.echo(f"  Resumo: {result['classification'].summary[:100]}...")
 
-        # Resumo de secoes
-        typer.echo("\n[Step 04] Secoes identificadas:")
-        for section in result["sections"]:
-            typer.echo(
-                f"  {section['section_id']}. {section['type']} "
-                f"(pags {section['start_page']}-{section['end_page']}, "
-                f"conf={section['confidence']})"
-            )
+        if result['cleaning'] and result['cleaning'].sections:
+            typer.echo(f"  Redução: {result['cleaning'].reduction_percent:.1f}%")
 
-        # Outputs gerados
-        out_dir = output_dir or input_md.parent
-        typer.echo(f"\n[Step 04] Outputs gerados em: {out_dir}")
-        typer.echo(f"  - semantic_structure.json")
-        if config.generate_tagged_md:
-            typer.echo(f"  - final_tagged.md")
+        typer.echo("")
+        typer.echo("[Step 04] Arquivos gerados:")
+        for name, path in result['output_files'].items():
+            typer.echo(f"  - {name}")
 
-    except Exception as e:
+    except FileNotFoundError as e:
         typer.echo(f"Erro: {e}", err=True)
         raise typer.Exit(1)
+    except RuntimeError as e:
+        typer.echo(f"Erro Gemini: {e}", err=True)
+        raise typer.Exit(2)
+    except Exception as e:
+        typer.echo(f"Erro inesperado: {e}", err=True)
+        raise typer.Exit(3)
 
 
 @app.command()
-def validate_taxonomy(
-    taxonomy_path: Path = typer.Option(
-        None,
-        "--path",
-        "-p",
-        help="Caminho para legal_taxonomy.json (default: assets/)",
-    ),
-) -> None:
-    """Valida arquivo de taxonomia."""
-    try:
-        if taxonomy_path:
-            taxonomy = reload_taxonomy(taxonomy_path)
-        else:
-            taxonomy = get_taxonomy()
-
-        typer.echo(f"Taxonomia valida!")
-        typer.echo(f"  - Versao: {taxonomy.version}")
-        typer.echo(f"  - Descricao: {taxonomy.description}")
-        typer.echo(f"  - Categorias: {len(taxonomy.categories)}")
-
-        for cat_name in taxonomy.all_categories():
-            cat = taxonomy.categories[cat_name]
-            typer.echo(
-                f"    - {cat_name}: {len(cat['synonyms'])} sinonimos, "
-                f"prioridade={cat['priority']}"
-            )
-
-    except Exception as e:
-        typer.echo(f"Erro: {e}", err=True)
-        raise typer.Exit(1)
+def version():
+    """Mostra versão do Bibliotecário."""
+    typer.echo("Bibliotecário Semântico v2.0.0")
+    typer.echo("Engine: Gemini 2.5 Flash/Pro")
+    typer.echo("Taxonomia: 12 categorias (ADR-001)")
 
 
 if __name__ == "__main__":
