@@ -1,3 +1,8 @@
+---
+name: legal-text-extractor
+description: Extração inteligente de texto de documentos jurídicos processuais brasileiros - OCR, limpeza avançada, separação de seções, remoção de certificações digitais.
+---
+
 # legal-text-extractor
 
 **Especialidade:** Extração inteligente de texto de documentos jurídicos processuais brasileiros - OCR, limpeza avançada, separação de seções, remoção de certificações digitais.

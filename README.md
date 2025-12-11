@@ -51,3 +51,8 @@ ferramentas/CLAUDE.md  # Regras para ferramentas
 ```
 
 Regras mais especificas (subdiretorio) complementam as regras globais.
+
+## Task Execution Patterns
+
+- **Swarm**: Medium-complex tasks with parallel subagents
+- **Breakdown**: Decompose large tasks into atomic units before execution
