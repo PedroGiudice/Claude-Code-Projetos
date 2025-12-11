@@ -33,8 +33,9 @@ RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 # Copy application code
 COPY api/ ./api/
 
-# Copy engine source from ferramentas
-COPY ../../../ferramentas/legal-doc-assembler/src/ ./ferramentas/legal-doc-assembler/src/
+# NOTE: Engine source is mounted via docker-compose volume or built from root context
+# To build from root: docker build -f docker/services/doc-assembler/Dockerfile -t doc-assembler .
+# COPY ferramentas/legal-doc-assembler/src/ ./ferramentas/legal-doc-assembler/src/
 
 # Set ownership
 RUN chown -R appuser:appuser /app

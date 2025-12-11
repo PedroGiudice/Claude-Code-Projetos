@@ -1,0 +1,75 @@
+# Legal Workbench - Cron Jobs Example
+# Adicione estas linhas ao seu crontab com: crontab -e
+
+# Define o diretório base (ajuste conforme necessário)
+LEGAL_WORKBENCH_DIR=/home/user/Claude-Code-Projetos/legal-workbench/docker/scripts
+
+# ==============================================================================
+# BACKUPS
+# ==============================================================================
+
+# Backup diário às 2h da manhã (mantém últimos 7 dias)
+0 2 * * * $LEGAL_WORKBENCH_DIR/backup.sh --keep 7 >> /var/log/lw-backup.log 2>&1
+
+# Backup semanal aos domingos às 3h (mantém últimos 4 backups semanais)
+0 3 * * 0 $LEGAL_WORKBENCH_DIR/backup.sh --keep 4 --output /backups/weekly >> /var/log/lw-backup-weekly.log 2>&1
+
+# ==============================================================================
+# HEALTH CHECKS
+# ==============================================================================
+
+# Health check a cada 5 minutos
+*/5 * * * * $LEGAL_WORKBENCH_DIR/health-check.sh --quiet || echo "Legal Workbench unhealthy at $(date)" | mail -s "LW Alert" admin@example.com
+
+# Health check com JSON export para monitoramento (a cada 10 minutos)
+*/10 * * * * $LEGAL_WORKBENCH_DIR/health-check.sh --json > /var/log/lw-health-$(date +\%Y\%m\%d-\%H\%M).json
+
+# ==============================================================================
+# LOGS & CLEANUP
+# ==============================================================================
+
+# Limpeza de containers e imagens antigas (diário, meia-noite)
+0 0 * * * docker system prune -f --filter "until=24h" >> /var/log/docker-cleanup.log 2>&1
+
+# Exportar logs de erro diariamente
+0 1 * * * $LEGAL_WORKBENCH_DIR/logs.sh --errors --since "24 hours ago" > /var/log/lw-errors-$(date +\%Y\%m\%d).log 2>&1
+
+# Limpeza de logs antigos (mantém últimos 30 dias)
+0 0 * * * find /var/log/lw-* -type f -mtime +30 -delete
+
+# ==============================================================================
+# MONITORING
+# ==============================================================================
+
+# Verificar uso de disco a cada hora
+0 * * * * df -h | grep -E '(docker|lw-)' > /var/log/lw-disk-usage-$(date +\%Y\%m\%d-\%H).log
+
+# Verificar uso de memória dos containers (a cada 30 minutos)
+*/30 * * * * docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" > /var/log/lw-container-stats-$(date +\%Y\%m\%d-\%H\%M).log
+
+# ==============================================================================
+# ALERTAS
+# ==============================================================================
+
+# Verificar se algum container parou inesperadamente (a cada minuto)
+* * * * * [ $(docker ps -a --filter "status=exited" --filter "name=lw-" --format "{{.Names}}" | wc -l) -gt 0 ] && echo "Container(s) stopped: $(docker ps -a --filter status=exited --filter name=lw- --format {{.Names}})" | mail -s "LW Alert: Container Down" admin@example.com
+
+# Verificar espaço em disco (alerta se > 80%)
+0 */6 * * * [ $(df / | tail -1 | awk '{print $5}' | sed 's/%//') -gt 80 ] && echo "Disk usage above 80%: $(df -h /)" | mail -s "LW Alert: Disk Space" admin@example.com
+
+# ==============================================================================
+# DEPLOY AUTOMATION (Use com cautela!)
+# ==============================================================================
+
+# Auto-restart em caso de unhealthy (desabilitado por padrão)
+# */10 * * * * $LEGAL_WORKBENCH_DIR/health-check.sh --quiet || (cd /path/to/legal-workbench/docker && docker compose restart)
+
+# ==============================================================================
+# LOGS DE CRON
+# ==============================================================================
+# Todos os outputs de cron devem ser redirecionados para logs:
+# >> /var/log/arquivo.log 2>&1
+#
+# Para ver logs de cron:
+# tail -f /var/log/cron
+# journalctl -u cron -f

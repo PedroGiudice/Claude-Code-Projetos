@@ -30,8 +30,9 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy application code
 COPY api/ /app/api/
 
-# Copy Trello client code from ferramentas (dependency)
-COPY ../../../ferramentas/trello-mcp/src /app/trello_src
+# NOTE: Trello client code is mounted via docker-compose volume or built from root context
+# To build from root: docker build -f docker/services/trello-mcp/Dockerfile -t trello-mcp .
+# COPY ferramentas/trello-mcp/src /app/trello_src
 
 # Set environment variables
 ENV PATH=/home/appuser/.local/bin:$PATH \
