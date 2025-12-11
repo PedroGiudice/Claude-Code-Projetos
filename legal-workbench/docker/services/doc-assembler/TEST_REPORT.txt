@@ -1,0 +1,150 @@
+================================================================================
+DOC-ASSEMBLER CONTAINER TEST REPORT
+================================================================================
+Date: 2025-12-11
+Service: legal-workbench/docker/services/doc-assembler/
+
+================================================================================
+1. SYNTAX VERIFICATION
+================================================================================
+
+Python Files Checked:
+- api/main.py ............................ ✓ PASS
+- api/models.py .......................... ✓ PASS
+- test_api.py ............................ ✓ PASS
+
+Dockerfile Syntax ......................... ✓ PASS (Valid multi-stage build)
+
+================================================================================
+2. DEPENDENCY VERIFICATION
+================================================================================
+
+requirements.txt Dependencies:
+- fastapi>=0.109.0 ....................... ✓ Compatible
+- uvicorn[standard]>=0.27.0 .............. ✓ Compatible
+- pydantic>=2.0.0 ........................ ✓ Compatible
+- docxtpl>=0.18.0 ........................ ✓ Compatible
+- jinja2>=3.1.0 .......................... ✓ Compatible
+- python-docx>=1.1.0 ..................... ✓ Compatible
+- python-multipart>=0.0.6 ................ ✓ Compatible
+- aiofiles>=23.0.0 ....................... ✓ Compatible
+
+All dependency versions are reasonable and compatible.
+
+================================================================================
+3. UNIT TEST EXECUTION
+================================================================================
+
+legal-doc-assembler Backend Tests:
+- tests/test_engine.py ................... ✓ 27 tests PASSED
+- tests/test_normalizers.py .............. ✓ 121 tests PASSED
+- Total Backend Tests .................... ✓ 148/148 PASSED
+
+Test Results Summary:
+- Engine initialization tests ............ PASS
+- Template variable extraction .......... PASS
+- Data validation tests ................. PASS
+- Text normalization tests .............. PASS
+- UTF-8 character handling .............. PASS
+- Nested data handling .................. PASS
+- CPF/CNPJ/CEP/OAB formatting ........... PASS
+- Punctuation normalization ............. PASS
+
+================================================================================
+4. API ENDPOINT ANALYSIS
+================================================================================
+
+Core Endpoints Defined:
+✓ GET  /health ........................... Health check endpoint
+✓ GET  /api/v1/templates ................ List templates
+✓ GET  /api/v1/templates/{id:path} ..... Template details
+✓ POST /api/v1/validate ................. Data validation
+✓ POST /api/v1/preview .................. Document preview
+✓ POST /api/v1/assemble ................. Document generation
+
+Pydantic Models:
+✓ All request/response models properly defined
+✓ Field validation implemented
+✓ Error response model defined
+
+Exception Handlers:
+✓ FileNotFoundError (404)
+✓ ValueError (400)
+✓ Generic Exception (500)
+
+================================================================================
+5. CRITICAL ISSUES FOUND
+================================================================================
+
+ISSUE #1: DOCKERFILE BUILD FAILURE (CRITICAL)
+Location: Dockerfile line 37
+Problem:  Relative path in COPY command outside build context
+Code:     COPY ../../../ferramentas/legal-doc-assembler/src/ ./ferramentas/legal-doc-assembler/src/
+Impact:   Docker build will FAIL with "COPY failed: stat ... no such file or directory"
+Severity: CRITICAL - Prevents container from building
+Solution: 
+  - Build from project root: docker build -f docker/services/doc-assembler/Dockerfile .
+  - Or modify Dockerfile to use proper build context
+
+ISSUE #2: PORT MISMATCH (MEDIUM)
+Location: api/main.py line 469
+Problem:  Hardcoded port 8000 in uvicorn.run()
+Expected: Port 8002 (per Dockerfile)
+Impact:   If main.py run directly, API listens on wrong port
+Severity: MEDIUM - Affects local development
+Solution: Change port to 8002 or use environment variable
+
+ISSUE #3: CORS TOO PERMISSIVE (MEDIUM)
+Location: api/main.py lines 75-81
+Problem:  allow_origins=["*"] exposes API to any origin
+Impact:   Security risk in production
+Severity: MEDIUM - Production security issue
+Solution: Restrict to specific frontend domains
+
+================================================================================
+6. RECOMMENDATIONS
+================================================================================
+
+HIGH PRIORITY:
+1. Fix Dockerfile COPY path issue before building container
+2. Ensure docker build is run from project root
+
+MEDIUM PRIORITY:
+1. Fix port mismatch (8000 vs 8002) in main.py
+2. Restrict CORS to specific origins for production
+3. Add environment variable for configurability
+
+LOW PRIORITY:
+1. Improve engine version error handling
+2. Add logging for path resolution
+3. Consider API request/response logging middleware
+
+================================================================================
+7. BUILD VERIFICATION
+================================================================================
+
+To properly build and test this container:
+
+# Build command (from project root):
+docker build -f docker/services/doc-assembler/Dockerfile \
+  -t doc-assembler:latest .
+
+# Run container:
+docker run -p 8002:8002 \
+  -e TEMPLATES_DIR=/app/templates \
+  -e OUTPUTS_DIR=/app/outputs \
+  doc-assembler:latest
+
+# Test health endpoint:
+curl http://localhost:8002/health
+
+================================================================================
+OVERALL STATUS: FAIL (Build issue prevents deployment)
+================================================================================
+
+Backend Code Quality: ✓ EXCELLENT (148/148 tests passing)
+API Design: ✓ GOOD (All endpoints properly designed)
+Docker Setup: ✗ NEEDS FIX (Build will fail due to path issue)
+
+The service is code-ready but cannot be containerized in current state.
+
