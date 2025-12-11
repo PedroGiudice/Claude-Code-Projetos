@@ -1,4 +1,4 @@
-version: "3.8"
+# version removed (obsolete in Compose V2)
 
 # Legal Workbench - Docker Compose
 # Target: 14GB RAM WSL, i5 12th gen
@@ -83,11 +83,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 10G
-          cpus: '4'
-        reservations:
-          memory: 6G
+          memory: 8G
           cpus: '2'
+        reservations:
+          memory: 4G
+          cpus: '1'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
@@ -125,8 +125,8 @@ services:
 
   stj-api:
     build:
-      context: ./services/stj-api
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/services/stj-api/Dockerfile
     container_name: lw-stj-api
     ports:
       - "8003:8003"

@@ -97,6 +97,30 @@ Acesse: **http://localhost:8501**
 - **Disco:** 20GB livres (modelos Marker + cache)
 - **CPU:** 4 cores (i5 12ª geração ou superior)
 
+### Instalação Docker (WSL2 Ubuntu)
+
+Se o Docker não estiver instalado no WSL2:
+
+```bash
+# Atualizar pacotes
+sudo apt update && sudo apt upgrade -y
+
+# Instalar Docker e Docker Compose
+sudo apt install -y docker.io docker-compose-v2
+
+# Adicionar usuário ao grupo docker (evita usar sudo)
+sudo usermod -aG docker $USER
+
+# Reiniciar WSL (executar no PowerShell do Windows)
+wsl --shutdown
+
+# Após reabrir o terminal WSL, verificar instalação
+docker --version        # Deve mostrar 24.0+
+docker compose version  # Deve mostrar 2.20+
+```
+
+> **Nota:** Após `usermod`, é necessário reiniciar o WSL para o grupo ter efeito.
+
 ### Configuração WSL2 (Windows)
 
 Criar/editar arquivo `%UserProfile%\.wslconfig`:
@@ -123,7 +147,45 @@ wsl --shutdown
 - `memory=14GB`: Reserva 2GB para o Windows dos 16GB totais
 - `processors=3`: Suficiente para builds e runtime simultâneos
 - `swap=8GB`: Cobre picos de memória do Marker durante OCR
-- `autoMemoryReclaim=gradual`: Libera memória não utilizada automaticamente
+
+### Troubleshooting: Correções Aplicadas (2025-12-11)
+
+Durante a primeira execução, as seguintes correções foram necessárias:
+
+#### 1. Atributo `version` obsoleto no docker-compose.yml
+```yaml
+# Antes (warning):
+version: "3.8"
+
+# Depois (corrigido):
+# version removed (obsolete in Compose V2)
+```
+
+#### 2. Contexto de build inconsistente
+Os Dockerfiles usam paths diferentes. O `docker-compose.yml` foi ajustado para:
+- Serviços com código autocontido: `context: ./services/<service>/`
+- Serviço `stj-api` (precisa de `ferramentas/`): `context: ..`
+
+#### 3. Conflito de dependências no text-extractor
+```txt
+# requirements.txt - Correções:
+redis>=4.5.2,<5.0.0  # celery[redis] 5.3.4 requer redis<5.0.0
+pydantic>=2.7.1,<3.0.0  # marker-pdf requer pydantic>=2.7.1
+```
+
+#### 4. Limites de CPU para máquinas com poucos cores
+Se você tem apenas 2 CPUs disponíveis, o `text-extractor` falhará. Ajuste no `docker-compose.yml`:
+```yaml
+# Para máquinas com 2 CPUs:
+deploy:
+  resources:
+    limits:
+      memory: 8G
+      cpus: '2'
+    reservations:
+      memory: 4G
+      cpus: '1'
+```
 
 ---
 
