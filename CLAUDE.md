@@ -2,8 +2,8 @@
 
 Instrucoes operacionais para Claude Code neste repositorio.
 
-**Arquitetura:** Ver `ARCHITECTURE.md` (North Star)
-**Licoes:** Ver `DISASTER_HISTORY.md`
+**Arquitetura:** `ARCHITECTURE.md` (North Star)
+**Licoes:** `DISASTER_HISTORY.md`
 
 ---
 
@@ -11,85 +11,48 @@ Instrucoes operacionais para Claude Code neste repositorio.
 
 ### 1. Sempre Usar venv
 ```bash
-cd agentes/<nome>      # ou ferramentas/<nome>
-source .venv/bin/activate
-python main.py
+cd agentes/<nome> && source .venv/bin/activate && python main.py
 ```
 
 ### 2. Nunca Commitar
-- `.venv/`, `__pycache__/`
-- Arquivos de dados (`*.pdf`, `*.log`)
+- `.venv/`, `__pycache__/`, `*.pdf`, `*.log`
 
 ### 3. Paths Dinamicos
 ```python
 from shared.utils.path_utils import get_data_dir
-data = get_data_dir('oab-watcher', 'downloads')
 ```
 
-### 4. Skills Custom
+### 4. Skills
 - `skills/` = custom (requer SKILL.md)
 - `.claude/skills/` = managed (nao modificar)
 
-### 5. Gemini para Context Offloading (OBRIGATORIO)
-**SEMPRE** usar o agente Gemini (`gemini-assistant`) para:
+### 5. Gemini para Context Offloading
+**SEMPRE** usar `gemini-assistant` para:
 - Arquivos > 500 linhas
-- Multiplos arquivos (mesmo pequenos)
-- Logs extensos, diffs grandes, exploracao de diretorios
-
-```bash
-# Exemplo: resumir arquivo grande
-cat arquivo_grande.py | gemini -m gemini-2.5-flash "Resuma em 5 bullets"
-
-# Exemplo: mapear multiplos arquivos
-find src/ -name "*.py" | xargs cat | gemini -m gemini-2.5-flash "Liste classes e funcoes principais"
-```
-
-**Por que:** Poupa tokens, mantem contexto limpo, acelera analise.
-
-## Gemini DPP (Data Ingestion)
-
-**Comando:** `comandos/dpp "instruction" [file]`
-**Funcao:** Ingestao de contexto imparcial e checagem de fatos em runtime.
-**Ferramentas:** Chrome DevTools (frontend), Cloud Run (infra), ADK (orquestracao).
-**Output:** Relatorios XML estruturados (fatos, nao opinioes).
-**Uso:** Acionar para analise estrutural, snapshots de UI ou logs de infra antes de iniciar correcoes.
+- Multiplos arquivos simultaneos
+- Logs extensos, diffs grandes
 
 ---
 
 ## Estrutura
 
 ```
-agentes/           # Agentes Python autonomos (oab-watcher, djen-tracker, legal-lens)
-ferramentas/       # Ferramentas Python sob demanda (legal-text-extractor, stj-dados-abertos, trello-mcp)
-comandos/          # Utilitarios (fetch-doc, parse-legal, validate-id)
-mcp-servers/       # Servidores MCP (djen-mcp-server)
-legal-extractor-*/ # CLI/TUI extracao PDF
+agentes/           # Agentes Python autonomos
+ferramentas/       # Ferramentas Python sob demanda
+comandos/          # CLI utilitarios
+mcp-servers/       # Servidores MCP
+legal-workbench/   # Ambiente de trabalho legal
 shared/            # Codigo compartilhado
 skills/            # Skills custom
-.claude/           # Config Claude Code (agents, hooks, skills managed)
+.claude/           # Config (agents, hooks, skills managed)
 ```
-
----
-
-## MCP: trello-mcp
-
-```bash
-cd ferramentas/trello-mcp
-trello-ui  # alias em ~/.bashrc
-```
-
-Backend: `src/`, Frontend: `Trello-app.py`
 
 ---
 
 ## Debugging
 
 Tecnica dos 5 Porques para bugs nao-triviais:
-1. Sintoma
-2. Por que? (imediato)
-3. Por que? (profundo)
-4. Por que? (mais profundo)
-5. Por que? **CAUSA RAIZ** <- Corrigir apenas isto
+1. Sintoma → 2. Por que? → 3. Por que? → 4. Por que? → 5. **CAUSA RAIZ**
 
 ---
 
@@ -99,14 +62,13 @@ Validar apos mudancas:
 ```bash
 tail -50 ~/.vibe-log/hooks.log
 ```
-
-Red flags: `MODULE_NOT_FOUND`, `command not found`, falhas silenciosas
+Red flags: `MODULE_NOT_FOUND`, `command not found`
 
 ---
 
 ## Agentes Discovery
 
-Agentes descobertos de `.claude/agents/*.md` no inicio da sessao.
+Agentes de `.claude/agents/*.md` descobertos no inicio da sessao.
 Novo agente? Reinicie a sessao.
 
 ---
@@ -114,12 +76,4 @@ Novo agente? Reinicie a sessao.
 ## Team
 
 - **PGR** = Pedro (dono do projeto)
-- **LGP** = Leo (contribuidor ativo, socio do projeto)
-
----
-
-**Ultima atualizacao:** 2025-12-07
-- Consolidacao: `legal-text-extractor` e `stj-dados-abertos` movidos de `agentes/` para `ferramentas/` (ADR-005)
-- `stj-dados-abertos`: Data Lakehouse Dashboard funcional (Streamlit + DuckDB) - download retroativo 2022-hoje
-- Regra 5: Gemini obrigatorio para context offloading (>500 linhas ou multiplos arquivos)
-- `legal-workbench`: claudecodeui integrado para mobile; wrapper Streamlit pendente debug para integracao interna
+- **LGP** = Leo (contribuidor ativo, socio)

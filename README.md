@@ -1,83 +1,53 @@
 # Claude Code Projetos
 
-Sistema de automacao juridica brasileira com agentes Python.
+Sistema de automacao juridica brasileira. Monitoramento de publicacoes, extracao de documentos, analise NLP e RAG juridico.
 
-## Numeros
+## Stack
 
-| Componente | Quantidade |
-|------------|------------|
-| Agentes Python | 9 |
-| Agentes Claude | 30 |
-| Skills custom | 17 |
-| Skills managed | 7 |
-| Comandos | 5 |
-| Hooks | 24 |
+- **Runtime:** Python 3.11, Node.js v22
+- **Ambiente:** Ubuntu 24.04 (WSL2)
+- **Orquestracao:** Claude Code com hooks e skills
 
-**Stack:** Python 3.11, Node.js v22, Ubuntu 24.04 (WSL2)
+## Estrutura do Projeto
 
----
+| Diretorio | Proposito | Quando Usar |
+|-----------|-----------|-------------|
+| `agentes/` | Processos autonomos (monitoramento continuo) | Tarefas que rodam em background |
+| `ferramentas/` | Utilitarios sob demanda | Tarefas pontuais invocadas manualmente |
+| `comandos/` | CLI scripts | Operacoes atomicas (fetch, parse, validate) |
+| `mcp-servers/` | Servidores MCP | Integracao com Claude Code |
+| `legal-workbench/` | Ambiente de trabalho legal | UI/dashboard juridico |
+| `shared/` | Codigo compartilhado | Utils, path helpers, memoria |
+| `skills/` | Skills custom | Guidelines especializadas |
+| `.claude/` | Config Claude Code | Agents, hooks, skills managed |
 
-## Agentes Python
-
-| Agente | Funcao |
-|--------|--------|
-| oab-watcher | Monitora Diario OAB |
-| djen-tracker | Monitora DJEN |
-| legal-lens | Analise NLP |
-| legal-text-extractor | OCR de PDFs |
-| legal-articles-finder | Busca artigos de leis |
-| legal-rag | RAG juridico |
-| jurisprudencia-collector | Coleta jurisprudencia |
-| stj-dados-abertos | Dados abertos STJ |
-| aesthetic-master | Design system |
-
----
-
-## Comandos
-
-| Comando | Funcao |
-|---------|--------|
-| fetch-doc | Baixa documentos |
-| extract-core | Extrai metadados |
-| validate-id | Valida CPF/CNPJ/OAB |
-| parse-legal | Parser juridico |
-| send-alert | Alertas |
-
----
-
-## Estrutura
-
-```
-Claude-Code-Projetos/
-├── .claude/           # Config (agents, hooks, skills managed)
-├── agentes/           # 9 agentes Python
-├── comandos/          # 5 comandos
-├── skills/            # 17 skills custom
-└── shared/            # Codigo compartilhado
-```
-
----
-
-## Setup
+## Comandos Essenciais
 
 ```bash
-cd agentes/oab-watcher
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python main.py
-```
+# Executar agente
+cd agentes/<nome> && source .venv/bin/activate && python main.py
 
----
+# Validar hooks
+tail -50 ~/.vibe-log/hooks.log
+
+# Testar ferramenta
+cd ferramentas/<nome> && source .venv/bin/activate && pytest
+```
 
 ## Documentacao
 
 | Arquivo | Conteudo |
 |---------|----------|
-| ARCHITECTURE.md | North Star (arquitetura) |
-| CLAUDE.md | Instrucoes operacionais |
-| DISASTER_HISTORY.md | Licoes aprendidas |
+| `CLAUDE.md` | Regras operacionais para Claude Code |
+| `ARCHITECTURE.md` | North Star (principios inviolaveis) |
+| `DISASTER_HISTORY.md` | Licoes aprendidas de falhas |
 
----
+## Hierarquia de Rules
 
-**Atualizacao:** 2025-12-04
+```
+CLAUDE.md              # Root: regras globais
+agentes/CLAUDE.md      # Regras para agentes Python
+ferramentas/CLAUDE.md  # Regras para ferramentas
+```
+
+Regras mais especificas (subdiretorio) complementam as regras globais.
