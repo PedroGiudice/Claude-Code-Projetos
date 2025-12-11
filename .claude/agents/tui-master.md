@@ -1,5 +1,6 @@
 ---
 name: tui-master
+model: opus
 description: Generalist TUI agent for Textual framework. Use for simple tasks or when crossing multiple domains (styling + code + debug). For complex work, prefer specialized agents (tui-architect, tui-designer, tui-developer, tui-debugger).
 color: cyan
 tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob

@@ -1,5 +1,6 @@
 ---
 name: desenvolvimento
+model: opus
 description: Implementação técnica hands-on - coding, refactoring, Git operations, TDD, code review
 ---
 

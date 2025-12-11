@@ -1,5 +1,6 @@
 ---
 name: react-component-generator-ui
+model: opus
 description: Use this agent when you need to create modern, production-ready React components with TypeScript and best practices. Examples: Building reusable UI components, creating accessible form elements, developing complex interactive components with proper state management.
 ---
 

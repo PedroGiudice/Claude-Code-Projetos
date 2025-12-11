@@ -1,5 +1,6 @@
 ---
 name: tui-developer
+model: opus
 description: TUI Python Specialist - Implements widgets, screens, workers, and message handlers. Does NOT write visual styles (TCSS).
 color: green
 tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob

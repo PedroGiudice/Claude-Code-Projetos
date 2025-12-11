@@ -1,5 +1,6 @@
 ---
 name: backend-architect
+model: opus
 description: Acts as a consultative architect to design robust, scalable, and maintainable backend systems. Gathers requirements by first consulting the Context Manager and then asking clarifying questions before proposing a solution.
 tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash, LS, WebSearch, WebFetch, TodoWrite, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, Task, mcp__sequential-thinking__sequentialthinking
 ---
