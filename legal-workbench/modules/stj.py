@@ -601,3 +601,87 @@ def render():
                 # Details table
                 with st.expander("Ver detalhes"):
                     st.dataframe(orgao_df, use_container_width=True, hide_index=True)
+
+    # ==========================================================================
+    # TAB 4: MAINTENANCE
+    # ==========================================================================
+    with tab4:
+        st.subheader("Manutenção do Banco de Dados")
+
+        if not db_exists:
+            st.warning("Banco de dados não existe. Use o Download Center primeiro.")
+            return
+
+        # --- Sync Status ---
+        st.markdown("### Status de Sincronização")
+
+        if stats:
+            periodo = stats.get('periodo', {})
+            mais_recente = periodo.get('mais_recente', 'N/A')
+
+            if isinstance(mais_recente, str) and mais_recente != 'N/A':
+                try:
+                    mais_recente_date = datetime.fromisoformat(mais_recente)
+                    days_since = (datetime.now() - mais_recente_date).days
+
+                    if days_since > 7:
+                        st.warning(f"⚠️ Dados desatualizados: última publicação há {days_since} dias")
+                        st.info("Recomendação: Execute uma sincronização no Download Center")
+                    elif days_since > 1:
+                        st.info(f"ℹ️ Última publicação há {days_since} dias")
+                    else:
+                        st.success("✅ Dados atualizados")
+                except:
+                    pass
+
+            # Coverage by organ
+            st.markdown("### Cobertura por Órgão")
+
+            por_orgao = stats.get('por_orgao', {})
+            if por_orgao:
+                for orgao, count in por_orgao.items():
+                    col1, col2 = st.columns([3, 1])
+                    col1.markdown(f"**{orgao}**")
+                    col2.markdown(f"{count:,}".replace(",", "."))
+
+        st.markdown("---")
+
+        # --- Quick Sync ---
+        st.markdown("### Sincronização Rápida")
+        st.caption("Baixa apenas dados novos desde a última sincronização")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("🔄 Sincronizar Novos", use_container_width=True):
+                st.info("Use o Download Center com a data inicial a partir da última publicação")
+
+        with col2:
+            if st.button("📊 Reindexar Banco", use_container_width=True):
+                with st.spinner("Reindexando..."):
+                    try:
+                        with STJDatabase(DATABASE_PATH) as db:
+                            # Run ANALYZE and VACUUM
+                            db.conn.execute("ANALYZE")
+                            st.success("✅ Banco reindexado")
+                    except Exception as e:
+                        st.error(f"Erro: {e}")
+
+        st.markdown("---")
+
+        # --- Danger Zone ---
+        st.markdown("### ⚠️ Zona de Perigo")
+
+        with st.expander("Ações Destrutivas", expanded=False):
+            st.warning("Estas ações são irreversíveis!")
+
+            if st.button("🗑️ Limpar Todo o Banco", type="secondary"):
+                confirm = st.checkbox("Confirmo que quero apagar todos os dados")
+                if confirm:
+                    if st.button("⚠️ CONFIRMAR EXCLUSÃO"):
+                        try:
+                            DATABASE_PATH.unlink()
+                            st.success("Banco de dados removido")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro: {e}")
