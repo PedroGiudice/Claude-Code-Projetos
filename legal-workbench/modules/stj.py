@@ -124,152 +124,286 @@ def render():
         "⚙️ Manutenção"
     ])
 
-    # --- TAB 1: BUSCA ---
+    # ==========================================================================
+    # TAB 1: DOWNLOAD CENTER (RESTORED)
+    # ==========================================================================
     with tab1:
-        st.subheader("Buscar Acórdãos")
+        st.subheader("Download Center")
+        st.caption("Baixe acórdãos diretamente do STJ Dados Abertos")
 
-        # Search form
-        col1, col2 = st.columns([3, 1])
+        # --- Configuration ---
+        col_config, col_terminal = st.columns([1, 2])
 
-        with col1:
-            search_term = st.text_input(
-                "Termo de busca",
-                placeholder="Ex: prescrição tributária, responsabilidade civil...",
-                help="Busca em ementas e textos integrais dos acórdãos"
-            )
+        with col_config:
+            st.markdown("#### Configuração")
 
-        with col2:
-            search_type = st.selectbox(
-                "Buscar em",
-                ["Ementa", "Texto Integral"],
-                help="Texto Integral pode ser mais lento em bases grandes"
-            )
+            with st.container(border=True):
+                # Date range
+                start_date = st.date_input(
+                    "Data Inicial",
+                    value=date(2023, 1, 1),
+                    min_value=date(2020, 1, 1),
+                    max_value=date.today(),
+                    key="stj_start_date"
+                )
 
-        # Filters
-        col1, col2, col3 = st.columns(3)
+                end_date = st.date_input(
+                    "Data Final",
+                    value=date.today(),
+                    min_value=date(2020, 1, 1),
+                    max_value=date.today(),
+                    key="stj_end_date"
+                )
 
-        with col1:
-            orgao_filter = st.selectbox(
-                "Órgão Julgador",
-                ["Todos"] + [config["name"] for config in ORGAOS_JULGADORES.values()],
-                help="Filtrar por órgão julgador específico"
-            )
+                # Organ selection
+                target_organs = st.multiselect(
+                    "Órgãos Julgadores",
+                    options=list(ORGAN_DISPLAY_NAMES.values()),
+                    default=["Corte Especial"],
+                    key="stj_organs"
+                )
 
-        with col2:
-            # Convert orgao name back to key for search
-            orgao_key = None
-            if orgao_filter != "Todos":
-                for key, config in ORGAOS_JULGADORES.items():
-                    if config["name"] == orgao_filter:
-                        orgao_key = key
-                        break
+                st.markdown("---")
 
-            dias_options = {
-                "Últimos 30 dias": 30,
-                "Últimos 90 dias": 90,
-                "Último ano": 365,
-                "Últimos 2 anos": 730,
-                "Últimos 3 anos": 1095
-            }
-            dias_label = st.selectbox(
-                "Período",
-                list(dias_options.keys()),
-                help="Limitar busca a um período específico"
-            )
-            dias = dias_options[dias_label]
+                # Action buttons
+                col1, col2 = st.columns(2)
 
-        with col3:
-            limit = st.number_input(
-                "Máximo de resultados",
-                min_value=10,
-                max_value=500,
-                value=50,
-                step=10,
-                help="Número máximo de resultados a retornar"
-            )
+                with col1:
+                    start_download = st.button(
+                        "▶️ Iniciar Download",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=st.session_state.stj_download_running
+                    )
 
-        # Search button
-        if st.button("🔍 Buscar", type="primary", use_container_width=True):
-            if not search_term:
-                st.warning("Digite um termo para buscar")
+                with col2:
+                    retroactive = st.button(
+                        "📦 Download Completo",
+                        use_container_width=True,
+                        help="Baixa todos os dados de 2022 até hoje",
+                        disabled=st.session_state.stj_download_running
+                    )
+
+        with col_terminal:
+            st.markdown("#### System Logs")
+
+            # Terminal display
+            terminal_container = st.empty()
+
+            # Display current logs
+            logs = st.session_state.stj_download_logs
+            if logs:
+                log_html = "<br>".join([f"<span style='color:#64748b'>></span> {l}" for l in logs[-15:]])
+                terminal_container.markdown(f"""
+                    <div style='background-color: #0f172a; padding: 15px; border-radius: 6px;
+                                border: 1px solid #1e293b; height: 350px; font-family: monospace;
+                                font-size: 12px; overflow-y: auto; color: #e2e8f0;'>
+                        <div style='color: #38bdf8; margin-bottom: 10px;'>
+                            stj-downloader@legal-workbench:~$ ./download.sh
+                        </div>
+                        {log_html}
+                    </div>
+                """, unsafe_allow_html=True)
             else:
-                with st.spinner("Buscando acórdãos..."):
-                    try:
-                        with STJDatabase(DATABASE_PATH) as db:
-                            if search_type == "Ementa":
-                                results = db.buscar_ementa(
-                                    termo=search_term,
-                                    orgao=orgao_key,
-                                    dias=dias,
-                                    limit=limit
-                                )
-                            else:
-                                results = db.buscar_acordao(
-                                    termo=search_term,
-                                    orgao=orgao_key,
-                                    dias=dias,
-                                    limit=limit
+                terminal_container.info("Aguardando comando de download...")
+
+            # Progress bar
+            progress_bar = st.empty()
+
+        # --- Execute Download ---
+        if start_download or retroactive:
+            st.session_state.stj_download_running = True
+            st.session_state.stj_download_logs = []
+
+            # Determine date range
+            if retroactive:
+                start_dt = datetime(2022, 1, 1)
+                end_dt = datetime.now()
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] MODO: Download Retroativo Completo"
+                )
+            else:
+                start_dt = datetime.combine(start_date, datetime.min.time())
+                end_dt = datetime.combine(end_date, datetime.min.time())
+
+            # Convert organ names to keys
+            organ_keys = [_map_display_to_key(name) for name in target_organs]
+
+            try:
+                # Log start
+                log_time = datetime.now().strftime('%H:%M:%S')
+                st.session_state.stj_download_logs.append(
+                    f"[{log_time}] INICIANDO download para {len(organ_keys)} órgão(s)"
+                )
+                st.session_state.stj_download_logs.append(
+                    f"[{log_time}] Período: {start_dt.strftime('%d/%m/%Y')} a {end_dt.strftime('%d/%m/%Y')}"
+                )
+
+                # Generate URLs
+                all_url_configs = []
+                for organ_key in organ_keys:
+                    urls = get_date_range_urls(start_dt, end_dt, organ_key)
+                    all_url_configs.extend(urls)
+
+                total_files = len(all_url_configs)
+                st.session_state.stj_download_logs.append(
+                    f"[{log_time}] Total de arquivos para download: {total_files}"
+                )
+
+                # Update terminal
+                logs = st.session_state.stj_download_logs
+                log_html = "<br>".join([f"<span style='color:#64748b'>></span> {l}" for l in logs[-15:]])
+                terminal_container.markdown(f"""
+                    <div style='background-color: #0f172a; padding: 15px; border-radius: 6px;
+                                border: 1px solid #1e293b; height: 350px; font-family: monospace;
+                                font-size: 12px; overflow-y: auto; color: #e2e8f0;'>
+                        <div style='color: #38bdf8; margin-bottom: 10px;'>
+                            stj-downloader@legal-workbench:~$ ./download.sh
+                        </div>
+                        {log_html}
+                        <span style='background-color: #10b981; width: 8px; height: 14px; display: inline-block;'></span>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                progress_bar.progress(0, "Iniciando...")
+
+                # PHASE 1: Download
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] FASE 1: Download de arquivos JSON..."
+                )
+
+                downloaded_files = []
+
+                with STJDownloader() as downloader:
+                    for idx, config in enumerate(all_url_configs):
+                        try:
+                            file_path = downloader.download_json(
+                                config["url"],
+                                config["filename"],
+                                force=False
+                            )
+
+                            if file_path:
+                                downloaded_files.append(file_path)
+                                st.session_state.stj_download_logs.append(
+                                    f"[{datetime.now().strftime('%H:%M:%S')}] ✓ {config['filename']}"
                                 )
 
-                            st.session_state.stj_search_results = results
+                            # Update progress (40% for download)
+                            progress = int((idx + 1) / total_files * 40)
+                            progress_bar.progress(progress, f"Download: {idx + 1}/{total_files}")
+
+                            # Update terminal every 5 files
+                            if idx % 5 == 0:
+                                logs = st.session_state.stj_download_logs
+                                log_html = "<br>".join([f"<span style='color:#64748b'>></span> {l}" for l in logs[-15:]])
+                                terminal_container.markdown(f"""
+                                    <div style='background-color: #0f172a; padding: 15px; border-radius: 6px;
+                                                border: 1px solid #1e293b; height: 350px; font-family: monospace;
+                                                font-size: 12px; overflow-y: auto; color: #e2e8f0;'>
+                                        <div style='color: #38bdf8; margin-bottom: 10px;'>
+                                            stj-downloader@legal-workbench:~$ ./download.sh
+                                        </div>
+                                        {log_html}
+                                        <span style='background-color: #10b981; width: 8px; height: 14px; display: inline-block;'></span>
+                                    </div>
+                                """, unsafe_allow_html=True)
+
+                        except Exception as e:
+                            st.session_state.stj_download_logs.append(
+                                f"[{datetime.now().strftime('%H:%M:%S')}] ⚠ {config['filename']}: {str(e)[:50]}"
+                            )
+
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] Download: {len(downloaded_files)} arquivos"
+                )
+
+                # PHASE 2: Processing
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] FASE 2: Processamento de JSON..."
+                )
+                progress_bar.progress(40, "Processando...")
+
+                processor = STJProcessor()
+                all_records = []
+
+                for idx, file_path in enumerate(downloaded_files):
+                    try:
+                        records = processor.processar_arquivo_json(file_path)
+                        all_records.extend(records)
+
+                        # Update progress (30% for processing)
+                        progress = 40 + int((idx + 1) / len(downloaded_files) * 30)
+                        progress_bar.progress(progress, f"Processando: {idx + 1}/{len(downloaded_files)}")
 
                     except Exception as e:
-                        st.error(f"Erro na busca: {e}")
-                        st.session_state.stj_search_results = None
-
-        # Display results
-        if st.session_state.stj_search_results is not None:
-            results = st.session_state.stj_search_results
-
-            st.markdown("---")
-            st.subheader(f"Resultados ({len(results)} encontrados)")
-
-            if len(results) == 0:
-                st.info("Nenhum resultado encontrado para os critérios especificados.")
-            else:
-                # Convert to DataFrame for better display
-                df = pd.DataFrame(results)
-
-                # Format dates
-                if 'data_publicacao' in df.columns:
-                    df['data_publicacao'] = pd.to_datetime(df['data_publicacao']).dt.strftime('%d/%m/%Y')
-                if 'data_julgamento' in df.columns:
-                    df['data_julgamento'] = pd.to_datetime(df['data_julgamento']).dt.strftime('%d/%m/%Y')
-
-                # Display each result as an expandable card
-                for idx, row in df.iterrows():
-                    with st.expander(f"📄 {row['numero_processo']} - {row['orgao_julgador']}"):
-                        col1, col2 = st.columns(2)
-
-                        with col1:
-                            st.markdown(f"**Processo:** {row['numero_processo']}")
-                            st.markdown(f"**Órgão:** {row['orgao_julgador']}")
-                            if 'tipo_decisao' in row and pd.notna(row['tipo_decisao']):
-                                st.markdown(f"**Tipo:** {row['tipo_decisao']}")
-
-                        with col2:
-                            st.markdown(f"**Relator:** {row.get('relator', 'N/A')}")
-                            st.markdown(f"**Publicação:** {row.get('data_publicacao', 'N/A')}")
-                            if 'data_julgamento' in row and pd.notna(row['data_julgamento']):
-                                st.markdown(f"**Julgamento:** {row['data_julgamento']}")
-
-                        st.markdown("**Ementa:**")
-                        st.text_area(
-                            "ementa",
-                            value=row.get('ementa', 'N/A'),
-                            height=150,
-                            key=f"ementa_{idx}",
-                            label_visibility="collapsed"
+                        st.session_state.stj_download_logs.append(
+                            f"[{datetime.now().strftime('%H:%M:%S')}] ⚠ Erro processando {file_path.name}"
                         )
 
-                # Download results as CSV
-                st.download_button(
-                    label="📥 Download resultados (CSV)",
-                    data=df.to_csv(index=False).encode('utf-8'),
-                    file_name=f"stj_resultados_{datetime.now():%Y%m%d_%H%M%S}.csv",
-                    mime="text/csv",
-                    use_container_width=True
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] Processados: {len(all_records)} registros"
                 )
+
+                # PHASE 3: Database insertion
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] FASE 3: Inserção no banco de dados..."
+                )
+                progress_bar.progress(70, "Inserindo no banco...")
+
+                with STJDatabase(DATABASE_PATH) as db:
+                    # Create schema if needed
+                    db.criar_schema()
+
+                    if all_records:
+                        inseridos, duplicados, erros = db.inserir_batch(all_records)
+
+                        st.session_state.stj_download_logs.append(
+                            f"[{datetime.now().strftime('%H:%M:%S')}] ✓ Inseridos: {inseridos}"
+                        )
+                        st.session_state.stj_download_logs.append(
+                            f"[{datetime.now().strftime('%H:%M:%S')}] → Duplicados: {duplicados}"
+                        )
+                        if erros > 0:
+                            st.session_state.stj_download_logs.append(
+                                f"[{datetime.now().strftime('%H:%M:%S')}] ⚠ Erros: {erros}"
+                            )
+                    else:
+                        st.session_state.stj_download_logs.append(
+                            f"[{datetime.now().strftime('%H:%M:%S')}] ⚠ Nenhum registro para inserir"
+                        )
+
+                # Complete
+                progress_bar.progress(100, "Concluído!")
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] ========== DOWNLOAD CONCLUÍDO =========="
+                )
+
+                st.success(f"✅ Download concluído! {len(all_records)} registros processados.")
+                st.balloons()
+
+            except Exception as e:
+                st.session_state.stj_download_logs.append(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] ❌ ERRO FATAL: {str(e)}"
+                )
+                st.error(f"Erro durante o download: {e}")
+
+            finally:
+                st.session_state.stj_download_running = False
+
+                # Final terminal update
+                logs = st.session_state.stj_download_logs
+                log_html = "<br>".join([f"<span style='color:#64748b'>></span> {l}" for l in logs[-15:]])
+                terminal_container.markdown(f"""
+                    <div style='background-color: #0f172a; padding: 15px; border-radius: 6px;
+                                border: 1px solid #1e293b; height: 350px; font-family: monospace;
+                                font-size: 12px; overflow-y: auto; color: #e2e8f0;'>
+                        <div style='color: #38bdf8; margin-bottom: 10px;'>
+                            stj-downloader@legal-workbench:~$ ./download.sh
+                        </div>
+                        {log_html}
+                    </div>
+                """, unsafe_allow_html=True)
 
     # --- TAB 2: DOWNLOAD ---
     with tab2:
