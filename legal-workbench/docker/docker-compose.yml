@@ -30,9 +30,11 @@ services:
     environment:
       - TEXT_EXTRACTOR_URL=http://text-extractor:8001
       - DOC_ASSEMBLER_URL=http://doc-assembler:8002
-      - STJ_API_URL=http://stj-api:8003
+      - STJ_API_URL=http://stj-api:8000
       - TRELLO_MCP_URL=http://trello-mcp:8004
       - DATA_PATH=/app/data
+      - NO_PROXY=text-extractor,doc-assembler,stj-api,trello-mcp,redis,localhost,127.0.0.1
+      - no_proxy=text-extractor,doc-assembler,stj-api,trello-mcp,redis,localhost,127.0.0.1
     volumes:
       - app-data:/app/data
       - ../:/app/legal-workbench:ro  # Mount source for development
