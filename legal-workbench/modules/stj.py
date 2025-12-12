@@ -554,7 +554,9 @@ def render():
                     use_container_width=True
                 )
 
-    # --- TAB 3: ESTATÍSTICAS ---
+    # ==========================================================================
+    # TAB 3: STATISTICS (EXISTING)
+    # ==========================================================================
     with tab3:
         st.subheader("Estatísticas do Banco de Dados")
 
