@@ -47,85 +47,82 @@ def _map_display_to_key(display_name: str) -> str:
 
 def render():
     """Renders the Streamlit UI for the STJ Dados Abertos module."""
-    # Lazy imports to avoid module resolution issues
-    STJDatabase, DATABASE_PATH, ORGAOS_JULGADORES = _setup_imports()
+    # Lazy imports
+    STJDatabase, STJDownloader, STJProcessor, DATABASE_PATH, ORGAOS_JULGADORES, get_date_range_urls = _setup_imports()
 
     st.header("STJ Dados Abertos")
-    st.caption("Busca em acórdãos do Superior Tribunal de Justiça (STJ)")
+    st.caption("Download, busca e análise de acórdãos do Superior Tribunal de Justiça")
 
     # --- Session State Initialization ---
     if "stj_search_results" not in st.session_state:
         st.session_state.stj_search_results = None
     if "stj_stats" not in st.session_state:
         st.session_state.stj_stats = None
-
-    # --- Database Connection Check ---
-    db_exists = DATABASE_PATH.exists()
+    if "stj_download_logs" not in st.session_state:
+        st.session_state.stj_download_logs = []
+    if "stj_download_running" not in st.session_state:
+        st.session_state.stj_download_running = False
 
     # --- Database Status ---
+    db_exists = DATABASE_PATH.exists()
+
+    # Stats display
     st.subheader("Status do Banco de Dados")
 
-    if not db_exists:
-        st.error(f"Base de dados não encontrada em: `{DATABASE_PATH}`")
-        st.info("""
-        **Como criar a base de dados:**
+    if db_exists:
+        try:
+            with STJDatabase(DATABASE_PATH) as db:
+                stats = db.obter_estatisticas()
+                st.session_state.stj_stats = stats
 
-        Execute o aplicativo standalone para fazer o download dos dados:
+            if stats:
+                col1, col2, col3, col4 = st.columns(4)
 
-        ```bash
-        cd legal-workbench/ferramentas/stj-dados-abertos
-        source .venv/bin/activate
-        streamlit run app.py
-        ```
+                col1.metric(
+                    "Total de Acórdãos",
+                    f"{stats.get('total_acordaos', 0):,}".replace(",", ".")
+                )
 
-        O aplicativo standalone oferece funcionalidades completas de download,
-        processamento e gerenciamento de dados do STJ.
-        """)
-        return
+                col2.metric(
+                    "Últimos 30 dias",
+                    f"{stats.get('ultimos_30_dias', 0):,}".replace(",", ".")
+                )
 
-    # --- Database Metrics ---
-    try:
-        with STJDatabase(DATABASE_PATH) as db:
-            stats = db.obter_estatisticas()
-            st.session_state.stj_stats = stats
+                col3.metric(
+                    "Tamanho do Banco",
+                    f"{stats.get('tamanho_db_mb', 0):.1f} MB"
+                )
 
-        if stats:
-            col1, col2, col3, col4 = st.columns(4)
+                periodo = stats.get('periodo', {})
+                mais_recente = periodo.get('mais_recente', 'N/A')
+                if isinstance(mais_recente, str) and mais_recente != 'N/A':
+                    try:
+                        mais_recente_date = datetime.fromisoformat(mais_recente)
+                        mais_recente = mais_recente_date.strftime("%d/%m/%Y")
+                    except:
+                        pass
 
-            col1.metric(
-                "Total de Acórdãos",
-                f"{stats.get('total_acordaos', 0):,}".replace(",", ".")
-            )
+                col4.metric(
+                    "Última Publicação",
+                    str(mais_recente)
+                )
 
-            col2.metric(
-                "Últimos 30 dias",
-                f"{stats.get('ultimos_30_dias', 0):,}".replace(",", ".")
-            )
-
-            col3.metric(
-                "Tamanho do Banco",
-                f"{stats.get('tamanho_db_mb', 0):.1f} MB"
-            )
-
-            periodo = stats.get('periodo', {})
-            mais_recente = periodo.get('mais_recente', 'N/A')
-            if isinstance(mais_recente, str) and mais_recente != 'N/A':
-                mais_recente_date = datetime.fromisoformat(mais_recente)
-                mais_recente = mais_recente_date.strftime("%d/%m/%Y")
-
-            col4.metric(
-                "Última Publicação",
-                str(mais_recente)
-            )
-
-    except Exception as e:
-        st.error(f"Erro ao carregar estatísticas: {e}")
+        except Exception as e:
+            st.error(f"Erro ao carregar estatísticas: {e}")
+            stats = None
+    else:
+        st.warning("⚠️ Base de dados não encontrada. Use a aba 'Download Center' para criar.")
         stats = None
 
     st.markdown("---")
 
     # --- Tabs ---
-    tab1, tab2, tab3 = st.tabs(["🔍 Busca", "📥 Download", "📊 Estatísticas"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📥 Download Center",
+        "🔍 Busca",
+        "📊 Estatísticas",
+        "⚙️ Manutenção"
+    ])
 
     # --- TAB 1: BUSCA ---
     with tab1:
