@@ -405,46 +405,154 @@ def render():
                     </div>
                 """, unsafe_allow_html=True)
 
-    # --- TAB 2: DOWNLOAD ---
+    # ==========================================================================
+    # TAB 2: SEARCH (EXISTING)
+    # ==========================================================================
     with tab2:
-        st.subheader("Download de Dados")
+        st.subheader("Buscar Acórdãos")
 
-        st.info("""
-        **Gerenciamento de Downloads**
+        # Search form
+        col1, col2 = st.columns([3, 1])
 
-        Para fazer download de novos dados do STJ, utilize o aplicativo standalone
-        que oferece funcionalidades completas:
+        with col1:
+            search_term = st.text_input(
+                "Termo de busca",
+                placeholder="Ex: prescrição tributária, responsabilidade civil...",
+                help="Busca em ementas e textos integrais dos acórdãos"
+            )
 
-        - Download retroativo (2022 até hoje)
-        - Seleção de órgãos julgadores
-        - Processamento em lote
-        - Monitoramento de progresso
-        - Gerenciamento de armazenamento
+        with col2:
+            search_type = st.selectbox(
+                "Buscar em",
+                ["Ementa", "Texto Integral"],
+                help="Texto Integral pode ser mais lento em bases grandes"
+            )
 
-        **Como executar:**
+        # Filters
+        col1, col2, col3 = st.columns(3)
 
-        ```bash
-        cd legal-workbench/ferramentas/stj-dados-abertos
-        source .venv/bin/activate
-        streamlit run app.py
-        ```
+        with col1:
+            orgao_filter = st.selectbox(
+                "Órgão Julgador",
+                ["Todos"] + [config["name"] for config in ORGAOS_JULGADORES.values()],
+                help="Filtrar por órgão julgador específico"
+            )
 
-        O aplicativo standalone possui interface completa com dashboard DuckDB
-        e todas as ferramentas necessárias para gerenciar a base de dados.
-        """)
+        with col2:
+            # Convert orgao name back to key for search
+            orgao_key = None
+            if orgao_filter != "Todos":
+                for key, config in ORGAOS_JULGADORES.items():
+                    if config["name"] == orgao_filter:
+                        orgao_key = key
+                        break
 
-        if db_exists and stats:
-            st.markdown("**Dados disponíveis no banco atual:**")
+            dias_options = {
+                "Últimos 30 dias": 30,
+                "Últimos 90 dias": 90,
+                "Último ano": 365,
+                "Últimos 2 anos": 730,
+                "Últimos 3 anos": 1095
+            }
+            dias_label = st.selectbox(
+                "Período",
+                list(dias_options.keys()),
+                help="Limitar busca a um período específico"
+            )
+            dias = dias_options[dias_label]
 
-            periodo = stats.get('periodo', {})
-            st.markdown(f"- **Período:** {periodo.get('mais_antigo', 'N/A')} até {periodo.get('mais_recente', 'N/A')}")
-            st.markdown(f"- **Total de acórdãos:** {stats.get('total_acordaos', 0):,}".replace(",", "."))
+        with col3:
+            limit = st.number_input(
+                "Máximo de resultados",
+                min_value=10,
+                max_value=500,
+                value=50,
+                step=10,
+                help="Número máximo de resultados a retornar"
+            )
 
-            por_orgao = stats.get('por_orgao', {})
-            if por_orgao:
-                st.markdown("**Distribuição por órgão:**")
-                for orgao, count in list(por_orgao.items())[:5]:
-                    st.markdown(f"  - {orgao}: {count:,}".replace(",", "."))
+        # Search button
+        if st.button("🔍 Buscar", type="primary", use_container_width=True):
+            if not search_term:
+                st.warning("Digite um termo para buscar")
+            else:
+                with st.spinner("Buscando acórdãos..."):
+                    try:
+                        with STJDatabase(DATABASE_PATH) as db:
+                            if search_type == "Ementa":
+                                results = db.buscar_ementa(
+                                    termo=search_term,
+                                    orgao=orgao_key,
+                                    dias=dias,
+                                    limit=limit
+                                )
+                            else:
+                                results = db.buscar_acordao(
+                                    termo=search_term,
+                                    orgao=orgao_key,
+                                    dias=dias,
+                                    limit=limit
+                                )
+
+                            st.session_state.stj_search_results = results
+
+                    except Exception as e:
+                        st.error(f"Erro na busca: {e}")
+                        st.session_state.stj_search_results = None
+
+        # Display results
+        if st.session_state.stj_search_results is not None:
+            results = st.session_state.stj_search_results
+
+            st.markdown("---")
+            st.subheader(f"Resultados ({len(results)} encontrados)")
+
+            if len(results) == 0:
+                st.info("Nenhum resultado encontrado para os critérios especificados.")
+            else:
+                # Convert to DataFrame for better display
+                df = pd.DataFrame(results)
+
+                # Format dates
+                if 'data_publicacao' in df.columns:
+                    df['data_publicacao'] = pd.to_datetime(df['data_publicacao']).dt.strftime('%d/%m/%Y')
+                if 'data_julgamento' in df.columns:
+                    df['data_julgamento'] = pd.to_datetime(df['data_julgamento']).dt.strftime('%d/%m/%Y')
+
+                # Display each result as an expandable card
+                for idx, row in df.iterrows():
+                    with st.expander(f"📄 {row['numero_processo']} - {row['orgao_julgador']}"):
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.markdown(f"**Processo:** {row['numero_processo']}")
+                            st.markdown(f"**Órgão:** {row['orgao_julgador']}")
+                            if 'tipo_decisao' in row and pd.notna(row['tipo_decisao']):
+                                st.markdown(f"**Tipo:** {row['tipo_decisao']}")
+
+                        with col2:
+                            st.markdown(f"**Relator:** {row.get('relator', 'N/A')}")
+                            st.markdown(f"**Publicação:** {row.get('data_publicacao', 'N/A')}")
+                            if 'data_julgamento' in row and pd.notna(row['data_julgamento']):
+                                st.markdown(f"**Julgamento:** {row['data_julgamento']}")
+
+                        st.markdown("**Ementa:**")
+                        st.text_area(
+                            "ementa",
+                            value=row.get('ementa', 'N/A'),
+                            height=150,
+                            key=f"ementa_{idx}",
+                            label_visibility="collapsed"
+                        )
+
+                # Download results as CSV
+                st.download_button(
+                    label="📥 Download resultados (CSV)",
+                    data=df.to_csv(index=False).encode('utf-8'),
+                    file_name=f"stj_resultados_{datetime.now():%Y%m%d_%H%M%S}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
 
     # --- TAB 3: ESTATÍSTICAS ---
     with tab3:
