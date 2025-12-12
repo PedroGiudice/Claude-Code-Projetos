@@ -19,6 +19,30 @@ Regras específicas para desenvolvimento no Legal Workbench.
 
 ## Regras Obrigatórias
 
+### 0. Docker Health Check PRIMEIRO
+
+**ANTES de qualquer trabalho no Legal Workbench**, verificar status dos containers:
+
+```bash
+cd ~/claude-work/repos/Claude-Code-Projetos/legal-workbench/docker
+docker compose ps
+```
+
+**Todos os 6 serviços devem estar "healthy":**
+- `lw-hub` (Streamlit) - porta 8501
+- `lw-text-extractor` - porta 8001
+- `lw-doc-assembler` - porta 8002
+- `lw-stj-api` - porta 8003
+- `lw-trello-mcp` - porta 8004
+- `lw-redis` - porta 6379
+
+**Se algum container não estiver healthy:**
+1. Verificar logs: `docker logs <container_name>`
+2. Reiniciar: `docker compose up -d`
+3. Investigar causa raiz antes de prosseguir
+
+> **Regra:** Não iniciar trabalho com infraestrutura quebrada.
+
 ### 1. UI-First Validation
 
 Toda alteração em `ferramentas/` DEVE ser validada em `modules/`:
