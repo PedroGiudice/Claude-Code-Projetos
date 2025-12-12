@@ -4,7 +4,8 @@ import streamlit as st
 from pathlib import Path
 import sys
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+import logging
 
 # Setup backend path (must be done before imports)
 _backend_path = Path(__file__).parent.parent / "ferramentas" / "stj-dados-abertos"
@@ -16,8 +17,32 @@ def _setup_imports():
         sys.path.insert(0, str(_backend_path))
 
     from src.database import STJDatabase
-    from config import DATABASE_PATH, ORGAOS_JULGADORES
-    return STJDatabase, DATABASE_PATH, ORGAOS_JULGADORES
+    from src.downloader import STJDownloader
+    from src.processor import STJProcessor
+    from config import DATABASE_PATH, ORGAOS_JULGADORES, get_date_range_urls
+    return STJDatabase, STJDownloader, STJProcessor, DATABASE_PATH, ORGAOS_JULGADORES, get_date_range_urls
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Organ display names mapping
+ORGAN_DISPLAY_NAMES = {
+    "corte_especial": "Corte Especial",
+    "primeira_secao": "1ª Seção",
+    "segunda_secao": "2ª Seção",
+    "terceira_secao": "3ª Seção",
+    "primeira_turma": "1ª Turma",
+    "segunda_turma": "2ª Turma",
+}
+
+def _map_display_to_key(display_name: str) -> str:
+    """Map display name to config key."""
+    for key, name in ORGAN_DISPLAY_NAMES.items():
+        if name == display_name:
+            return key
+    return "corte_especial"
 
 
 def render():
