@@ -150,4 +150,52 @@ streamlit run app.py
 
 ---
 
-*Última atualização: 2025-12-10*
+## Regras de Frontend (OBRIGATÓRIO)
+
+### 6. Sempre Usar Subagente Especializado
+
+**QUALQUER tarefa de frontend DEVE usar um subagente especializado:**
+
+| Tarefa | Subagente | Quando Usar |
+|--------|-----------|-------------|
+| FastHTML/HTMX | `fasthtml-bff-developer` | **SEMPRE** para FastHTML |
+| React/TypeScript | `frontend-developer` | Componentes React |
+| UI/Design | `ui-designer` | Layout, estética, cores |
+| Review | `code-reviewer-superpowers` | Após implementação |
+
+> **"Não importa quão simples pareça a tarefa - SEMPRE usar especialista."**
+
+### 7. Clareza de Output ANTES de Implementar
+
+**ANTES de escrever qualquer código frontend:**
+
+1. ✅ Confirmar expectativa de UI com usuário (mockup/referência)
+2. ✅ Definir interações HTMX (o que dispara o quê?)
+3. ✅ Identificar endpoints backend necessários
+4. ✅ Definir estados de erro e loading
+5. ✅ Confirmar paleta de cores e estética
+
+> **"Se não está 100% claro o que o usuário espera, PERGUNTE."**
+
+### 8. FastHTML BFF Pattern (Novo Stack)
+
+**Arquitetura aprovada para substituir Streamlit:**
+
+```
+Browser (HTMX) ←→ FastHTML BFF ←→ FastAPI Services (Docker)
+                       ↑
+               Tokens ficam AQUI
+               Browser NUNCA vê
+```
+
+**Regras do BFF Pattern:**
+- Tokens/secrets NUNCA no browser
+- Componentes NUNCA chamam API diretamente
+- Usar `services/*.py` para proxy de backend
+- SSE para streaming de logs
+
+**PoC de referência:** `poc-fasthtml-stj/`
+
+---
+
+*Última atualização: 2025-12-13*
