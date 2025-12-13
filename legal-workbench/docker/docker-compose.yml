@@ -76,6 +76,11 @@ services:
       - JOB_TIMEOUT_SECONDS=600
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Marker directories (writable by appuser)
+      - FONT_DIR=/app/cache/fonts
+      - FONT_PATH=/app/cache/fonts/GoNotoCurrent-Regular.ttf
+      - OUTPUT_DIR=/app/cache/output
+      - DEBUG_DATA_FOLDER=/app/cache/debug
     volumes:
       - text-extractor-cache:/app/cache
       - app-data:/app/data

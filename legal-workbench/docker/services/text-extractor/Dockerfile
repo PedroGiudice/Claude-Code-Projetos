@@ -29,10 +29,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # =====================================
 FROM python:3.11-slim
 
-# Install runtime dependencies
+# Install runtime dependencies (libgl1 needed for OpenCV/Marker)
 RUN apt-get update && apt-get install -y \
     curl \
     libgomp1 \
+    libgl1 \
+    libglib2.0-0 \
     poppler-utils \
     tesseract-ocr \
     tesseract-ocr-por \
@@ -46,8 +48,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN groupadd -g 1000 appuser && \
     useradd -r -u 1000 -g appuser -s /bin/bash -m appuser
 
-# Create application directories
-RUN mkdir -p /app/data /app/cache /app/api && \
+# Create application directories (including fonts dir for Marker)
+RUN mkdir -p /app/data /app/cache /app/cache/fonts /app/api && \
     chown -R appuser:appuser /app
 
 # Set working directory
@@ -73,6 +75,12 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
 
 # Set Python path
 ENV PYTHONPATH=/app
+
+# Configure Marker to use writable directories for fonts and output
+ENV FONT_DIR=/app/cache/fonts
+ENV FONT_PATH=/app/cache/fonts/GoNotoCurrent-Regular.ttf
+ENV OUTPUT_DIR=/app/cache/output
+ENV DEBUG_DATA_FOLDER=/app/cache/debug
 
 # Entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
