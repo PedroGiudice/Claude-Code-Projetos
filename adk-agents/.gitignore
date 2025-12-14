@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# State files
+.processed_containers.json
+*.log
+
+# NOTE: .env will be added here after initial setup
+# For now it's tracked to allow remote editing
