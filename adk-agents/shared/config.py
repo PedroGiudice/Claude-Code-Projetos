@@ -11,16 +11,33 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class Models:
-    """Available Gemini models (Dec 2025)"""
+    """
+    Available Gemini models (Dec 2025)
 
-    # Primary - for reasoning, agentic tasks
+    Source: docs/GeminiADK-RULESET/Pyrules
+    SDK: google-genai (NOT google-generativeai)
+
+    PROHIBITED models (deprecated):
+      - gemini-1.5-flash
+      - gemini-1.5-pro
+      - gemini-pro
+    """
+
+    # PRIMARY - Coding and Complex Reasoning
     GEMINI_3_PRO = "gemini-3-pro-preview"
 
-    # Long context - for large files
-    GEMINI_25_PRO = "gemini-2.5-pro"      # 1M tokens, complex reasoning
-    GEMINI_25_FLASH = "gemini-2.5-flash"  # 1M tokens, faster/cheaper
+    # LONG CONTEXT - For large files (1M tokens)
+    GEMINI_25_PRO = "gemini-2.5-pro"       # Complex reasoning, long context
+    GEMINI_25_FLASH = "gemini-2.5-flash"   # General text & multimodal
 
-    # Embedding - for RAG, semantic search
+    # LOW LATENCY - High volume tasks
+    GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite"
+
+    # IMAGE GENERATION
+    GEMINI_25_FLASH_IMAGE = "gemini-2.5-flash-image"      # Fast (Nano Banana)
+    GEMINI_3_PRO_IMAGE = "gemini-3-pro-image-preview"     # High-quality
+
+    # EMBEDDING - for RAG, semantic search
     EMBEDDING = "gemini-embedding-001"
 
 
