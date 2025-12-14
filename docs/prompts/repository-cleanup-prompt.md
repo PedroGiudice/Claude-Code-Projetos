@@ -1,166 +1,234 @@
-# REPOSITORY CLEANUP & REORGANIZATION
+# REPOSITORY CLEANUP, TOOL ANALYSIS & REORGANIZATION
 
-## CRITICAL PRINCIPLE
-**Docker = Canonical State.** The `legal-workbench/docker/services/` directory defines what's "real". Everything else must align with or support this truth.
+## OPERATIONAL SETUP
 
-## CURRENT CHAOS
+### Step 0: Activate Gemini Agents
+Before any analysis, attempt to activate **two Gemini agents** for large-context processing:
+- **Agent 1**: Analyze `ferramentas/` (development tools)
+- **Agent 2**: Analyze `docker/services/` (production services)
 
-### Docker Services (CANONICAL):
-```
-docker/services/
-├── doc-assembler/      ← Production
-├── stj-api/            ← Production
-├── streamlit-hub/      ← Production
-├── text-extractor/     ← Production
-└── trello-mcp/         ← Production
+If two agents cannot be activated, proceed with a single agent processing both sequentially.
+
+These agents will read and process the entire repository to build comprehensive context.
+
+---
+
+## CRITICAL PRINCIPLE (REVISED)
+
+**⚠️ WARNING: Docker copies may be DEGRADED, not canonical.**
+
+The original assumption that "Docker = truth" is being challenged. Many tools in `ferramentas/` were developed BEFORE Docker containerization. The Docker versions may be:
+- Incomplete copies
+- Missing recent development
+- Simplified/stripped versions
+- Out of sync with source
+
+**NEW PRINCIPLE: Identify the MOST FUNCTIONAL version, regardless of location.**
+
+---
+
+## PHASE 1: IMPARTIAL FILE CLASSIFICATION
+
+Execute a thorough, unbiased classification of ALL repository files. This classification will inform all subsequent decisions.
+
+### Classification Schema:
+
+For each file/directory, capture:
+```yaml
+path: /full/path/to/item
+type: [code|config|doc|test|script|data|generated|unknown]
+category: [core|tool|infrastructure|documentation|archive|experimental]
+size: bytes
+last_modified: date
+functional_role: "Brief description of what this does"
+dependencies: [list of what depends on this]
 ```
 
-### Ferramentas (SCATTERED DEVELOPMENT):
-```
-ferramentas/
-├── legal-doc-assembler/   ← Duplicate? Sync issue?
-├── legal-text-extractor/  ← Duplicate? Sync issue?
-├── stj-dados-abertos/     ← Is this stj-api source?
-├── trello-mcp/            ← Duplicate?
-├── prompt-library/        ← Not in Docker - orphan?
-└── _archived/             ← Review contents
-```
+### Launch Parallel Classification Agents:
 
-### POCs (EXPERIMENTAL - scattered at root level):
-```
-legal-workbench/
-├── poc-fasthtml-stj/
-├── poc-react-stj/
-└── poc-reflex-stj/
+| Agent | Scope | Focus |
+|-------|-------|-------|
+| Agent A | `/legal-workbench/ferramentas/*` | Tool source code analysis |
+| Agent B | `/legal-workbench/docker/*` | Docker service analysis |
+| Agent C | `/legal-workbench/poc-*` | Experimental code analysis |
+| Agent D | Repository root + `/docs/` + `/skills/` | Documentation & config |
+| Agent E | `/_archived/` + `/adk-agents/` + `/comandos/` | Supporting infrastructure |
+
+**Constraint**: Classification must be DESCRIPTIVE and UNBIASED. Do not make value judgments during classification—only describe what exists.
+
+---
+
+## PHASE 2: TOOL DISCREPANCY ANALYSIS
+
+### Known Tool Pairs to Analyze:
+
+| Ferramentas (Dev) | Docker (Prod) | Analysis Required |
+|-------------------|---------------|-------------------|
+| `legal-text-extractor/` | `docker/services/text-extractor/` | Compare completeness |
+| `legal-doc-assembler/` | `docker/services/doc-assembler/` | Compare completeness |
+| `stj-dados-abertos/` | `docker/services/stj-api/` | Same tool? Different? |
+| `trello-mcp/` | `docker/services/trello-mcp/` | Compare completeness |
+| `prompt-library/` | (none) | Orphan evaluation |
+
+### For Each Pair, Determine:
+
+```markdown
+## Tool: [NAME]
+
+### Ferramentas Version:
+- File count: X
+- LOC estimate: X
+- Has tests: Yes/No (count)
+- Has documentation: Yes/No
+- Dependencies: [list]
+- Key features: [list]
+- Maturity signals: [version numbers, dates, completeness]
+
+### Docker Version:
+- File count: X
+- LOC estimate: X
+- Has tests: Yes/No (count)
+- Dockerfile present: Yes/No
+- Dependencies: [list]
+- Key features: [list]
+- Appears to be: [full copy | partial copy | stub | independent]
+
+### Discrepancies Found:
+- [List specific differences]
+
+### Functional Density Score:
+- Ferramentas: X/10 (features per complexity)
+- Docker: X/10 (features per complexity)
+
+### Recommendation: [ferramentas | docker | merge | archive both]
 ```
 
 ---
 
-## PHASE 1: ROOT DIRECTORY CLEANUP
+## PHASE 3: OPTIMAL TOOL SELECTION
 
-### Allowed in Repository Root (6 files):
+### Selection Criteria (Priority Order):
+
+1. **Functional Density** — Most features per unit of complexity
+2. **Completeness** — Has tests, docs, examples
+3. **Maintainability** — Clean code, clear structure
+4. **Integration Readiness** — Works with current architecture
+
+**NOT minimalism** — We want the BEST tools, not the fewest.
+
+### Decision Matrix Template:
+
+| Tool | Best Version | Location to Keep | Action for Other |
+|------|--------------|------------------|------------------|
+| text-extractor | ? | ? | Archive/Delete |
+| doc-assembler | ? | ? | Archive/Delete |
+| stj-api | ? | ? | Archive/Delete |
+| trello-mcp | ? | ? | Archive/Delete |
+| prompt-library | ? | ? | Integrate/Archive |
+
+---
+
+## PHASE 4: ROOT DIRECTORY CLEANUP
+
+### Allowed in Repository Root (6 files only):
 - `README.md`, `CLAUDE.md`, `ARCHITECTURE.md`
 - `requirements.txt`, `LICENSE`, `.gitignore`
 
-### Move Everything Else:
-Launch parallel agents to classify and move loose files:
+### File Disposition:
 
-| File Pattern | Destination | Action |
-|-------------|-------------|--------|
-| `*.html` (visualizations) | `docs/visualizations/` | Move |
-| `*.ps1` (Windows scripts) | `scripts/windows/` | Move |
-| `diagnostico-*.txt` | DELETE or `_archived/diagnostics/` | Cleanup |
-| `*:Zone.Identifier` | DELETE | Windows metadata |
-| `gemini_context.txt` (16MB) | DELETE | Generated dump |
-| `repomix-output.xml` (32MB) | DELETE | Generated dump |
-| `GEMINI.md`, `DISASTER_HISTORY.md` | `docs/` | Move |
-| `WSL2-INSTALL-GUIDE.md` | `docs/setup/` | Move |
-| `CC-GottaKnow.md` | `.claude/` or `docs/` | Move |
-| `progress.json` | `_archived/` | Archive |
-
----
-
-## PHASE 2: LEGAL-WORKBENCH CONSOLIDATION (CRITICAL)
-
-### Goal: Align ferramentas/ with docker/services/
-
-**For each tool, answer:**
-1. Is there a Docker service for this? → Sync or consolidate
-2. Is the Docker service the "source of truth"? → ferramentas/ may be deprecated
-3. Is ferramentas/ the development source? → Docker should copy from it
-
-### Mapping Analysis Required:
-
-| Ferramentas | Docker Service | Action Required |
-|-------------|----------------|-----------------|
-| `legal-text-extractor/` | `text-extractor/` | Determine source of truth |
-| `legal-doc-assembler/` | `doc-assembler/` | Determine source of truth |
-| `stj-dados-abertos/` | `stj-api/` | Same tool? Different names? |
-| `trello-mcp/` | `trello-mcp/` | Exact duplicate? |
-| `prompt-library/` | (none) | Orphan - archive or integrate |
-
-### Decision Framework:
-```
-IF docker/services/X copies from ferramentas/Y:
-   → Keep ferramentas/Y as source, document relationship
-
-IF docker/services/X is standalone:
-   → Archive or delete ferramentas/ duplicate
-
-IF ferramentas/Z has no Docker service:
-   → Either create Docker service OR archive
-```
+| Pattern | Action | Destination |
+|---------|--------|-------------|
+| `*.html` | Move | `docs/visualizations/` |
+| `*.ps1` | Move | `scripts/windows/` |
+| `diagnostico-*.txt` | Delete | — |
+| `*:Zone.Identifier` | Delete | — |
+| `gemini_context.txt` | Delete | (16MB generated) |
+| `repomix-output.xml` | Delete | (32MB generated) |
+| `GEMINI.md` | Move | `docs/` |
+| `DISASTER_HISTORY.md` | Move | `docs/` |
+| `WSL2-INSTALL-GUIDE.md` | Move | `docs/setup/` |
+| `progress.json` | Archive | `_archived/` |
 
 ---
 
-## PHASE 3: POC ORGANIZATION
-
-### Current State (messy):
-POCs at same level as production code in `legal-workbench/`
+## PHASE 5: LEGAL-WORKBENCH STRUCTURE
 
 ### Target State:
 ```
 legal-workbench/
-├── docker/           ← Production (canonical)
-├── ferramentas/      ← Development sources (if needed)
-├── modules/          ← Streamlit UI modules
-├── poc/              ← ALL experimental work
+├── docker/              ← Production services (after consolidation)
+│   ├── services/
+│   ├── docker-compose.yml
+│   └── ...
+├── src/                 ← Consolidated source (if ferramentas wins)
+│   ├── text-extractor/
+│   ├── doc-assembler/
+│   ├── stj-api/
+│   ├── trello-mcp/
+│   └── prompt-library/
+├── poc/                 ← Experimental (consolidated)
 │   ├── fasthtml-stj/
 │   ├── react-stj/
 │   └── reflex-stj/
-├── app.py            ← Main Streamlit app
-└── config.yaml
+├── modules/             ← Streamlit UI wrappers
+├── docs/                ← Documentation
+├── app.py
+├── config.yaml
+└── requirements.txt
 ```
 
-### Action:
+### Consolidation Actions:
 ```bash
+# Consolidate POCs
 mkdir -p legal-workbench/poc
 mv legal-workbench/poc-fasthtml-stj legal-workbench/poc/fasthtml-stj
 mv legal-workbench/poc-react-stj legal-workbench/poc/react-stj
 mv legal-workbench/poc-reflex-stj legal-workbench/poc/reflex-stj
+
+# If ferramentas/ tools are superior:
+mv legal-workbench/ferramentas legal-workbench/src
+# Update Docker to reference src/ instead of copying
 ```
-
----
-
-## PHASE 4: LEGAL-WORKBENCH ROOT CLEANUP
-
-### Current Loose Files:
-- `Gerenciamento de Prompts e Skills.txt` → `docs/` or DELETE
-- `KNOWN_ISSUES.md` → Keep or move to `docs/`
-- `ROADMAP.md` → Keep or move to `docs/`
-
-### Allowed in legal-workbench Root:
-- `app.py`, `config.yaml`, `requirements.txt`, `run.sh`
-- `README.md`, `CLAUDE.md`
-- Directories only: `docker/`, `modules/`, `poc/`, `docs/`
 
 ---
 
 ## EXECUTION GUIDELINES
 
-### Use Parallel Agents Purposefully:
-- **File classification** → Multiple agents scanning different patterns
-- **Tool analysis** → One agent per ferramentas/ tool
-- **Documentation audit** → Agents for different doc categories
+### Parallel Agent Deployment:
+Use as many agents as purposeful—no fixed number. Examples:
+- One agent per tool comparison
+- Separate agents for doc classification vs code classification
+- Dedicated agent for dependency analysis
 
 ### Preserve Git History:
 ```bash
-git mv old_path new_path  # Not mv
+git mv old_path new_path  # Always use git mv
 ```
 
-### Verification Checklist:
-- [ ] Repository root has ≤6 files
-- [ ] legal-workbench/ root is clean
-- [ ] ferramentas/ aligned with docker/services/
-- [ ] POCs consolidated under poc/
-- [ ] No Zone.Identifier files remain
-- [ ] No generated dumps (>1MB files) in tracked directories
+### Output Requirements:
+
+1. **Impartial Classification Report** (CSV or Markdown table)
+2. **Tool Comparison Matrix** with functional density scores
+3. **Recommended Actions** with justification
+4. **Execution Script** (if confident in recommendations)
 
 ---
 
-## OUTPUT REQUIRED
+## VERIFICATION CHECKLIST
 
-After cleanup, provide:
-1. **Summary table**: What was moved/deleted/archived
-2. **Ferramentas decision matrix**: Which tools kept, why
-3. **Remaining issues**: Anything requiring human decision
+After reorganization:
+- [ ] Repository root: ≤6 files
+- [ ] legal-workbench root: Only essential files + directories
+- [ ] No duplicate tools (one canonical location per tool)
+- [ ] No Zone.Identifier files
+- [ ] No generated dumps (>1MB)
+- [ ] All POCs under `poc/`
+- [ ] Clear documentation of tool locations
+
+---
+
+## CONSTRAINT REMINDER
+
+**The classification MUST be impartial.**
+
+Do not assume Docker is better. Do not assume ferramentas is better. Measure, compare, and let the data inform the decision. The goal is to find the **most effective and functional** version of each tool, prioritizing **functional density over minimalism**.
