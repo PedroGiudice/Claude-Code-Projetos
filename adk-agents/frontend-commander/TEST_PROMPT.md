@@ -1,45 +1,95 @@
 # Frontend Commander Test Prompt
 
-Use this prompt to test the Frontend Commander agent in a new Claude Code session.
+Real-world test scenario for the Frontend Commander agent.
 
 ---
 
-## Test Prompt (English)
+## Primary Test: Legal Workbench Architecture
+
+This prompt intentionally provides partial information to test how the agent:
+1. Uses tools to gather missing context
+2. Analyzes module complexity to recommend framework
+3. Makes autonomous decisions with minimal user interaction
 
 ```
-I want to test the Frontend Commander ADK agent.
+CONTEXT: Legal Workbench frontend architecture implementation.
 
-Here's the scenario:
-1. I have a new backend service running in Docker called "legal-search-api"
-2. It exposes these endpoints:
-   - POST /api/search - Search legal documents
-   - GET /api/document/{id} - Get document by ID
-   - GET /api/health - Health check
+ARCHITECTURE: docs/plans/legal-workbench/2025-12-14-framework-agnostic-module-architecture.md
 
-Please:
-1. Run the Frontend Commander agent to analyze this service
-2. When it asks for preferences, I want:
-   - Framework: React (TypeScript)
-   - UI Style: Dashboard with search form and results table
-3. Generate the frontend component
+STACK:
+- Traefik v3.0 (API Gateway)
+- FastHTML Hub (SSR frontend)
+- FastAPI backends (STJ, Text Extractor, Doc Assembler, Trello)
+- Docker Compose orchestration
+- Shared volume /data for file passing
 
-The agent should ask me ONE question about UI preferences and then generate complete code.
+EXECUTION PLAN: docs/plans/legal-workbench/2025-12-14-themed-plugin-architecture-EXECUTION-PLAN.md (copy-paste ready code)
 
-Path to agent: adk-agents/frontend-commander/agent.py
+TASK: Implement the Traefik + FastHTML Hub architecture. Start with docker-compose.yml and the FastHTML Hub scaffold.
+
+CONSTRAINTS:
+- No hardcoded URLs (use /api/* paths)
+- FastHTML Hub is non-negotiable
+- Module themes: Purple (STJ), Copper (Text), Blue (Doc), Green (Trello)
 ```
 
 ---
 
-## Alternative Test (Simpler)
+## Expected Agent Behavior
+
+### Phase 1: Context Gathering
+The agent should:
+- Read the architecture doc to understand the full system
+- Read the execution plan for implementation details
+- Analyze existing modules in legal-workbench/
+
+### Phase 2: Framework Analysis
+Before generating code, agent should evaluate:
+
+| Criteria | FastHTML OK? | Need React/Vue? |
+|----------|--------------|-----------------|
+| Simple forms + tables | ✅ | ❌ |
+| Real-time updates | ⚠️ SSE works | ✅ WebSocket |
+| Complex state mgmt | ❌ | ✅ |
+| Drag-and-drop | ❌ | ✅ |
+| Heavy client interactivity | ❌ | ✅ |
+
+### Phase 3: Single Question
+Agent asks ONE consolidated question:
+> "Based on the architecture, FastHTML with HTMX covers the MVP needs.
+> Should I proceed with FastHTML, or do you anticipate needing [specific interactive feature]?"
+
+### Phase 4: Code Generation
+Generate:
+1. `docker-compose.yml` with Traefik + services
+2. FastHTML Hub scaffold with themed modules
+3. Module routing with `/api/*` proxy paths
+
+---
+
+## Success Criteria
+
+✅ Agent reads referenced docs WITHOUT being told to
+✅ Agent makes framework recommendation with reasoning
+✅ Agent asks ≤1 clarifying question
+✅ Generated code follows constraints (no hardcoded URLs, themed modules)
+✅ Agent provides integration instructions
+
+---
+
+## Alternative Test: Text Extractor Module
+
+Simpler test focusing on single module generation:
 
 ```
-Test the frontend-commander agent located at adk-agents/frontend-commander/.
+Generate a frontend module for the Text Extractor backend.
 
-Simulate detecting a new Docker container "document-processor" with endpoints:
-- POST /api/process
-- GET /api/status
+Backend: legal-workbench/backend/text-extractor/
+Endpoints: Unknown (agent should discover)
+Theme: Copper (#B87333)
 
-Ask me for framework preference then generate the UI.
+Analyze the backend code and generate appropriate UI.
+Framework decision is yours based on complexity analysis.
 ```
 
 ---
@@ -48,25 +98,7 @@ Ask me for framework preference then generate the UI.
 
 ```bash
 cd /home/user/Claude-Code-Projetos/adk-agents
-
-# Activate venv (if exists)
-source .venv/bin/activate
-
-# Set API key
-export GOOGLE_API_KEY=your_key_here
-
-# Run with ADK CLI
+source .venv/bin/activate  # if exists
+export GOOGLE_API_KEY=your_key
 adk run frontend-commander
 ```
-
----
-
-## Expected Behavior
-
-1. Agent detects/receives service info
-2. Asks ONE question with 3 parts:
-   - Framework choice (FastHTML/React/Streamlit/Other)
-   - UI style (Dashboard/Form/Visualization/Custom)
-   - Any specific requirements
-3. Generates complete code for chosen framework
-4. Provides integration instructions
