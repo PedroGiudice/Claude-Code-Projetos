@@ -674,49 +674,69 @@ def results_container(results: List[Dict] = None, domain: str = "", keywords: Li
 
 
 def quick_stats_card(stats: Dict) -> FT:
-    """Display quick statistics dashboard"""
+    """Display quick statistics dashboard with premium icons"""
 
     return Div(
-        Div("Estatísticas Rápidas", cls="card-header"),
+        Div(
+            NotStr('<iconify-icon icon="ph:chart-bar-bold" width="24" height="24" class="text-blue-400 mr-2"></iconify-icon>'),
+            Span("Estatísticas Rápidas", cls="text-gradient-blue"),
+            cls="card-header flex items-center"
+        ),
 
         Div(
             # Total acordãos
             Div(
                 Div(
-                    Span(f"{stats['total_acordaos']:,}", cls="font-mono text-3xl font-bold text-amber-400"),
+                    Div(
+                        NotStr('<iconify-icon icon="ph:files-bold" width="28" height="28" class="text-amber-400 mb-2"></iconify-icon>'),
+                        cls="flex justify-center"
+                    ),
+                    Span(f"{stats['total_acordaos']:,}", cls="font-mono text-3xl font-bold text-gradient-amber"),
                     P("Acórdãos no banco", cls="text-xs text-gray-500 mt-1")
                 ),
-                cls="text-center"
+                cls="text-center p-4 rounded-xl bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/20"
             ),
 
             # Last update
             Div(
                 Div(
+                    Div(
+                        NotStr('<iconify-icon icon="ph:clock-bold" width="28" height="28" class="text-green-400 mb-2"></iconify-icon>'),
+                        cls="flex justify-center"
+                    ),
                     Span(stats['ultima_atualizacao'], cls="font-mono text-lg text-green-400"),
                     P("Última atualização", cls="text-xs text-gray-500 mt-1")
                 ),
-                cls="text-center"
+                cls="text-center p-4 rounded-xl bg-gradient-to-b from-green-500/10 to-transparent border border-green-500/20"
             ),
 
             # This month
             Div(
                 Div(
+                    Div(
+                        NotStr('<iconify-icon icon="ph:trend-up-bold" width="28" height="28" class="text-green-400 mb-2"></iconify-icon>'),
+                        cls="flex justify-center"
+                    ),
                     Span(f"+{stats['processos_mes']}", cls="font-mono text-3xl font-bold text-green-400"),
                     P("Novos este mês", cls="text-xs text-gray-500 mt-1")
                 ),
-                cls="text-center"
+                cls="text-center p-4 rounded-xl bg-gradient-to-b from-green-500/10 to-transparent border border-green-500/20"
             ),
 
             # Average citations
             Div(
                 Div(
-                    Span(f"{stats['citacoes_medio']:.1f}", cls="font-mono text-3xl font-bold text-amber-400"),
+                    Div(
+                        NotStr('<iconify-icon icon="ph:quotes-bold" width="28" height="28" class="text-blue-400 mb-2"></iconify-icon>'),
+                        cls="flex justify-center"
+                    ),
+                    Span(f"{stats['citacoes_medio']:.1f}", cls="font-mono text-3xl font-bold text-blue-400"),
                     P("Citações médias", cls="text-xs text-gray-500 mt-1")
                 ),
-                cls="text-center"
+                cls="text-center p-4 rounded-xl bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/20"
             ),
 
-            cls="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4"
+            cls="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"
         ),
 
         cls="card mb-6"

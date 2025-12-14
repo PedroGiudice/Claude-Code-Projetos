@@ -5,14 +5,18 @@ Interactive jurisprudence search with live SQL preview
 
 from fasthtml.common import *
 from typing import List
-import mock_data
+# Use backend_adapter in Docker, falls back to mock if engines unavailable
+try:
+    import backend_adapter as mock_data
+except ImportError:
+    import mock_data
 
 
 def domain_selector(selected: str = "") -> FT:
     """Legal domain dropdown selector"""
 
     options = [Option("Selecione...", value="", selected=(selected == ""))]
-    for domain in mock_data.LEGAL_DOMAINS:
+    for domain in mock_data.DOMAINS:
         options.append(
             Option(domain, value=domain, selected=(selected == domain))
         )
@@ -40,7 +44,7 @@ def keyword_selector(domain: str = "", selected_keywords: List[str] = None) -> F
         selected_keywords = []
 
     # Get keywords for domain
-    keywords = mock_data.TRIGGER_WORDS.get(domain, []) if domain else []
+    keywords = mock_data.KEYWORDS_BY_DOMAIN.get(domain, []) if domain else []
 
     if not keywords:
         return Div(

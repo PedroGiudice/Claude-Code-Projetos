@@ -13,27 +13,55 @@ try:
     import backend_adapter as mock_data
 except ImportError:
     import mock_data
-from styles import TERMINAL_STYLE, TAILWIND_CDN
+from styles import PREMIUM_STYLE, TAILWIND_CDN, ICONIFY_CDN
 from components import query_builder, results, terminal
 
-# Initialize FastHTML app
+# Initialize FastHTML app with premium styling
 app, rt = fast_app(
     hdrs=(
+        # Premium fonts
+        Link(rel="preconnect", href="https://fonts.googleapis.com"),
+        Link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
+        Link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap", rel="stylesheet"),
+        # Core dependencies
         Script(src=TAILWIND_CDN),
         Script(src="https://unpkg.com/htmx.org@2.0.3"),
         Script(src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"),
-        Style(TERMINAL_STYLE),
+        Script(src=ICONIFY_CDN),
+        # Premium CSS
+        NotStr(PREMIUM_STYLE),
     ),
     live=True
 )
 
 
 def app_header() -> FT:
-    """Application header"""
+    """Application header with premium styling and icons"""
     return Div(
         Div(
-            H1("STJ Jurisprudence Lab", cls="app-title"),
-            P("FastHTML Backend-for-Frontend Demo", cls="app-subtitle"),
+            # Logo and title
+            Div(
+                # Icon using Iconify
+                Span(
+                    NotStr('<iconify-icon icon="ph:scales-bold" width="32" height="32"></iconify-icon>'),
+                    cls="text-blue-400 mr-3"
+                ),
+                Div(
+                    H1("STJ Jurisprudence Lab", cls="app-title"),
+                    P("FastHTML Backend-for-Frontend Demo", cls="app-subtitle"),
+                ),
+                cls="flex items-center"
+            ),
+            # Status indicator
+            Div(
+                Span(
+                    NotStr('<iconify-icon icon="ph:circle-fill" width="8" height="8"></iconify-icon>'),
+                    cls="text-green-400 mr-2 animate-pulse"
+                ),
+                Span("Sistema Online", cls="text-xs text-gray-400"),
+                cls="flex items-center"
+            ),
+            cls="flex items-center justify-between"
         ),
         cls="app-header"
     )
@@ -53,13 +81,20 @@ def get_main():
 
     return Html(
         Head(
-            Title("STJ - FastHTML PoC"),
+            Title("STJ Jurisprudence Lab - Legal Workbench"),
             Meta(charset="utf-8"),
             Meta(name="viewport", content="width=device-width, initial-scale=1"),
+            # Premium fonts
+            Link(rel="preconnect", href="https://fonts.googleapis.com"),
+            Link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
+            Link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap", rel="stylesheet"),
+            # Core dependencies
             Script(src=TAILWIND_CDN),
             Script(src="https://unpkg.com/htmx.org@2.0.3"),
             Script(src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"),
-            NotStr(TERMINAL_STYLE),
+            Script(src=ICONIFY_CDN),
+            # Premium styles
+            NotStr(PREMIUM_STYLE),
         ),
         Body(
             app_header(),
