@@ -511,6 +511,19 @@ def render():
                 )
                 col2.metric("Padrões Encontrados", total_patterns)
 
+            # Prepare data for export (always, regardless of view mode)
+            df_data = []
+            for card in data:
+                row = {
+                    "Nome": card["name"],
+                    "Labels": ", ".join(card.get("labels", [])),
+                    "Due": card.get("due_date", ""),
+                }
+                if "patterns" in card:
+                    for ptype, pvalues in card["patterns"].items():
+                        row[ptype.upper()] = ", ".join(pvalues)
+                df_data.append(row)
+
             # View mode
             view_mode = st.radio(
                 "Visualização",
@@ -520,19 +533,6 @@ def render():
             )
 
             if view_mode == "table":
-                # Convert to DataFrame
-                df_data = []
-                for card in data:
-                    row = {
-                        "Nome": card["name"],
-                        "Labels": ", ".join(card.get("labels", [])),
-                        "Due": card.get("due_date", ""),
-                    }
-                    if "patterns" in card:
-                        for ptype, pvalues in card["patterns"].items():
-                            row[ptype.upper()] = ", ".join(pvalues)
-                    df_data.append(row)
-
                 df = pd.DataFrame(df_data)
                 st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -573,31 +573,29 @@ def render():
                 )
 
             with col2:
-                # CSV export
-                if view_mode == "table" and df_data:
-                    csv = pd.DataFrame(df_data).to_csv(index=False)
-                    st.download_button(
-                        "📥 CSV",
-                        data=csv,
-                        file_name="trello_extraction.csv",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
+                # CSV export (always available)
+                csv = pd.DataFrame(df_data).to_csv(index=False)
+                st.download_button(
+                    "📥 CSV",
+                    data=csv,
+                    file_name="trello_extraction.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
 
             with col3:
                 # Excel export (if openpyxl available)
                 try:
                     import io
-                    if view_mode == "table" and df_data:
-                        buffer = io.BytesIO()
-                        pd.DataFrame(df_data).to_excel(buffer, index=False)
-                        st.download_button(
-                            "📥 Excel",
-                            data=buffer.getvalue(),
-                            file_name="trello_extraction.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width=True
-                        )
+                    buffer = io.BytesIO()
+                    pd.DataFrame(df_data).to_excel(buffer, index=False)
+                    st.download_button(
+                        "📥 Excel",
+                        data=buffer.getvalue(),
+                        file_name="trello_extraction.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
                 except ImportError:
                     st.caption("Excel export requer openpyxl")
 
