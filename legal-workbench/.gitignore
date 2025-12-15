@@ -1,1 +1,34 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Testing
 test_env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Streamlit
+.streamlit/
+
+# Data & Logs
+*.log
+*.db
+*.duckdb
+*.duckdb.wal
+
+# OS
+.DS_Store
+Thumbs.db
