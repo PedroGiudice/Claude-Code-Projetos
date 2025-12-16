@@ -9,9 +9,10 @@ These tools enable the agent to:
 """
 import subprocess
 import json
+import re
 from pathlib import Path
 from typing import Optional
-from google.adk.tools import tool
+from google.adk.tools import FunctionTool
 
 
 # Project paths
@@ -22,8 +23,7 @@ MODULES_DIR = LEGAL_WORKBENCH / "modules"
 DOCKER_DIR = LEGAL_WORKBENCH / "docker"
 
 
-@tool
-def list_docker_containers() -> str:
+def _list_docker_containers() -> str:
     """
     List all running Docker containers with their details.
 
@@ -54,8 +54,7 @@ def list_docker_containers() -> str:
         return json.dumps({"error": str(e)})
 
 
-@tool
-def inspect_container(container_name: str) -> str:
+def _inspect_container(container_name: str) -> str:
     """
     Get detailed information about a specific container.
 
@@ -82,63 +81,7 @@ def inspect_container(container_name: str) -> str:
         return json.dumps({"error": str(e)})
 
 
-@tool
-def read_file(file_path: str) -> str:
-    """
-    Read any file from the project. Use for docs, plans, configs, or code.
-
-    Args:
-        file_path: Relative path from project root or absolute path.
-                   Examples: "docs/plans/architecture.md", "docker-compose.yml"
-
-    Returns:
-        File contents as string
-    """
-    # Try as relative to project root first
-    path = PROJECT_ROOT / file_path
-    if not path.exists():
-        # Try as absolute
-        path = Path(file_path)
-
-    if not path.exists():
-        return json.dumps({"error": f"File not found: {file_path}"})
-
-    try:
-        return path.read_text()
-    except Exception as e:
-        return json.dumps({"error": f"Failed to read {file_path}: {e}"})
-
-
-@tool
-def write_file(file_path: str, content: str) -> str:
-    """
-    Write content to any file in the project.
-    Creates parent directories if needed.
-
-    Args:
-        file_path: Relative path from project root.
-                   Examples: "legal-workbench/docker-compose.yml", "hub/main.py"
-        content: File contents to write
-
-    Returns:
-        Success message or error
-    """
-    path = PROJECT_ROOT / file_path
-
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
-        return json.dumps({
-            "success": True,
-            "path": str(path.relative_to(PROJECT_ROOT)),
-            "message": f"File written: {file_path}"
-        })
-    except Exception as e:
-        return json.dumps({"error": str(e)})
-
-
-@tool
-def read_backend_code(service_name: str) -> str:
+def _read_backend_code(service_name: str) -> str:
     """
     Read all Python source code from a backend service.
 
@@ -200,8 +143,7 @@ def read_backend_code(service_name: str) -> str:
     return "\n".join(code_content)
 
 
-@tool
-def read_openapi_spec(service_name: str) -> str:
+def _read_openapi_spec(service_name: str) -> str:
     """
     Read OpenAPI/Swagger specification from a backend service.
 
@@ -233,8 +175,7 @@ def read_openapi_spec(service_name: str) -> str:
     return json.dumps({"error": f"No OpenAPI spec found for service: {service_name}"})
 
 
-@tool
-def list_existing_modules() -> str:
+def _list_existing_modules() -> str:
     """
     List existing UI modules in legal-workbench/modules/.
 
@@ -268,8 +209,7 @@ def list_existing_modules() -> str:
     return json.dumps(modules, indent=2)
 
 
-@tool
-def write_frontend_module(
+def _write_frontend_module(
     module_name: str,
     code: str,
     module_type: str = "fasthtml",
@@ -313,8 +253,7 @@ def write_frontend_module(
         return json.dumps({"error": str(e)})
 
 
-@tool
-def get_service_endpoints(service_name: str) -> str:
+def _get_service_endpoints(service_name: str) -> str:
     """
     Extract API endpoints from a backend service by analyzing its code.
 
@@ -326,9 +265,7 @@ def get_service_endpoints(service_name: str) -> str:
     Returns:
         JSON with detected endpoints: method, path, function name
     """
-    import re
-
-    code = read_backend_code(service_name)
+    code = _read_backend_code(service_name)
     if "error" in code:
         return code
 
@@ -353,3 +290,13 @@ def get_service_endpoints(service_name: str) -> str:
         })
 
     return json.dumps(endpoints, indent=2)
+
+
+# Export tools wrapped with FunctionTool
+list_docker_containers = FunctionTool(_list_docker_containers)
+inspect_container = FunctionTool(_inspect_container)
+read_backend_code = FunctionTool(_read_backend_code)
+read_openapi_spec = FunctionTool(_read_openapi_spec)
+list_existing_modules = FunctionTool(_list_existing_modules)
+write_frontend_module = FunctionTool(_write_frontend_module)
+get_service_endpoints = FunctionTool(_get_service_endpoints)

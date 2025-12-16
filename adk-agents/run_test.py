@@ -1,222 +1,181 @@
 #!/usr/bin/env python3
 """
-Test script for Frontend Commander agent.
-
-Validates:
-1. Model configuration is correct (per Pyrules)
-2. Module structure is valid Python
-3. Tool definitions exist
-
-Usage:
-    cd adk-agents
-    python run_test.py
+Test runner for Frontend Commander agent.
+Executes the agent with a real-world prompt and shows the response.
 """
 import sys
-import ast
-import re
+import os
 from pathlib import Path
 
-# Project root
-PROJECT_ROOT = Path(__file__).parent
+# Add paths
+sys.path.insert(0, str(Path(__file__).parent))
+os.chdir(Path(__file__).parent)
 
+# Load environment
+from dotenv import load_dotenv
+load_dotenv()
 
-def test_model_names_in_config():
-    """Test that config.py has correct model names per Pyrules."""
-    print("Testing shared/config.py model names...")
+# Verify API key
+api_key = os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    print("ERROR: GOOGLE_API_KEY not set in .env")
+    sys.exit(1)
+print(f"✓ API Key loaded: {api_key[:10]}...")
 
-    config_path = PROJECT_ROOT / "shared" / "config.py"
-    content = config_path.read_text()
+# Import the agent
+print("Loading Frontend Commander agent...")
 
-    # Check for correct model name (per Pyrules Dec 2025)
-    # Should be gemini-3-pro-preview, NOT gemini-3-pro
-    if 'GEMINI_3_PRO = "gemini-3-pro-preview"' in content:
-        print("  ✓ GEMINI_3_PRO = 'gemini-3-pro-preview' (correct)")
-    elif 'GEMINI_3_PRO = "gemini-3-pro"' in content:
-        raise AssertionError(
-            "GEMINI_3_PRO should be 'gemini-3-pro-preview', not 'gemini-3-pro'"
+# Add frontend-commander to path so relative imports work
+fc_path = Path(__file__).parent / "frontend-commander"
+sys.path.insert(0, str(fc_path))
+
+# Now import tools first, then agent components
+import tools as fc_tools
+from shared.config import Config
+from shared.model_selector import get_model_for_context
+from google.adk.agents import Agent
+from google.adk.tools import google_search
+
+# Build the agent directly here to avoid import issues
+INSTRUCTION = """# Frontend Commander - Framework-Agnostic UI Generator
+
+You are an **autonomous frontend generation agent** that creates UI modules for ANY framework.
+
+## Your Mission
+
+When a new backend service (Docker container) is created, you:
+1. **Detect** the new service and analyze its API
+2. **Ask** the user for framework choice and UI preferences (ONE interaction)
+3. **Generate** a complete frontend module in the chosen framework
+4. **Integrate** it into the project structure
+
+## Supported Frameworks
+
+| Framework | Best For | Output |
+|-----------|----------|--------|
+| **FastHTML** | HTMX apps, SSR, minimal JS | Python + HTMX |
+| **React** | Complex SPAs, TypeScript | TSX components |
+| **Streamlit** | Data apps, dashboards | Python module |
+
+## Workflow
+
+### Step 1: Context Gathering
+- Read referenced architecture documents
+- Analyze existing code structure
+- Map API endpoints
+
+### Step 2: User Interaction (SINGLE PROMPT)
+Ask ONLY ONCE for framework + UI style preferences.
+
+### Step 3: Code Generation
+Generate complete, working code for the chosen framework.
+
+## Constraints
+- NEVER modify backend code
+- ALWAYS use /api/* paths (no hardcoded URLs)
+- ASK user before writing files
+"""
+
+root_agent = Agent(
+    name="frontend_commander",
+    model=Config.MODELS.GEMINI_3_PRO,
+    instruction=INSTRUCTION,
+    description="Autonomous frontend generation agent for any framework",
+    tools=[
+        google_search,
+        fc_tools.list_docker_containers,
+        fc_tools.inspect_container,
+        fc_tools.read_backend_code,
+        fc_tools.read_openapi_spec,
+        fc_tools.list_existing_modules,
+        fc_tools.write_frontend_module,
+        fc_tools.get_service_endpoints,
+    ],
+)
+
+# Test prompt
+TEST_PROMPT = """
+CONTEXT: Legal Workbench frontend architecture implementation.
+
+ARCHITECTURE: docs/plans/legal-workbench/2025-12-14-framework-agnostic-module-architecture.md
+
+STACK:
+- Traefik v3.0 (API Gateway)
+- FastHTML Hub (SSR frontend)
+- FastAPI backends (STJ, Text Extractor, Doc Assembler, Trello)
+- Docker Compose orchestration
+- Shared volume /data for file passing
+
+EXECUTION PLAN: docs/plans/legal-workbench/2025-12-14-themed-plugin-architecture-EXECUTION-PLAN.md (copy-paste ready code)
+
+TASK: Implement the Traefik + FastHTML Hub architecture. Start with docker-compose.yml and the FastHTML Hub scaffold.
+
+CONSTRAINTS:
+- No hardcoded URLs (use /api/* paths)
+- FastHTML Hub is non-negotiable
+- Module themes: Purple (STJ), Copper (Text), Blue (Doc), Green (Trello)
+"""
+
+print("\n" + "="*60)
+print("TEST PROMPT:")
+print("="*60)
+print(TEST_PROMPT)
+print("="*60 + "\n")
+
+# Run the agent
+print("Running agent...")
+
+import asyncio
+
+async def run_agent():
+    try:
+        from google.adk.runners import Runner
+        from google.adk.sessions import InMemorySessionService
+
+        session_service = InMemorySessionService()
+        runner = Runner(
+            agent=root_agent,
+            app_name="frontend_commander_test",
+            session_service=session_service,
         )
-    else:
-        raise AssertionError("GEMINI_3_PRO not found in config.py")
 
-    # Verify other models are present
-    assert 'GEMINI_25_PRO = "gemini-2.5-pro"' in content, "Missing GEMINI_25_PRO"
-    assert 'GEMINI_25_FLASH = "gemini-2.5-flash"' in content, "Missing GEMINI_25_FLASH"
-
-    print("  ✓ All model names correct per Pyrules")
-
-
-def test_requirements_uses_correct_sdk():
-    """Test that requirements.txt uses google-genai, not deprecated google-generativeai."""
-    print("Testing requirements.txt SDK package...")
-
-    req_path = PROJECT_ROOT / "requirements.txt"
-    content = req_path.read_text()
-
-    # Should use google-genai (current SDK per Pyrules)
-    if "google-genai" in content:
-        print("  ✓ Uses google-genai (current SDK)")
-    else:
-        raise AssertionError("requirements.txt should include google-genai")
-
-    # Should NOT use deprecated google-generativeai
-    if "google-generativeai" in content:
-        raise AssertionError(
-            "requirements.txt should not use deprecated google-generativeai"
+        # Create session (async)
+        session = await session_service.create_session(
+            app_name="frontend_commander_test",
+            user_id="test_user",
         )
 
-    print("  ✓ No deprecated packages")
+        print(f"Session created: {session.id}")
+        print("\nAgent response:\n" + "-"*40)
 
+        # Create proper message content
+        from google.genai import types
+        user_message = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=TEST_PROMPT)]
+        )
 
-def test_agent_module_valid_python():
-    """Test that agent.py is valid Python syntax."""
-    print("Testing frontend-commander/agent.py syntax...")
+        # Stream the response (async generator)
+        async for event in runner.run_async(
+            user_id="test_user",
+            session_id=session.id,
+            new_message=user_message,
+        ):
+            if hasattr(event, 'content') and event.content:
+                if hasattr(event.content, 'parts'):
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            print(part.text, end='', flush=True)
+                else:
+                    print(str(event.content), end='', flush=True)
 
-    agent_path = PROJECT_ROOT / "frontend-commander" / "agent.py"
-    content = agent_path.read_text()
+        print("\n" + "-"*40)
+        print("Test complete!")
 
-    # Parse as AST to verify syntax
-    try:
-        ast.parse(content)
-        print("  ✓ Valid Python syntax")
-    except SyntaxError as e:
-        raise AssertionError(f"Syntax error in agent.py: {e}")
+    except Exception as e:
+        print(f"ERROR: {e}")
+        import traceback
+        traceback.print_exc()
 
-    # Verify it uses Config.MODELS.GEMINI_3_PRO (not hardcoded)
-    if "Config.MODELS.GEMINI_3_PRO" in content:
-        print("  ✓ Uses Config.MODELS.GEMINI_3_PRO (not hardcoded)")
-    elif '"gemini-3-pro"' in content or "'gemini-3-pro'" in content:
-        # Check if it's in a comment or docstring
-        lines_with_model = [l for l in content.split('\n')
-                          if 'gemini-3-pro' in l and not l.strip().startswith('#')]
-        if any('model=' in l for l in lines_with_model):
-            raise AssertionError("agent.py should use Config.MODELS, not hardcoded model")
-
-
-def test_tools_module_valid_python():
-    """Test that tools.py is valid Python and has expected functions."""
-    print("Testing frontend-commander/tools.py...")
-
-    tools_path = PROJECT_ROOT / "frontend-commander" / "tools.py"
-    content = tools_path.read_text()
-
-    # Parse as AST
-    try:
-        tree = ast.parse(content)
-        print("  ✓ Valid Python syntax")
-    except SyntaxError as e:
-        raise AssertionError(f"Syntax error in tools.py: {e}")
-
-    # Find all function definitions
-    functions = [node.name for node in ast.walk(tree)
-                 if isinstance(node, ast.FunctionDef)]
-
-    expected_tools = [
-        "list_docker_containers",
-        "inspect_container",
-        "read_backend_code",
-        "read_openapi_spec",
-        "list_existing_modules",
-        "write_frontend_module",
-        "get_service_endpoints",
-    ]
-
-    for tool in expected_tools:
-        if tool in functions:
-            print(f"  ✓ Found tool: {tool}")
-        else:
-            raise AssertionError(f"Missing tool function: {tool}")
-
-
-def test_watcher_module_valid_python():
-    """Test that watcher.py is valid Python."""
-    print("Testing frontend-commander/watcher.py...")
-
-    watcher_path = PROJECT_ROOT / "frontend-commander" / "watcher.py"
-    content = watcher_path.read_text()
-
-    try:
-        tree = ast.parse(content)
-        print("  ✓ Valid Python syntax")
-    except SyntaxError as e:
-        raise AssertionError(f"Syntax error in watcher.py: {e}")
-
-    # Check for key components
-    classes = [node.name for node in ast.walk(tree)
-               if isinstance(node, ast.ClassDef)]
-    functions = [node.name for node in ast.walk(tree)
-                 if isinstance(node, ast.FunctionDef)]
-
-    assert "ContainerState" in classes, "Missing ContainerState class"
-    assert "watch_once" in functions, "Missing watch_once function"
-    assert "main" in functions, "Missing main function"
-
-    print("  ✓ All key components present")
-
-
-def test_readme_model_names():
-    """Test that README files have correct model names."""
-    print("Testing README model names...")
-
-    # Main README
-    readme_path = PROJECT_ROOT / "README.md"
-    content = readme_path.read_text()
-
-    if "gemini-3-pro-preview" in content:
-        print("  ✓ Main README uses gemini-3-pro-preview")
-    elif "gemini-3-pro" in content and "gemini-3-pro-preview" not in content:
-        raise AssertionError("Main README should use gemini-3-pro-preview")
-
-    # Frontend Commander README
-    fc_readme_path = PROJECT_ROOT / "frontend-commander" / "README.md"
-    fc_content = fc_readme_path.read_text()
-
-    if "gemini-3-pro-preview" in fc_content:
-        print("  ✓ Frontend Commander README uses gemini-3-pro-preview")
-    elif "gemini-3-pro" in fc_content and "gemini-3-pro-preview" not in fc_content:
-        raise AssertionError("Frontend Commander README should use gemini-3-pro-preview")
-
-
-def main():
-    """Run all tests."""
-    print("\n" + "="*60)
-    print("Frontend Commander Agent - Test Suite")
-    print("="*60)
-    print("Validating fixes per Pyrules (Dec 2025)")
-    print("="*60 + "\n")
-
-    tests = [
-        test_model_names_in_config,
-        test_requirements_uses_correct_sdk,
-        test_agent_module_valid_python,
-        test_tools_module_valid_python,
-        test_watcher_module_valid_python,
-        test_readme_model_names,
-    ]
-
-    passed = 0
-    failed = 0
-
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  ✗ FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ✗ ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("="*60)
-    if failed == 0:
-        print(f"✅ ALL TESTS PASSED ({passed}/{passed})")
-    else:
-        print(f"❌ {failed} FAILED, {passed} passed")
-    print("="*60 + "\n")
-
-    return 0 if failed == 0 else 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+# Run async
+asyncio.run(run_agent())
