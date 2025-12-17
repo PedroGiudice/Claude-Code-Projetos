@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # ============================================================
   # 1. TRAEFIK - The Invisible Router
@@ -24,6 +22,14 @@ services:
   # ============================================================
   frontend-hub:
     build: ./hub
+    environment:
+      - DATA_PATH=/data
+      - NO_PROXY=localhost,127.0.0.1,reverse-proxy,api-stj,api-text-extractor,api-doc-assembler,api-trello,redis,frontend-hub
+      - no_proxy=localhost,127.0.0.1,reverse-proxy,api-stj,api-text-extractor,api-doc-assembler,api-trello,redis,frontend-hub
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - http_proxy=
+      - https_proxy=
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.hub.rule=PathPrefix(`/`)"
@@ -32,8 +38,6 @@ services:
       - "traefik.http.services.hub.loadbalancer.server.port=5001"
     volumes:
       - shared-data:/data                        # Shared with backends
-    environment:
-      - DATA_PATH=/data
     networks:
       - legal-network
     depends_on:
@@ -43,7 +47,9 @@ services:
   # 3. STJ SERVICE - Jurisprudence API
   # ============================================================
   api-stj:
-    build: ./docker/services/stj-api
+    build:
+      context: .
+      dockerfile: docker/services/stj-api/Dockerfile
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.stj.rule=PathPrefix(`/api/stj`)"
@@ -73,20 +79,30 @@ services:
       - "traefik.http.routers.text.priority=10"
       - "traefik.http.middlewares.text-strip.stripprefix.prefixes=/api/text"
       - "traefik.http.routers.text.middlewares=text-strip"
-      - "traefik.http.services.text.loadbalancer.server.port=8000"
+      - "traefik.http.services.text.loadbalancer.server.port=8001"
     volumes:
       - shared-data:/data
+      - text-extractor-cache:/app/cache
     environment:
       - DATA_PATH=/data
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MARKER_CACHE_DIR=/app/cache
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-2}
+      - JOB_TIMEOUT_SECONDS=${JOB_TIMEOUT_SECONDS:-600}
     networks:
       - legal-network
+    depends_on:
+      - redis
 
   # ============================================================
   # 5. DOC ASSEMBLER SERVICE - Document Generation
   # ============================================================
   api-doc-assembler:
-    build: ./docker/services/doc-assembler
+    build:
+      context: .
+      dockerfile: docker/services/doc-assembler/Dockerfile
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.doc.rule=PathPrefix(`/api/doc`)"
@@ -108,7 +124,9 @@ services:
   # 6. TRELLO MCP SERVICE - Task Integration
   # ============================================================
   api-trello:
-    build: ./docker/services/trello-mcp
+    build:
+      context: .
+      dockerfile: docker/services/trello-mcp/Dockerfile
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.trello.rule=PathPrefix(`/api/trello`)"
@@ -123,13 +141,31 @@ services:
     networks:
       - legal-network
 
+  # ============================================================
+  # 7. REDIS - Message Broker for Celery
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - legal-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
 # ============================================================
 # VOLUMES - Persistent Storage
 # ============================================================
 volumes:
-  shared-data:     # Files shared between frontend and backends
-  stj-db:          # DuckDB persistence for STJ
-  templates:       # Document templates
+  shared-data:           # Files shared between frontend and backends
+  stj-db:                # DuckDB persistence for STJ
+  templates:             # Document templates
+  text-extractor-cache:  # Marker cache for PDF processing
+  redis-data:            # Redis persistence
 
 # ============================================================
 # NETWORKS
