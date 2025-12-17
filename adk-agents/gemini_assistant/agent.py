@@ -18,6 +18,7 @@ from pathlib import Path
 # Add shared module to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared.config import Config
+from shared.tools import read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files
 
 # This agent ALWAYS uses Flash for speed (context offloading priority)
 MODEL = Config.MODELS.GEMINI_25_FLASH  # Fixed: gemini-2.5-flash
@@ -168,7 +169,7 @@ root_agent = Agent(
         "Context offloading specialist using Gemini Flash for high-speed analysis. "
         "Summarizes large files before Claude reads them to minimize context usage."
     ),
-    tools=[google_search],
+    tools=[google_search, read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files],
 )
 
 

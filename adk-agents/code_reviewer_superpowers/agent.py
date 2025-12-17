@@ -13,6 +13,7 @@ from pathlib import Path
 # Add shared module to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared.config import Config
+from shared.tools import read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files
 from shared.model_selector import get_model_for_context
 
 INSTRUCTION = """# Code Reviewer Superpowers
@@ -103,7 +104,7 @@ root_agent = Agent(
         "Senior Code Reviewer for comprehensive code reviews against plans and standards. "
         "Identifies issues, suggests improvements, and ensures architectural integrity."
     ),
-    tools=[google_search],
+    tools=[google_search, read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files],
 )
 
 

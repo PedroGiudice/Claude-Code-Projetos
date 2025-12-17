@@ -13,6 +13,7 @@ from pathlib import Path
 # Add shared module to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from shared.config import Config
+from shared.tools import read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files
 
 INSTRUCTION = """# Legal Tech Frontend Specialist
 
@@ -64,9 +65,9 @@ Structured markdown with:
 
 # Agent definition using Gemini 3 Pro (best reasoning)
 root_agent = Agent(
-    name="legal-tech-frontend-specialist",
+    name="legal_tech_frontend_specialist",
     model=Config.MODELS.GEMINI_3_PRO,  # gemini-3-pro
     instruction=INSTRUCTION,
     description="Senior Frontend Engineer for Legal Tech. Builds React/TypeScript UIs for document analysis, case management, and legal data visualization.",
-    tools=[google_search],
+    tools=[google_search, read_file, write_file, list_directory, search_code, run_command, analyze_python_structure, get_directory_tree, read_multiple_files],
 )
