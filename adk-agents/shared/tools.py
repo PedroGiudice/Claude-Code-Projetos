@@ -1,14 +1,12 @@
 """
-Custom tools for Backend Architect agent.
+Shared tools for all ADK agents.
 
-These tools enable the agent to:
-- Read and analyze code files
-- Write architecture documents and code
-- Execute commands for validation
-- Search and analyze codebases
+These tools provide common functionality for file operations,
+code analysis, command execution, and project navigation.
 """
 import subprocess
 import json
+import re
 from pathlib import Path
 from typing import Optional
 from google.adk.tools import tool
@@ -199,8 +197,6 @@ def analyze_python_structure(file_path: str) -> str:
     Returns:
         JSON with classes, functions, imports found in the file
     """
-    import re
-
     content = read_file(file_path)
     if "error" in content:
         return content
@@ -264,16 +260,16 @@ def get_directory_tree(dir_path: str, max_depth: int = 3) -> str:
             # Filter out common noise
             entries = [e for e in entries if e.name not in [
                 "__pycache__", ".git", "node_modules", ".venv", "venv",
-                ".pytest_cache", ".mypy_cache", "__init__.py"
+                ".pytest_cache", ".mypy_cache"
             ]]
 
             for i, entry in enumerate(entries[:30]):  # Limit entries
                 is_last = i == len(entries) - 1
-                connector = "\\u2514\\u2500\\u2500 " if is_last else "\\u251c\\u2500\\u2500 "
+                connector = "└── " if is_last else "├── "
 
                 if entry.is_dir():
                     items.append(f"{prefix}{connector}{entry.name}/")
-                    extension = "    " if is_last else "\\u2502   "
+                    extension = "    " if is_last else "│   "
                     items.extend(build_tree(entry, prefix + extension, depth + 1))
                 else:
                     items.append(f"{prefix}{connector}{entry.name}")
@@ -311,3 +307,16 @@ def read_multiple_files(file_paths: str) -> str:
             results.append(f"\n### FILE: {file_path}\n[ERROR: Could not read file]\n")
 
     return "\n".join(results)
+
+
+# Export all tools
+__all__ = [
+    "read_file",
+    "write_file",
+    "list_directory",
+    "search_code",
+    "run_command",
+    "analyze_python_structure",
+    "get_directory_tree",
+    "read_multiple_files",
+]
