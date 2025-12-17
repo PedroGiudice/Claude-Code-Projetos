@@ -55,7 +55,7 @@ def main():
 
     # Check if module is available
     if ContextMemoryDB is None:
-        print(json.dumps({"continue": True}))
+        print(json.dumps({}))
         return
 
     try:
@@ -75,21 +75,21 @@ def main():
             context = generate_context_injection(db, branch=branch, max_tokens=500)
 
             if context.strip():
+                # Official Claude Code hook format for context injection
                 output = {
-                    "continue": True,
-                    "result": f"[Context Memory]\n{context}"
+                    "hookSpecificOutput": {
+                        "hookEventName": "SessionStart",
+                        "additionalContext": f"[Context Memory]\n{context}"
+                    }
                 }
             else:
-                output = {"continue": True}
+                output = {}
 
         print(json.dumps(output))
 
     except Exception as e:
-        # Non-blocking: always continue even on error
-        print(json.dumps({
-            "continue": True,
-            "systemMessage": f"Context memory injection skipped: {str(e)[:100]}"
-        }))
+        # Non-blocking: output empty JSON on error (hook still succeeds)
+        print(json.dumps({}))
 
 
 if __name__ == "__main__":
