@@ -77,7 +77,7 @@ def main():
             if context.strip():
                 output = {
                     "continue": True,
-                    "additionalContext": f"[Context Memory - Auto-injected]\n{context}"
+                    "result": f"[Context Memory]\n{context}"
                 }
             else:
                 output = {"continue": True}
