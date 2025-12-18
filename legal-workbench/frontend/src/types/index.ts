@@ -54,3 +54,31 @@ export interface Toast {
   message: string;
   type: ToastType;
 }
+
+// LEDES Converter Types
+export type LedesConversionStatus = 'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error';
+
+export interface LedesExtractedData {
+  invoice_date: string;
+  invoice_number: string;
+  client_id: string;
+  matter_id: string;
+  invoice_total: number;
+  line_items: Array<{
+    description: string;
+    amount: number;
+  }>;
+}
+
+export interface ConvertLedesResponse {
+  filename: string;
+  status: 'success' | 'error';
+  message?: string;
+  ledes_content?: string;
+  extracted_data?: LedesExtractedData;
+}
+
+export interface LedesFileValidation {
+  valid: boolean;
+  error?: string;
+}

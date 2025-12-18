@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Kanban, FileText, Scale, ArrowRight, FileOutput } from 'lucide-react';
+import { Kanban, FileText, Scale, ArrowRight, FileOutput, Receipt } from 'lucide-react';
 
 const modules = [
   {
@@ -32,6 +32,14 @@ const modules = [
     description: 'Extraia texto de PDFs com OCR, filtragem LGPD e suporte a documentos jurídicos.',
     icon: FileOutput,
     color: 'status-emerald',
+    status: 'active'
+  },
+  {
+    id: 'ledes-converter',
+    name: 'LEDES Converter',
+    description: 'Converta faturas DOCX para formato LEDES 1998B para faturamento jurídico.',
+    icon: Receipt,
+    color: 'accent-amber',
     status: 'active'
   },
 ];
@@ -100,7 +108,7 @@ export default function HubHome() {
           {/* Stats Section */}
           <div className="mt-12 grid grid-cols-3 gap-4">
             <div className="p-4 bg-bg-panel-1 rounded-lg border border-border-default">
-              <p className="text-2xl font-bold text-accent-indigo">4</p>
+              <p className="text-2xl font-bold text-accent-indigo">5</p>
               <p className="text-sm text-text-muted">Módulos ativos</p>
             </div>
             <div className="p-4 bg-bg-panel-1 rounded-lg border border-border-default">

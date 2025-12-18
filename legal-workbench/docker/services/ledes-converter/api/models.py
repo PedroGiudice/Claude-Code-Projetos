@@ -1,15 +1,52 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from typing import List
 
-class ConversionStatus(BaseModel):
-    filename: str
-    status: str
-    message: str | None = None
-    ledes_content: str | None = None
+
+class LineItem(BaseModel):
+    """Represents a single line item in an invoice."""
+    description: str = Field(..., max_length=500, description="Line item description")
+    amount: float = Field(..., ge=0, description="Line item amount (must be non-negative)")
+
+    @field_validator('description')
+    @classmethod
+    def validate_description(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Description cannot be empty")
+        return v.strip()
+
 
 class LedesData(BaseModel):
-    invoice_date: str
-    invoice_number: str
-    client_id: str
-    matter_id: str
-    invoice_total: float
-    line_items: list[dict]
+    """Extracted invoice data ready for LEDES conversion."""
+    invoice_date: str = Field(..., description="Invoice date in YYYYMMDD format")
+    invoice_number: str = Field(..., max_length=50, description="Invoice number")
+    client_id: str = Field(..., max_length=100, description="Client identifier")
+    matter_id: str = Field(..., max_length=100, description="Matter identifier")
+    invoice_total: float = Field(..., ge=0, description="Total invoice amount")
+    line_items: List[LineItem] = Field(..., min_length=1, description="Invoice line items")
+
+    @field_validator('invoice_date')
+    @classmethod
+    def validate_date_format(cls, v: str) -> str:
+        if v and len(v) != 8:
+            raise ValueError("Invoice date must be in YYYYMMDD format")
+        return v
+
+
+class ConversionResponse(BaseModel):
+    """API response for successful conversion."""
+    filename: str = Field(..., description="Original filename")
+    status: str = Field(default="success", description="Conversion status")
+    extracted_data: LedesData = Field(..., description="Extracted invoice data")
+    ledes_content: str = Field(..., description="LEDES 1998B formatted content")
+
+
+class ErrorResponse(BaseModel):
+    """API response for errors."""
+    detail: str = Field(..., description="Error message")
+    status_code: int = Field(..., description="HTTP status code")
+
+
+class HealthResponse(BaseModel):
+    """Health check response."""
+    status: str = Field(default="ok", description="Service health status")
+    service: str = Field(default="ledes-converter", description="Service name")

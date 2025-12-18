@@ -1,59 +1,199 @@
 import { create } from 'zustand';
-import { ledesConverterApi } from '../services/ledesConverterApi';
+import { ledesConverterApi, validateDocxFile } from '@/services/ledesConverterApi';
+import type { LedesConversionStatus, LedesExtractedData } from '@/types';
 
 interface LedesConversionState {
+  // File state
   file: File | null;
-  isConverting: boolean;
-  conversionResult: string | null;
-  conversionError: string | null;
-  uploadProgress: number; // 0-100
+
+  // Conversion state
+  status: LedesConversionStatus;
+  uploadProgress: number;
+
+  // Results
+  ledesContent: string | null;
+  extractedData: LedesExtractedData | null;
+
+  // Error handling
+  error: string | null;
+  retryCount: number;
+
+  // Actions
   setFile: (file: File | null) => void;
   convertFile: () => Promise<void>;
+  downloadResult: () => void;
   reset: () => void;
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_BASE = 1000; // 1 second
+
+/**
+ * Delay helper for retry logic
+ */
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
 export const useLedesConverterStore = create<LedesConversionState>((set, get) => ({
+  // Initial state
   file: null,
-  isConverting: false,
-  conversionResult: null,
-  conversionError: null,
+  status: 'idle',
   uploadProgress: 0,
+  ledesContent: null,
+  extractedData: null,
+  error: null,
+  retryCount: 0,
 
-  setFile: (file) => set({ file, conversionResult: null, conversionError: null, uploadProgress: 0 }),
-
-  convertFile: async () => {
-    const { file } = get();
+  setFile: (file) => {
     if (!file) {
-      set({ conversionError: 'No file selected for conversion.' });
+      set({
+        file: null,
+        status: 'idle',
+        error: null,
+        ledesContent: null,
+        extractedData: null,
+        uploadProgress: 0,
+        retryCount: 0,
+      });
       return;
     }
 
-    set({ isConverting: true, conversionResult: null, conversionError: null, uploadProgress: 0 });
+    // Validate file before accepting
+    set({ status: 'validating', error: null });
+
+    const validation = validateDocxFile(file);
+    if (!validation.valid) {
+      set({
+        status: 'error',
+        error: validation.error || 'Invalid file',
+        file: null,
+      });
+      return;
+    }
+
+    set({
+      file,
+      status: 'idle',
+      ledesContent: null,
+      extractedData: null,
+      error: null,
+      uploadProgress: 0,
+      retryCount: 0,
+    });
+  },
+
+  convertFile: async () => {
+    const { file, retryCount } = get();
+
+    if (!file) {
+      set({ status: 'error', error: 'No file selected for conversion.' });
+      return;
+    }
+
+    set({
+      status: 'uploading',
+      ledesContent: null,
+      extractedData: null,
+      error: null,
+      uploadProgress: 0,
+    });
 
     try {
-      // Simulate upload progress (axios doesn't directly expose progress for multipart/form-data easily in this setup)
-      // In a real scenario, you'd integrate with axios progress events.
-      set({ uploadProgress: 50 });
+      const response = await ledesConverterApi.convertDocxToLedes(
+        file,
+        (progress) => {
+          // Upload phase: 0-50%
+          set({ uploadProgress: Math.round(progress * 0.5) });
+        }
+      );
 
-      const response = await ledesConverterApi.convertDocxToLedes(file);
+      // Processing phase: 50-100%
+      set({ status: 'processing', uploadProgress: 75 });
 
       if (response.status === 'success' && response.ledes_content) {
-        set({ conversionResult: response.ledes_content, uploadProgress: 100, isConverting: false });
-      } else if (response.message) {
-        set({ conversionError: response.message, isConverting: false });
+        set({
+          status: 'success',
+          ledesContent: response.ledes_content,
+          extractedData: response.extracted_data || null,
+          uploadProgress: 100,
+          retryCount: 0,
+        });
       } else {
-        set({ conversionError: 'Unknown conversion error.', isConverting: false });
+        set({
+          status: 'error',
+          error: response.message || 'Unknown conversion error.',
+        });
       }
-    } catch (error: any) {
-      set({ conversionError: error.message || 'Failed to convert file.', isConverting: false });
+    } catch (error: unknown) {
+      const isNetworkError =
+        error instanceof Error &&
+        (error.message.includes('Network') ||
+         error.message.includes('timeout') ||
+         error.message.includes('ECONNREFUSED'));
+
+      if (isNetworkError && retryCount < MAX_RETRIES) {
+        const newRetryCount = retryCount + 1;
+        const retryDelay = RETRY_DELAY_BASE * Math.pow(2, retryCount);
+
+        set({
+          error: `Connection failed. Retrying (${newRetryCount}/${MAX_RETRIES})...`,
+          retryCount: newRetryCount,
+          uploadProgress: 0,
+        });
+
+        await delay(retryDelay);
+        return get().convertFile();
+      }
+
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to convert file. Please try again.';
+
+      set({
+        status: 'error',
+        error: errorMessage,
+      });
+    }
+  },
+
+  downloadResult: () => {
+    const { ledesContent, file } = get();
+
+    if (!ledesContent || !file) {
+      console.warn('Cannot download: missing content or file reference');
+      return;
+    }
+
+    try {
+      const blob = new Blob([ledesContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      const baseName = file.name.replace(/\.docx$/i, '');
+      link.href = url;
+      link.download = `${baseName}_LEDES.txt`;
+      link.setAttribute('aria-label', `Download LEDES file: ${baseName}_LEDES.txt`);
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup with timeout to ensure download completes
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Download failed:', error);
+      set({ error: 'Failed to download file. Please try again.' });
     }
   },
 
   reset: () => set({
     file: null,
-    isConverting: false,
-    conversionResult: null,
-    conversionError: null,
+    status: 'idle',
     uploadProgress: 0,
+    ledesContent: null,
+    extractedData: null,
+    error: null,
+    retryCount: 0,
   }),
 }));

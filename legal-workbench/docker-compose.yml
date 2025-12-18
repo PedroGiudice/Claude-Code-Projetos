@@ -133,7 +133,7 @@ services:
       - legal-network
 
   # ============================================================
-  # 7. REDIS - Message Broker for Celery
+  # 7. LEDES CONVERTER - DOCX to LEDES Format
   # ============================================================
   api-ledes-converter:
     build: ./docker/services/ledes-converter
@@ -147,15 +147,22 @@ services:
       - "traefik.http.services.ledes.loadbalancer.server.port=8003"
     volumes:
       - shared-data:/data
-      - ledes-data:/app/data # For any persistent data related to LEDES conversion
     environment:
       - DATA_PATH=/data
-      # Add any specific environment variables here, e.g., for templates or configurations
     networks:
       - legal-network
+    depends_on:
+      - reverse-proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ============================================================
-  # 7. REDIS - Message Broker for Celery
+  # 8. REDIS - Message Broker for Celery
   # ============================================================
   redis:
     image: redis:7-alpine

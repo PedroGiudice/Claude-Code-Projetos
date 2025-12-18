@@ -1,32 +1,117 @@
-import axios from 'axios';
+import axios, { AxiosProgressEvent } from 'axios';
+import type { ConvertLedesResponse, LedesFileValidation } from '@/types';
 
-const API_BASE_URL = '/api/ledes'; // Corresponds to Traefik route
+const API_BASE_URL = '/api/ledes';
 
-interface ConvertLedesResponse {
-  filename: string;
-  status: string;
-  message?: string;
-  ledes_content?: string;
-}
+// Constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const VALID_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/octet-stream', // Fallback for some browsers
+];
 
+/**
+ * Validate a DOCX file before upload
+ * @param file - File to validate
+ * @returns Validation result with error message if invalid
+ */
+export const validateDocxFile = (file: File): LedesFileValidation => {
+  // Validate file size (10MB limit)
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
+    };
+  }
+
+  // Validate MIME type (allow empty string for browser compatibility)
+  if (!VALID_MIME_TYPES.includes(file.type) && file.type !== '') {
+    return {
+      valid: false,
+      error: 'Invalid file type. Please upload a valid .docx file.',
+    };
+  }
+
+  // Validate file extension as final check
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    return {
+      valid: false,
+      error: 'Invalid file extension. Please upload a .docx file.',
+    };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Sanitize filename to prevent XSS attacks when displaying
+ * Converts potentially dangerous HTML characters to HTML entities
+ * @param filename - Original filename
+ * @returns Sanitized filename safe for display
+ */
+export const sanitizeFilename = (filename: string): string => {
+  return filename.replace(/[<>"'&]/g, (char) => {
+    const entities: Record<string, string> = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '&': '&amp;',
+    };
+    return entities[char] || char;
+  });
+};
+
+/**
+ * LEDES Converter API client
+ * Provides methods for converting DOCX invoices to LEDES format
+ */
 export const ledesConverterApi = {
-  healthCheck: async (): Promise<{ status: string }> => {
+  /**
+   * Check LEDES service health status
+   * @returns Promise resolving to health status
+   * @throws Error if service is unreachable
+   */
+  healthCheck: async (): Promise<{ status: string; service?: string }> => {
     const response = await axios.get(`${API_BASE_URL}/health`);
     return response.data;
   },
 
-  convertDocxToLedes: async (file: File): Promise<ConvertLedesResponse> => {
+  /**
+   * Convert a DOCX invoice file to LEDES 1998B format
+   * @param file - DOCX file to convert (max 10MB)
+   * @param onProgress - Optional progress callback (0-100 percent)
+   * @returns Promise resolving to conversion result with LEDES content and extracted data
+   * @throws Error if conversion fails or file is invalid
+   */
+  convertDocxToLedes: async (
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<ConvertLedesResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await axios.post(`${API_BASE_URL}/convert/docx-to-ledes`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+
+    const response = await axios.post<ConvertLedesResponse>(
+      `${API_BASE_URL}/convert/docx-to-ledes`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            onProgress(percentCompleted);
+          }
+        },
+        timeout: 30000, // 30 second timeout for large files
+      }
+    );
+
     return response.data;
   },
-
-  // In a real implementation, you might have a job polling mechanism here
-  // getConversionStatus: async (jobId: string): Promise<ConversionStatus> => { ... }
-  // getConversionResult: async (jobId: string): Promise<LedesContent> => { ... }
 };
+
+export default ledesConverterApi;
