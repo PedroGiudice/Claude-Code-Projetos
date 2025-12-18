@@ -21,6 +21,7 @@ from shared.model_selector import get_model_for_context
 
 # Import custom tools
 from .tools import (
+    # Core tools
     list_docker_containers,
     inspect_container,
     read_file,
@@ -30,6 +31,17 @@ from .tools import (
     list_existing_modules,
     write_frontend_module,
     get_service_endpoints,
+    # Advanced frontend tools
+    run_npm_command,
+    fetch_api,
+    run_typescript_check,
+    format_code,
+    analyze_package_json,
+    search_npm_packages,
+    run_linter,
+    git_operations,
+    list_directory_tree,
+    analyze_component_structure,
 )
 
 INSTRUCTION = """# Frontend Commander
@@ -110,8 +122,9 @@ def {service_name}_component():
 
 ## Available Tools
 
-- `read_file`: Read ANY file (docs, plans, configs, code) - **use for on-demand tasks**
-- `write_file`: Write ANY file (docker-compose, configs, etc.) - **use for on-demand tasks**
+### Core Tools
+- `read_file`: Read ANY file (docs, plans, configs, code)
+- `write_file`: Write ANY file (docker-compose, configs, etc.)
 - `list_docker_containers`: See running services
 - `inspect_container`: Get container details
 - `read_backend_code`: Read Python source from a service
@@ -120,6 +133,18 @@ def {service_name}_component():
 - `write_frontend_module`: Save generated frontend code
 - `get_service_endpoints`: Extract API routes
 - `google_search`: Research patterns/libraries
+
+### Advanced Frontend Tools
+- `run_npm_command`: Execute npm/bun/yarn commands (install, build, etc.)
+- `fetch_api`: Make HTTP requests to test APIs
+- `run_typescript_check`: Type-check TypeScript code
+- `format_code`: Format with Prettier/ESLint/Black
+- `analyze_package_json`: Understand project dependencies
+- `search_npm_packages`: Find npm packages for features
+- `run_linter`: Run ESLint/Biome/Stylelint
+- `git_operations`: Version control (status, diff, log)
+- `list_directory_tree`: Explore project structure
+- `analyze_component_structure`: Analyze React/Vue components
 
 ## Constraints
 
@@ -140,6 +165,7 @@ root_agent = Agent(
         "frontend UI modules. Creates modern, visually rich FastHTML/React components."
     ),
     tools=[
+        # Core
         google_search,
         read_file,
         write_file,
@@ -150,6 +176,17 @@ root_agent = Agent(
         list_existing_modules,
         write_frontend_module,
         get_service_endpoints,
+        # Advanced frontend
+        run_npm_command,
+        fetch_api,
+        run_typescript_check,
+        format_code,
+        analyze_package_json,
+        search_npm_packages,
+        run_linter,
+        git_operations,
+        list_directory_tree,
+        analyze_component_structure,
     ],
 )
 
