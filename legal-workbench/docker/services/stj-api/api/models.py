@@ -50,8 +50,50 @@ class SyncRequest(BaseModel):
         None,
         description="Lista de órgãos para sincronizar (None = todos)"
     )
-    dias: int = Field(30, description="Sincronizar últimos N dias", ge=1, le=365)
+    dias: int = Field(30, description="Sincronizar últimos N dias", ge=1, le=1500)
+    data_inicio: Optional[str] = Field(
+        None,
+        description="Data de início em formato ISO (YYYY-MM-DD). Alternativa ao parâmetro 'dias'"
+    )
     force: bool = Field(False, description="Forçar redownload de arquivos existentes")
+
+    @validator('data_inicio')
+    def validar_data_inicio(cls, v):
+        if v is not None:
+            try:
+                datetime.strptime(v, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError('data_inicio deve estar no formato YYYY-MM-DD')
+        return v
+
+
+class ExportFormat(str, Enum):
+    """Formato de exportação."""
+    JSON = "json"
+    CSV = "csv"
+
+
+class ExportRequest(BaseModel):
+    """Request body for export endpoint."""
+    termo: str = Field(..., description="Termo para buscar", min_length=3)
+    formato: ExportFormat = Field(ExportFormat.JSON, description="Formato de exportação (json ou csv)")
+    dias: int = Field(365, description="Buscar nos últimos N dias", ge=1, le=1500)
+    orgao: Optional[str] = Field(None, description="Órgão julgador para filtrar")
+    campo: str = Field("ementa", description="Campo para buscar (ementa ou texto_integral)")
+
+    @validator('campo')
+    def validar_campo(cls, v):
+        if v not in ['ementa', 'texto_integral']:
+            raise ValueError('campo deve ser "ementa" ou "texto_integral"')
+        return v
+
+
+class ExportResponse(BaseModel):
+    """Response metadata for export (returned in headers, not body)."""
+    filename: str
+    content_type: str
+    total_records: int
+    formato: ExportFormat
 
 
 # Response models

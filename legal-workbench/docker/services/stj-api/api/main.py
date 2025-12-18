@@ -20,7 +20,7 @@ from typing import List, Optional, Dict
 
 from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 # Add backend path to sys.path
 BACKEND_PATH = Path(__file__).parent.parent.parent.parent / "ferramentas/stj-dados-abertos"
@@ -36,7 +36,9 @@ from api.models import (
     StatsResponse,
     SyncRequest,
     SyncStatus,
-    HealthResponse
+    HealthResponse,
+    ExportRequest,
+    ExportFormat
 )
 from api.dependencies import get_database, close_database, get_cache, invalidate_cache
 from api.scheduler import start_scheduler, stop_scheduler, run_sync_task, get_sync_status
@@ -293,14 +295,32 @@ async def trigger_sync(
     Downloads and processes new data from STJ Dados Abertos.
     Runs in background and returns immediately.
 
+    Supports two modes:
+    - By days: Use 'dias' parameter (1-1500) to sync last N days
+    - By start date: Use 'data_inicio' (ISO format YYYY-MM-DD) as alternative
+
     Args:
-        request: SyncRequest with orgaos, dias, and force options
+        request: SyncRequest with orgaos, dias/data_inicio, and force options
 
     Returns:
         SyncStatus with current sync status
     """
     try:
-        logger.info(f"Sync requested: orgaos={request.orgaos}, dias={request.dias}, force={request.force}")
+        # Calculate effective dias from data_inicio if provided
+        effective_dias = request.dias
+        if request.data_inicio:
+            try:
+                start_date = datetime.strptime(request.data_inicio, "%Y-%m-%d")
+                delta = datetime.now() - start_date
+                effective_dias = max(1, delta.days)
+                # Cap at 1500 days for safety
+                if effective_dias > 1500:
+                    effective_dias = 1500
+                    logger.warning(f"data_inicio resulted in {delta.days} days, capped to 1500")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=f"Formato de data inválido: {str(e)}")
+
+        logger.info(f"Sync requested: orgaos={request.orgaos}, dias={effective_dias}, data_inicio={request.data_inicio}, force={request.force}")
 
         # Check if sync is already running
         status = get_sync_status()
@@ -312,7 +332,7 @@ async def trigger_sync(
         background_tasks.add_task(
             run_sync_task,
             orgaos=request.orgaos,
-            dias=request.dias,
+            dias=effective_dias,
             force=request.force
         )
 
@@ -320,9 +340,11 @@ async def trigger_sync(
         return SyncStatus(
             status="running",
             started_at=datetime.now(),
-            message="Sync started in background"
+            message=f"Sync started in background (dias={effective_dias})"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to trigger sync: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erro ao iniciar sincronização: {str(e)}")
@@ -343,6 +365,106 @@ async def get_sync_status_endpoint():
     except Exception as e:
         logger.error(f"Failed to get sync status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erro ao obter status de sincronização: {str(e)}")
+
+
+# Export endpoint
+@app.post("/api/v1/export", tags=["Export"])
+async def export_results(
+    request: ExportRequest,
+    db: STJDatabase = Depends(get_database)
+):
+    """
+    Export search results as downloadable file.
+
+    Searches jurisprudence and returns results as JSON or CSV file.
+    Supports mass retroactive downloads with date ranges up to 1500 days.
+
+    Args:
+        request: ExportRequest with termo, formato, dias, orgao, campo
+
+    Returns:
+        StreamingResponse with file download (Content-Disposition attachment)
+    """
+    import csv
+    import json
+    import io
+
+    try:
+        logger.info(f"Export requested: termo={request.termo}, formato={request.formato}, dias={request.dias}, orgao={request.orgao}")
+
+        # Search based on field
+        if request.campo == "ementa":
+            results = db.buscar_ementa(request.termo, request.orgao, request.dias, limit=10000)
+        else:  # texto_integral
+            results = db.buscar_acordao(request.termo, request.orgao, request.dias, limit=10000)
+
+        if not results:
+            raise HTTPException(status_code=404, detail="Nenhum resultado encontrado para exportação")
+
+        logger.info(f"Export: found {len(results)} results")
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        termo_safe = "".join(c if c.isalnum() else "_" for c in request.termo[:20])
+
+        if request.formato == ExportFormat.CSV:
+            # Generate CSV
+            output = io.StringIO()
+            fieldnames = ["numero_processo", "relator", "orgao_julgador", "data_julgamento", "ementa"]
+            writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+            writer.writeheader()
+
+            for row in results:
+                # Format date if present
+                row_copy = dict(row)
+                if row_copy.get("data_julgamento"):
+                    if hasattr(row_copy["data_julgamento"], "strftime"):
+                        row_copy["data_julgamento"] = row_copy["data_julgamento"].strftime("%Y-%m-%d")
+                writer.writerow(row_copy)
+
+            content = output.getvalue()
+            output.close()
+
+            filename = f"stj_export_{termo_safe}_{timestamp}.csv"
+            media_type = "text/csv"
+
+            return StreamingResponse(
+                iter([content]),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "X-Total-Records": str(len(results))
+                }
+            )
+
+        else:  # JSON format
+            # Full acordao data for JSON
+            content = json.dumps({
+                "termo": request.termo,
+                "total": len(results),
+                "exported_at": datetime.now().isoformat(),
+                "dias": request.dias,
+                "orgao": request.orgao,
+                "resultados": results
+            }, indent=2, default=str, ensure_ascii=False)
+
+            filename = f"stj_export_{termo_safe}_{timestamp}.json"
+            media_type = "application/json"
+
+            return StreamingResponse(
+                iter([content]),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "X-Total-Records": str(len(results))
+                }
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Export failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Erro na exportação: {str(e)}")
 
 
 # Root endpoint

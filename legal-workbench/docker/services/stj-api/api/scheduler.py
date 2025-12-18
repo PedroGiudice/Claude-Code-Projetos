@@ -73,14 +73,22 @@ async def run_sync_task(
     """
     Run sync task to download and process STJ data.
 
+    Supports large date ranges up to 1500 days for mass retroactive downloads.
+    For very large ranges, data is processed in batches to avoid memory issues.
+
     Args:
         orgaos: List of órgãos to sync (None = all)
-        dias: Number of days to sync (default: 30)
+        dias: Number of days to sync (default: 30, max: 1500)
         force: Force redownload of existing files
 
     Returns:
         Dict with sync results
     """
+    # Cap dias at 1500 for safety
+    if dias > 1500:
+        logger.warning(f"dias={dias} exceeds maximum, capping to 1500")
+        dias = 1500
+
     logger.info(f"Starting sync task: orgaos={orgaos}, dias={dias}, force={force}")
 
     try:
