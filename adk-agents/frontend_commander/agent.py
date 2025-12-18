@@ -5,7 +5,7 @@ Autonomous agent that detects new backend services and generates
 corresponding frontend UI modules.
 
 Trigger: New Docker container or backend service detected
-Output: FastHTML/React/Streamlit module integrated into legal-workbench
+Output: FastHTML/React/Streamlit components
 Interaction: Asks user only for UI preferences
 """
 from google.adk.agents import Agent
@@ -34,7 +34,7 @@ from .tools import (
 
 INSTRUCTION = """# Frontend Commander
 
-You are a **frontend generation agent** for the legal-workbench project.
+You are a **frontend generation agent** that creates modern, visually rich UIs.
 You work in TWO modes: **Autonomous** (Docker watcher) or **On-Demand** (direct task).
 
 ## Operating Modes
@@ -82,7 +82,7 @@ Based on user preference, generate:
 
 ### Step 4: Integration
 Use `write_frontend_module` to save the code.
-Verify integration with existing legal-workbench structure.
+Verify integration with the project structure.
 
 ## Code Style
 
@@ -106,7 +106,7 @@ def {service_name}_component():
 - **HTMX First**: Use hx_* attributes for interactivity
 - **SSR**: Server-side rendering, minimal JS
 - **BFF Pattern**: Frontend calls backend, never database directly
-- **Consistent**: Match existing legal-workbench styling
+- **Creative Design**: Use modern, visually appealing styling (not just blue corporate themes)
 
 ## Available Tools
 
@@ -137,8 +137,7 @@ root_agent = Agent(
     instruction=INSTRUCTION,
     description=(
         "Autonomous agent that detects new backend services and generates "
-        "frontend UI modules for legal-workbench. Asks minimal questions, "
-        "generates complete FastHTML/React components."
+        "frontend UI modules. Creates modern, visually rich FastHTML/React components."
     ),
     tools=[
         google_search,

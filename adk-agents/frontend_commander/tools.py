@@ -5,21 +5,18 @@ These tools enable the agent to:
 - Detect and inspect Docker containers
 - Read backend source code
 - Generate and write frontend code
-- Integrate with legal-workbench structure
+- Integrate with project structure
 """
 import subprocess
 import json
+import re
 from pathlib import Path
 from typing import Optional
 from google.adk.tools import tool
 
 
-# Project paths
+# Project paths - configurable base
 PROJECT_ROOT = Path("/home/user/Claude-Code-Projetos")
-LEGAL_WORKBENCH = PROJECT_ROOT / "legal-workbench"
-FERRAMENTAS_DIR = LEGAL_WORKBENCH / "ferramentas"
-MODULES_DIR = LEGAL_WORKBENCH / "modules"
-DOCKER_DIR = LEGAL_WORKBENCH / "docker"
 
 
 @tool
@@ -117,7 +114,7 @@ def write_file(file_path: str, content: str) -> str:
 
     Args:
         file_path: Relative path from project root.
-                   Examples: "legal-workbench/docker-compose.yml", "hub/main.py"
+                   Examples: "src/components/MyComponent.tsx", "docker-compose.yml"
         content: File contents to write
 
     Returns:
@@ -138,197 +135,182 @@ def write_file(file_path: str, content: str) -> str:
 
 
 @tool
-def read_backend_code(service_name: str) -> str:
+def read_backend_code(directory: str) -> str:
     """
-    Read all Python source code from a backend service.
-
-    Searches in:
-    - legal-workbench/ferramentas/{service_name}/
-    - legal-workbench/docker/services/{service_name}/
+    Read all Python source code from a directory.
 
     Args:
-        service_name: Name of the backend service (e.g., 'stj-api', 'text-extractor')
+        directory: Path to the directory containing backend code
 
     Returns:
         Concatenated source code with file markers
     """
-    possible_paths = [
-        FERRAMENTAS_DIR / service_name,
-        DOCKER_DIR / "services" / service_name,
-    ]
+    base_path = PROJECT_ROOT / directory
+    if not base_path.exists():
+        base_path = Path(directory)
+
+    if not base_path.exists():
+        return json.dumps({"error": f"Directory not found: {directory}"})
 
     code_content = []
 
-    for base_path in possible_paths:
-        if not base_path.exists():
+    # Read Python files
+    for py_file in base_path.rglob("*.py"):
+        # Skip __pycache__ and venv
+        if "__pycache__" in str(py_file) or ".venv" in str(py_file):
             continue
 
-        # Read Python files
-        for py_file in base_path.rglob("*.py"):
-            # Skip __pycache__ and venv
-            if "__pycache__" in str(py_file) or ".venv" in str(py_file):
-                continue
+        try:
+            content = py_file.read_text()
+            relative_path = py_file.relative_to(base_path)
+            code_content.append(f"### FILE: {relative_path}\n```python\n{content}\n```\n")
+        except Exception as e:
+            code_content.append(f"### FILE: {py_file} (ERROR: {e})\n")
 
-            try:
-                content = py_file.read_text()
-                relative_path = py_file.relative_to(base_path)
-                code_content.append(f"### FILE: {relative_path}\n```python\n{content}\n```\n")
-            except Exception as e:
-                code_content.append(f"### FILE: {py_file} (ERROR: {e})\n")
+    # Read requirements.txt if exists
+    req_file = base_path / "requirements.txt"
+    if req_file.exists():
+        try:
+            content = req_file.read_text()
+            code_content.append(f"### FILE: requirements.txt\n```\n{content}\n```\n")
+        except:
+            pass
 
-        # Read requirements.txt if exists
-        req_file = base_path / "requirements.txt"
-        if req_file.exists():
-            try:
-                content = req_file.read_text()
-                code_content.append(f"### FILE: requirements.txt\n```\n{content}\n```\n")
-            except:
-                pass
-
-        # Read Dockerfile if exists
-        dockerfile = base_path / "Dockerfile"
-        if dockerfile.exists():
-            try:
-                content = dockerfile.read_text()
-                code_content.append(f"### FILE: Dockerfile\n```dockerfile\n{content}\n```\n")
-            except:
-                pass
+    # Read Dockerfile if exists
+    dockerfile = base_path / "Dockerfile"
+    if dockerfile.exists():
+        try:
+            content = dockerfile.read_text()
+            code_content.append(f"### FILE: Dockerfile\n```dockerfile\n{content}\n```\n")
+        except:
+            pass
 
     if not code_content:
-        return json.dumps({"error": f"No code found for service: {service_name}"})
+        return json.dumps({"error": f"No code found in: {directory}"})
 
     return "\n".join(code_content)
 
 
 @tool
-def read_openapi_spec(service_name: str) -> str:
+def read_openapi_spec(directory: str) -> str:
     """
-    Read OpenAPI/Swagger specification from a backend service.
+    Read OpenAPI/Swagger specification from a directory.
 
     Args:
-        service_name: Name of the backend service
+        directory: Path to the directory containing the spec
 
     Returns:
         OpenAPI spec as JSON/YAML string, or error if not found
     """
-    possible_paths = [
-        FERRAMENTAS_DIR / service_name,
-        DOCKER_DIR / "services" / service_name,
-    ]
+    base_path = PROJECT_ROOT / directory
+    if not base_path.exists():
+        base_path = Path(directory)
+
+    if not base_path.exists():
+        return json.dumps({"error": f"Directory not found: {directory}"})
 
     spec_filenames = ["openapi.json", "openapi.yaml", "swagger.json", "swagger.yaml", "api.json"]
 
-    for base_path in possible_paths:
-        if not base_path.exists():
-            continue
+    for filename in spec_filenames:
+        spec_file = base_path / filename
+        if spec_file.exists():
+            try:
+                return spec_file.read_text()
+            except Exception as e:
+                return json.dumps({"error": f"Failed to read {spec_file}: {e}"})
 
-        for filename in spec_filenames:
-            spec_file = base_path / filename
-            if spec_file.exists():
-                try:
-                    return spec_file.read_text()
-                except Exception as e:
-                    return json.dumps({"error": f"Failed to read {spec_file}: {e}"})
-
-    return json.dumps({"error": f"No OpenAPI spec found for service: {service_name}"})
+    return json.dumps({"error": f"No OpenAPI spec found in: {directory}"})
 
 
 @tool
-def list_existing_modules() -> str:
+def list_existing_modules(directory: str = "src/components") -> str:
     """
-    List existing UI modules in legal-workbench/modules/.
+    List existing UI modules/components in a directory.
+
+    Args:
+        directory: Path to the directory containing modules (default: src/components)
 
     Returns:
         JSON with module names and their descriptions
     """
+    modules_dir = PROJECT_ROOT / directory
+    if not modules_dir.exists():
+        return json.dumps({"error": f"Directory not found: {directory}", "modules": []})
+
     modules = []
 
-    if MODULES_DIR.exists():
-        for py_file in MODULES_DIR.glob("*.py"):
-            if py_file.name.startswith("_"):
-                continue
+    for file in modules_dir.glob("*.*"):
+        if file.name.startswith("_") or file.name.startswith("."):
+            continue
 
-            module_info = {
-                "name": py_file.stem,
-                "file": str(py_file.relative_to(LEGAL_WORKBENCH)),
-            }
+        module_info = {
+            "name": file.stem,
+            "file": str(file.relative_to(PROJECT_ROOT)),
+            "type": file.suffix,
+        }
 
-            # Try to extract description from first docstring
-            try:
-                content = py_file.read_text()
-                if '"""' in content:
-                    start = content.index('"""') + 3
-                    end = content.index('"""', start)
-                    module_info["description"] = content[start:end].strip()[:200]
-            except:
-                pass
+        # Try to extract description from first docstring/comment
+        try:
+            content = file.read_text()
+            if '"""' in content:
+                start = content.index('"""') + 3
+                end = content.index('"""', start)
+                module_info["description"] = content[start:end].strip()[:200]
+            elif "/*" in content:
+                start = content.index("/*") + 2
+                end = content.index("*/", start)
+                module_info["description"] = content[start:end].strip()[:200]
+        except:
+            pass
 
-            modules.append(module_info)
+        modules.append(module_info)
 
     return json.dumps(modules, indent=2)
 
 
 @tool
 def write_frontend_module(
-    module_name: str,
+    file_path: str,
     code: str,
-    module_type: str = "fasthtml",
 ) -> str:
     """
-    Write a new frontend module to legal-workbench.
+    Write a new frontend module/component to the project.
 
     Args:
-        module_name: Name of the module (e.g., 'stj_viewer')
-        code: Complete module code (Python/FastHTML)
-        module_type: Type of module ('fasthtml', 'streamlit', 'react')
+        file_path: Full path where to save the file (e.g., 'src/components/Dashboard.tsx')
+        code: Complete module code
 
     Returns:
         Success message with file path, or error
     """
-    # Determine target directory based on type
-    if module_type == "fasthtml":
-        target_dir = LEGAL_WORKBENCH / "poc-fasthtml-stj" / "components"
-    elif module_type == "streamlit":
-        target_dir = MODULES_DIR
-    elif module_type == "react":
-        target_dir = LEGAL_WORKBENCH / "poc-react-stj" / "src" / "components"
-    else:
-        return json.dumps({"error": f"Unknown module_type: {module_type}"})
-
-    # Ensure directory exists
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    # Determine file extension
-    ext = ".tsx" if module_type == "react" else ".py"
-    target_file = target_dir / f"{module_name}{ext}"
+    target_file = PROJECT_ROOT / file_path
 
     try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
         target_file.write_text(code)
         return json.dumps({
             "success": True,
             "path": str(target_file.relative_to(PROJECT_ROOT)),
-            "message": f"Module {module_name} created successfully",
+            "message": f"Module created: {file_path}",
         })
     except Exception as e:
         return json.dumps({"error": str(e)})
 
 
 @tool
-def get_service_endpoints(service_name: str) -> str:
+def get_service_endpoints(directory: str) -> str:
     """
     Extract API endpoints from a backend service by analyzing its code.
 
     Looks for Flask/FastAPI route decorators.
 
     Args:
-        service_name: Name of the backend service
+        directory: Path to the directory containing backend code
 
     Returns:
-        JSON with detected endpoints: method, path, function name
+        JSON with detected endpoints: method, path, framework
     """
-    import re
-
-    code = read_backend_code(service_name)
+    code = read_backend_code(directory)
     if "error" in code:
         return code
 
