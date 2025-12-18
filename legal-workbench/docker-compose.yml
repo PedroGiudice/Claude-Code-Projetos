@@ -135,6 +135,28 @@ services:
   # ============================================================
   # 7. REDIS - Message Broker for Celery
   # ============================================================
+  api-ledes-converter:
+    build: ./docker/services/ledes-converter
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ledes.rule=PathPrefix(`/api/ledes`)"
+      - "traefik.http.routers.ledes.entrypoints=web"
+      - "traefik.http.routers.ledes.priority=10"
+      - "traefik.http.middlewares.ledes-strip.stripprefix.prefixes=/api/ledes"
+      - "traefik.http.routers.ledes.middlewares=ledes-strip"
+      - "traefik.http.services.ledes.loadbalancer.server.port=8003"
+    volumes:
+      - shared-data:/data
+      - ledes-data:/app/data # For any persistent data related to LEDES conversion
+    environment:
+      - DATA_PATH=/data
+      # Add any specific environment variables here, e.g., for templates or configurations
+    networks:
+      - legal-network
+
+  # ============================================================
+  # 7. REDIS - Message Broker for Celery
+  # ============================================================
   redis:
     image: redis:7-alpine
     volumes:
@@ -156,6 +178,7 @@ volumes:
   stj-db:                # DuckDB persistence for STJ
   templates:             # Document templates
   text-extractor-cache:  # Marker cache for PDF processing
+  ledes-data:            # Persistent storage for LEDES converter
   redis-data:            # Redis persistence
 
 # ============================================================
