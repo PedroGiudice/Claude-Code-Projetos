@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Kanban, FileText, Scale, ArrowRight } from 'lucide-react';
+import { Kanban, FileText, Scale, ArrowRight, FileOutput } from 'lucide-react';
 
 const modules = [
   {
@@ -23,6 +23,14 @@ const modules = [
     name: 'STJ Dados Abertos',
     description: 'Pesquise jurisprudência do Superior Tribunal de Justiça em tempo real.',
     icon: Scale,
+    color: 'status-emerald',
+    status: 'active'
+  },
+  {
+    id: 'text-extractor',
+    name: 'Text Extractor',
+    description: 'Extraia texto de PDFs com OCR, filtragem LGPD e suporte a documentos jurídicos.',
+    icon: FileOutput,
     color: 'status-emerald',
     status: 'active'
   },
@@ -92,7 +100,7 @@ export default function HubHome() {
           {/* Stats Section */}
           <div className="mt-12 grid grid-cols-3 gap-4">
             <div className="p-4 bg-bg-panel-1 rounded-lg border border-border-default">
-              <p className="text-2xl font-bold text-accent-indigo">3</p>
+              <p className="text-2xl font-bold text-accent-indigo">4</p>
               <p className="text-sm text-text-muted">Módulos ativos</p>
             </div>
             <div className="p-4 bg-bg-panel-1 rounded-lg border border-border-default">

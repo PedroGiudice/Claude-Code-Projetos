@@ -7,6 +7,7 @@ const HubHome = lazy(() => import('@/pages/HubHome'));
 const TrelloModule = lazy(() => import('@/pages/TrelloModule'));
 const DocAssemblerModule = lazy(() => import('@/pages/DocAssemblerModule'));
 const STJModule = lazy(() => import('@/pages/STJModule'));
+const TextExtractorModule = lazy(() => import('@/pages/TextExtractorModule'));
 
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: 'trello', element: <LazyPage><TrelloModule /></LazyPage> },
       { path: 'doc-assembler', element: <LazyPage><DocAssemblerModule /></LazyPage> },
       { path: 'stj', element: <LazyPage><STJModule /></LazyPage> },
+      { path: 'text-extractor', element: <LazyPage><TextExtractorModule /></LazyPage> },
     ],
   },
 ]); // Root path - no basename needed
