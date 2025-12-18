@@ -19,6 +19,11 @@ export default {
         'gh-border-default': '#30363d',
         'gh-highlight-bg': '#388bfd33',
       },
+      fontFamily: {
+        ui: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        document: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+        heading: ['Inter', 'system-ui', 'sans-serif'],
+      }
     },
   },
   plugins: [],

@@ -8,15 +8,15 @@ export function Header() {
   const clearDocument = useDocumentStore(state => state.clearDocument);
 
   return (
-    <header className="bg-gh-bg-secondary border-b border-gh-border-default px-6 py-4">
-      <div className="flex items-center justify-between">
+    <header className="bg-[#181825] border-b border-[#3f3f46] px-6 py-3 h-12 flex items-center"> {/* Updated background, border, padding, and added height/flex for vertical alignment */}
+      <div className="flex items-center justify-between w-full"> {/* Added w-full */}
         <div className="flex items-center gap-3">
-          <FileText className="w-8 h-8 text-gh-accent-primary" />
+          <FileText className="w-6 h-6 text-[#3b82f6]" /> {/* Adjusted icon size to 24px for 48px header */}
           <div>
-            <h1 className="text-xl font-bold text-gh-text-primary">
+            <h1 className="text-base font-bold text-[#e4e4e7]"> {/* Adjusted text size to 16px (body UI default) */}
               Doc Assembler
             </h1>
-            <p className="text-xs text-gh-text-secondary">Template Builder</p>
+            <p className="text-xs text-[#a1a1aa]">Template Builder</p>
           </div>
         </div>
 
@@ -25,7 +25,7 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={clearDocument}
-            className="text-gh-text-secondary hover:text-gh-accent-danger"
+            className="text-[#a1a1aa] hover:text-[#ef4444]"
           >
             <Trash2 className="w-4 h-4 mr-2" />
             Clear Document

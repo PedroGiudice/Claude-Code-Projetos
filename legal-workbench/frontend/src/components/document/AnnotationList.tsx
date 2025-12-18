@@ -32,14 +32,14 @@ export function AnnotationList() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gh-bg-secondary border-l border-gh-border-default">
+    <div className="h-full flex flex-col"> {/* Removed background and border */}
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gh-border-default">
-        <h2 className="text-lg font-semibold text-gh-text-primary flex items-center gap-2">
+      <div className="px-4 py-4 border-b border-[#3f3f46]"> {/* Updated border color */}
+        <h2 className="text-lg font-semibold text-[#e4e4e7] flex items-center gap-2"> {/* Updated primary text color */}
           <FileText className="w-5 h-5" />
           Annotations
         </h2>
-        <p className="text-xs text-gh-text-secondary mt-1">
+        <p className="text-xs text-[#a1a1aa] mt-1"> {/* Updated secondary text color */}
           {annotations.length} field{annotations.length !== 1 ? 's' : ''} created
         </p>
       </div>
@@ -48,7 +48,7 @@ export function AnnotationList() {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {annotations.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gh-text-secondary">
+            <p className="text-sm text-[#a1a1aa]">
               No annotations yet. Select text in the document to create fields.
             </p>
           </div>
@@ -57,24 +57,24 @@ export function AnnotationList() {
             {annotations.map(annotation => (
               <div
                 key={annotation.fieldName}
-                className="bg-gh-bg-tertiary border border-gh-border-default rounded-lg p-3 hover:border-gh-accent-primary transition-colors"
+                className="bg-[#1e1e2e] border border-[#3f3f46] rounded-lg p-3 hover:border-[#3b82f6] transition-colors" // Updated background, border, and hover border
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <code className="text-sm font-mono text-gh-accent-primary">
+                  <code className="text-sm font-mono text-[#3b82f6]"> {/* Updated accent color */}
                     {annotation.fieldName}
                   </code>
                   <button
                     onClick={() => removeAnnotation(annotation.fieldName)}
-                    className="text-gh-text-secondary hover:text-gh-accent-danger transition-colors"
+                    className="text-[#a1a1aa] hover:text-[#ef4444] transition-colors" // Updated text and hover error colors
                     aria-label={`Delete ${annotation.fieldName}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-xs text-gh-text-secondary line-clamp-2">
+                <p className="text-xs text-[#a1a1aa] line-clamp-2"> {/* Updated secondary text color */}
                   "{annotation.text}"
                 </p>
-                <p className="text-xs text-gh-text-secondary mt-1">
+                <p className="text-xs text-[#a1a1aa] mt-1"> {/* Updated secondary text color */}
                   Paragraph {annotation.paragraphIndex + 1}
                 </p>
               </div>
@@ -85,7 +85,7 @@ export function AnnotationList() {
 
       {/* Footer with Save button */}
       {annotations.length > 0 && (
-        <div className="px-4 py-4 border-t border-gh-border-default">
+        <div className="px-4 py-4 border-t border-[#3f3f46]"> {/* Updated border color */}
           <Button
             variant="primary"
             className="w-full"
