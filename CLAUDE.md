@@ -32,6 +32,14 @@ from shared.utils.path_utils import get_data_dir
 - Multiplos arquivos simultaneos
 - Logs extensos, diffs grandes
 
+### 6. Ambiente WEB (Claude Code Web)
+**ATENCAO REDOBRADA** quando operando via interface web:
+- **SEMPRE** ler arquivos existentes antes de modificar (CLI já fez trabalho correto)
+- **NUNCA** assumir sintaxe — verificar padroes existentes no codigo
+- **VALIDAR** decorators (`@tool` vs `@function_tool`), imports, paths
+- Historico: agentes ADK tinham erros graves que o CLI corrigiu
+- Na duvida, **PERGUNTE** antes de sobrescrever
+
 ---
 
 ## Estrutura
