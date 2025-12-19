@@ -80,16 +80,38 @@ export const ledesConverterApi = {
   /**
    * Convert a DOCX invoice file to LEDES 1998B format
    * @param file - DOCX file to convert (max 10MB)
+   * @param config - Optional LEDES configuration (law_firm_id, client_id, matter_id, etc.)
    * @param onProgress - Optional progress callback (0-100 percent)
    * @returns Promise resolving to conversion result with LEDES content and extracted data
    * @throws Error if conversion fails or file is invalid
    */
   convertDocxToLedes: async (
     file: File,
+    config?: {
+      lawFirmId: string;
+      lawFirmName: string;
+      clientId: string;
+      clientName?: string;
+      matterId: string;
+      matterName?: string;
+    },
     onProgress?: (progress: number) => void
   ): Promise<ConvertLedesResponse> => {
     const formData = new FormData();
     formData.append('file', file);
+
+    // Add config as JSON string if provided
+    if (config) {
+      const configPayload = {
+        law_firm_id: config.lawFirmId,
+        law_firm_name: config.lawFirmName,
+        client_id: config.clientId,
+        client_name: config.clientName || '',
+        matter_id: config.matterId,
+        matter_name: config.matterName || '',
+      };
+      formData.append('config', JSON.stringify(configPayload));
+    }
 
     const response = await axios.post<ConvertLedesResponse>(
       `${API_BASE_URL}/convert/docx-to-ledes`,

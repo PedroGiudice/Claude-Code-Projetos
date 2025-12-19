@@ -1,5 +1,34 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List
+from typing import List, Optional
+
+
+class LedesConfig(BaseModel):
+    """Configuration for LEDES conversion with required firm/client/matter identifiers."""
+    # Firm info
+    law_firm_id: str = Field(..., min_length=1, max_length=50, description="Law firm identifier")
+    law_firm_name: str = Field(..., min_length=1, max_length=100, description="Law firm name")
+    # Client info
+    client_id: str = Field(..., min_length=1, max_length=50, description="Client identifier")
+    client_name: Optional[str] = Field(None, max_length=100, description="Client name (optional)")
+    # Matter info
+    matter_id: str = Field(..., min_length=1, max_length=50, description="Matter identifier (LAW_FIRM_MATTER_ID)")
+    matter_name: Optional[str] = Field(None, max_length=200, description="Matter name (optional)")
+    client_matter_id: Optional[str] = Field(None, max_length=50, description="Client matter ID (field 24, optional)")
+    # Timekeeper info
+    timekeeper_id: Optional[str] = Field(None, max_length=20, description="Timekeeper ID")
+    timekeeper_name: Optional[str] = Field(None, max_length=50, description="Timekeeper name (SURNAME, FIRST)")
+    timekeeper_classification: Optional[str] = Field(None, max_length=10, description="PARTNR, ASSOC, LGPRMG, etc")
+    unit_cost: Optional[float] = Field(None, ge=0, description="Hourly rate")
+    # Billing period
+    billing_start_date: Optional[str] = Field(None, max_length=8, description="YYYYMMDD")
+    billing_end_date: Optional[str] = Field(None, max_length=8, description="YYYYMMDD")
+
+    @field_validator('law_firm_id', 'law_firm_name', 'client_id', 'matter_id')
+    @classmethod
+    def validate_required_fields(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Required field cannot be empty")
+        return v.strip()
 
 
 class LineItem(BaseModel):

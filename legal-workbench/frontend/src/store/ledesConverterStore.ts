@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ledesConverterApi, validateDocxFile } from '@/services/ledesConverterApi';
-import type { LedesConversionStatus, LedesExtractedData } from '@/types';
+import type { LedesConversionStatus, LedesExtractedData, LedesConfig } from '@/types';
 
 interface LedesConversionState {
   // File state
@@ -13,6 +13,9 @@ interface LedesConversionState {
   // Results
   ledesContent: string | null;
   extractedData: LedesExtractedData | null;
+
+  // LEDES Config
+  ledesConfig: LedesConfig | null;
 
   // Error handling
   error: string | null;
@@ -40,6 +43,7 @@ export const useLedesConverterStore = create<LedesConversionState>((set, get) =>
   uploadProgress: 0,
   ledesContent: null,
   extractedData: null,
+  ledesConfig: null,
   error: null,
   retryCount: 0,
 
@@ -82,7 +86,7 @@ export const useLedesConverterStore = create<LedesConversionState>((set, get) =>
   },
 
   convertFile: async () => {
-    const { file, retryCount } = get();
+    const { file, retryCount, ledesConfig } = get();
 
     if (!file) {
       set({ status: 'error', error: 'No file selected for conversion.' });
@@ -100,6 +104,7 @@ export const useLedesConverterStore = create<LedesConversionState>((set, get) =>
     try {
       const response = await ledesConverterApi.convertDocxToLedes(
         file,
+        ledesConfig || undefined,
         (progress) => {
           // Upload phase: 0-50%
           set({ uploadProgress: Math.round(progress * 0.5) });
@@ -193,6 +198,7 @@ export const useLedesConverterStore = create<LedesConversionState>((set, get) =>
     uploadProgress: 0,
     ledesContent: null,
     extractedData: null,
+    ledesConfig: null,
     error: null,
     retryCount: 0,
   }),

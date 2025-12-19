@@ -58,6 +58,15 @@ export interface Toast {
 // LEDES Converter Types
 export type LedesConversionStatus = 'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error';
 
+export interface LedesConfig {
+  lawFirmId: string;
+  lawFirmName: string;
+  clientId: string;
+  clientName?: string;
+  matterId: string;
+  matterName?: string;
+}
+
 export interface LedesExtractedData {
   invoice_date: string;
   invoice_number: string;

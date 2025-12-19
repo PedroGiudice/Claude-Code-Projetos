@@ -1,7 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from typing import Annotated
+from typing import Annotated, Optional
 import docx
 import re
 import os
@@ -12,8 +12,9 @@ from collections import defaultdict
 import time
 import magic
 from defusedxml import ElementTree
+import json
 
-from .models import LedesData, ConversionResponse, HealthResponse, LineItem
+from .models import LedesData, ConversionResponse, HealthResponse, LineItem, LedesConfig
 
 # Configure logging
 logging.basicConfig(
@@ -99,6 +100,31 @@ def sanitize_string(value: str, max_length: int = MAX_DESCRIPTION_LENGTH) -> str
     return cleaned[:max_length]
 
 
+def sanitize_ledes_field(value: str, max_length: int = MAX_DESCRIPTION_LENGTH) -> str:
+    """
+    Sanitize field values for LEDES format compliance.
+
+    LEDES 1998B Requirements:
+    - ASCII encoding only (non-ASCII chars removed)
+    - No pipe characters (field delimiter)
+    - No brackets (line terminator chars)
+    - Control characters removed
+    """
+    if not value:
+        return ""
+
+    # First apply general sanitization
+    cleaned = sanitize_string(value, max_length)
+
+    # Remove pipe and bracket characters (LEDES reserved chars)
+    cleaned = cleaned.replace('|', '').replace('[', '').replace(']', '')
+
+    # Ensure ASCII-only by removing non-ASCII characters
+    cleaned = cleaned.encode('ascii', errors='ignore').decode('ascii')
+
+    return cleaned
+
+
 def parse_currency(value_str: str | None) -> float:
     """Parse currency string to float, removing symbols and formatting."""
     if not value_str:
@@ -109,6 +135,31 @@ def parse_currency(value_str: str | None) -> float:
         return float(clean_val)
     except ValueError:
         return 0.0
+
+
+def format_ledes_currency(amount: float) -> str:
+    """
+    Format currency for LEDES 1998B compliance.
+
+    LEDES 1998B Requirements:
+    - Up to 14 digits before decimal point
+    - Exactly 2 digits after decimal point
+    - No currency symbols, commas, or spaces
+    - Returns empty string if amount exceeds specification limits
+    """
+    if amount < 0:
+        return ""  # LEDES doesn't support negative amounts in standard fields
+
+    # Format with 2 decimal places
+    formatted = f"{amount:.2f}"
+
+    # Check if integer part exceeds 14 digits
+    integer_part = formatted.split('.')[0]
+    if len(integer_part) > 14:
+        logger.warning(f"Currency amount {amount} exceeds LEDES 14-digit limit")
+        return ""  # Or could raise exception depending on requirements
+
+    return formatted
 
 
 def format_date_ledes(date_str: str) -> str:
@@ -183,43 +234,79 @@ def extract_ledes_data(text: str) -> dict:
 
 
 def generate_ledes_1998b(data: dict) -> str:
-    """Generate LEDES 1998B format from extracted data."""
-    # LEDES 1998B Header
+    """
+    Generate LEDES 1998B format from extracted data.
+
+    LEDES 1998B Specification Compliance:
+    - Line 1: LEDES1998B[] identifier
+    - Line 2: Header with 24 ALL CAPS field names
+    - Lines 3+: Data rows with 24 fields each
+    - Every line ends with []
+    - Pipe-delimited (|)
+    - ASCII encoding only
+    - Currency: max 14 digits before decimal, 2 after
+    - Date: YYYYMMDD format
+    - No pipe or bracket characters in field values
+    """
+    # Line 1: LEDES 1998B identifier
+    lines = ["LEDES1998B[]"]
+
+    # Line 2: Header with exactly 24 fields in specification order
     header = (
-        "INVOICE_DATE|INVOICE_NUMBER|CLIENT_ID|MATTER_ID|INVOICE_TOTAL|"
-        "BILLING_START_DATE|BILLING_END_DATE|INVOICE_DESCRIPTION|"
-        "LINE_ITEM_NUMBER|EXP/FEE/INV_ADJ_TYPE|LINE_ITEM_DATE|"
-        "LINE_ITEM_TASK_CODE|LINE_ITEM_EXPENSE_CODE|TIMEKEEPER_ID|"
-        "LINE_ITEM_DESCRIPTION|LINE_ITEM_UNITS|LINE_ITEM_RATE|"
-        "LINE_ITEM_ADJUSTMENT_AMOUNT|LINE_ITEM_TOTAL"
+        "INVOICE_DATE|INVOICE_NUMBER|CLIENT_ID|LAW_FIRM_MATTER_ID|INVOICE_TOTAL|"
+        "BILLING_START_DATE|BILLING_END_DATE|INVOICE_DESCRIPTION|LINE_ITEM_NUMBER|"
+        "EXP/FEE/INV_ADJ_TYPE|LINE_ITEM_NUMBER_OF_UNITS|LINE_ITEM_ADJUSTMENT_AMOUNT|"
+        "LINE_ITEM_TOTAL|LINE_ITEM_DATE|LINE_ITEM_TASK_CODE|LINE_ITEM_EXPENSE_CODE|"
+        "LINE_ITEM_ACTIVITY_CODE|TIMEKEEPER_ID|LINE_ITEM_DESCRIPTION|LAW_FIRM_ID|"
+        "LINE_ITEM_UNIT_COST|TIMEKEEPER_NAME|TIMEKEEPER_CLASSIFICATION|CLIENT_MATTER_ID[]"
     )
+    lines.append(header)
 
-    lines = [header]
+    # Extract config values with defaults
+    billing_start = data.get("billing_start_date", "")
+    billing_end = data.get("billing_end_date", "")
+    timekeeper_id = data.get("timekeeper_id", "")
+    timekeeper_name = data.get("timekeeper_name", "")
+    timekeeper_class = data.get("timekeeper_classification", "")
+    unit_cost = data.get("unit_cost", 0)
+    invoice_desc = data.get("invoice_description", "Legal Services")
 
+    # Data rows: Each line item becomes a row with 24 fields
     for i, item in enumerate(data["line_items"], 1):
+        # Calculate units if unit_cost is provided
+        units = ""
+        if unit_cost and unit_cost > 0:
+            calculated_units = item['amount'] / unit_cost
+            units = f"{calculated_units:.2f}"
+
         row = [
-            data["invoice_date"],           # 1
-            data["invoice_number"],         # 2
-            data["client_id"],              # 3
-            data["matter_id"],              # 4
-            f"{data['invoice_total']:.2f}", # 5
-            "",                             # 6
-            "",                             # 7
-            "Legal Services",               # 8
-            str(i),                         # 9
-            "F",                            # 10
-            "",                             # 11
-            "",                             # 12
-            "",                             # 13
-            "",                             # 14
-            item["description"],            # 15
-            "",                             # 16
-            "",                             # 17
-            "",                             # 18
-            f"{item['amount']:.2f}"         # 19
+            sanitize_ledes_field(data["invoice_date"], 8),           # 1. INVOICE_DATE
+            sanitize_ledes_field(data["invoice_number"], 50),        # 2. INVOICE_NUMBER
+            sanitize_ledes_field(data["client_id"], 100),            # 3. CLIENT_ID
+            sanitize_ledes_field(data["matter_id"], 100),            # 4. LAW_FIRM_MATTER_ID
+            format_ledes_currency(data['invoice_total']),            # 5. INVOICE_TOTAL
+            sanitize_ledes_field(billing_start, 8),                  # 6. BILLING_START_DATE
+            sanitize_ledes_field(billing_end, 8),                    # 7. BILLING_END_DATE
+            sanitize_ledes_field(invoice_desc, 100),                 # 8. INVOICE_DESCRIPTION
+            str(i),                                                  # 9. LINE_ITEM_NUMBER
+            "F",                                                     # 10. EXP/FEE/INV_ADJ_TYPE (F=Fee)
+            units,                                                   # 11. LINE_ITEM_NUMBER_OF_UNITS
+            "",                                                      # 12. LINE_ITEM_ADJUSTMENT_AMOUNT
+            format_ledes_currency(item['amount']),                   # 13. LINE_ITEM_TOTAL
+            sanitize_ledes_field(data["invoice_date"], 8),           # 14. LINE_ITEM_DATE
+            item.get("task_code", ""),                               # 15. LINE_ITEM_TASK_CODE
+            "",                                                      # 16. LINE_ITEM_EXPENSE_CODE
+            item.get("activity_code", ""),                           # 17. LINE_ITEM_ACTIVITY_CODE
+            sanitize_ledes_field(timekeeper_id, 20),                 # 18. TIMEKEEPER_ID
+            sanitize_ledes_field(item["description"], 500),          # 19. LINE_ITEM_DESCRIPTION
+            sanitize_ledes_field(data.get("law_firm_id", ""), 50),   # 20. LAW_FIRM_ID
+            format_ledes_currency(unit_cost) if unit_cost else "",   # 21. LINE_ITEM_UNIT_COST
+            sanitize_ledes_field(timekeeper_name, 50),               # 22. TIMEKEEPER_NAME
+            sanitize_ledes_field(timekeeper_class, 10),              # 23. TIMEKEEPER_CLASSIFICATION
+            sanitize_ledes_field(data.get("client_matter_id", ""), 50) # 24. CLIENT_MATTER_ID
         ]
 
-        lines.append("|".join(row))
+        lines.append("|".join(row) + "[]")
 
     return "\n".join(lines)
 
@@ -233,12 +320,14 @@ async def health_check():
 @app.post("/convert/docx-to-ledes", response_model=ConversionResponse)
 async def convert_docx_to_ledes(
     request: Request,
-    file: Annotated[UploadFile, File(description="DOCX file to convert to LEDES")]
+    file: Annotated[UploadFile, File(description="DOCX file to convert to LEDES")],
+    config: Annotated[Optional[str], Form(description="JSON string with LEDES configuration")] = None
 ) -> ConversionResponse:
     """
     Convert a DOCX invoice file to LEDES 1998B format.
 
     - **file**: DOCX file containing invoice data (max 10MB)
+    - **config**: Optional JSON string with LEDES configuration (law_firm_id, client_id, matter_id, etc.)
     - Returns: LEDES formatted content and extracted data
 
     Security features:
@@ -326,6 +415,48 @@ async def convert_docx_to_ledes(
 
         # Extract Data
         extracted_data = extract_ledes_data(text_content)
+
+        # Parse and validate config if provided
+        ledes_config = None
+        if config:
+            try:
+                config_dict = json.loads(config)
+                ledes_config = LedesConfig(**config_dict)
+                logger.info(f"Config provided: law_firm={ledes_config.law_firm_id}, client={ledes_config.client_id}, matter={ledes_config.matter_id}")
+            except json.JSONDecodeError as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid JSON in config parameter: {str(e)}"
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid config data: {str(e)}"
+                )
+
+        # Merge config with extracted data (config takes precedence)
+        if ledes_config:
+            # Firm/Client/Matter
+            extracted_data["law_firm_id"] = ledes_config.law_firm_id
+            extracted_data["law_firm_name"] = ledes_config.law_firm_name
+            extracted_data["client_id"] = ledes_config.client_id
+            extracted_data["client_name"] = ledes_config.client_name
+            extracted_data["matter_id"] = ledes_config.matter_id
+            extracted_data["matter_name"] = ledes_config.matter_name
+            extracted_data["client_matter_id"] = ledes_config.client_matter_id or ""
+            # Timekeeper
+            extracted_data["timekeeper_id"] = ledes_config.timekeeper_id or ""
+            extracted_data["timekeeper_name"] = ledes_config.timekeeper_name or ""
+            extracted_data["timekeeper_classification"] = ledes_config.timekeeper_classification or ""
+            extracted_data["unit_cost"] = ledes_config.unit_cost or 0
+            # Billing period
+            extracted_data["billing_start_date"] = ledes_config.billing_start_date or ""
+            extracted_data["billing_end_date"] = ledes_config.billing_end_date or ""
+        else:
+            # Backward compatibility: use placeholders if no config provided
+            extracted_data["law_firm_id"] = ""
+            extracted_data["client_matter_id"] = ""
+            logger.warning("No config provided, using empty law_firm_id (backward compatibility mode)")
 
         # Validate extracted data
         if not extracted_data.get("invoice_number"):
