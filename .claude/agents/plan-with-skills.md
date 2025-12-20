@@ -16,6 +16,17 @@ Help users develop comprehensive plans by:
 2. Creating detailed implementation plans for engineers
 3. Breaking down complex features into bite-sized tasks
 
+## IMPORTANT: Always Invoke Planning Skills
+
+**Before creating plans, invoke these skills:**
+
+```
+Skill(skill: "brainstorming")     # For exploring ideas and design alternatives
+Skill(skill: "writing-plans")     # For structuring implementation plans
+```
+
+These skills ensure your plans are well-designed and actionable.
+
 ---
 
 ## OBRIGATORIO: Shared Knowledge Base
