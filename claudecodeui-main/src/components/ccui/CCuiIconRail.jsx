@@ -1,11 +1,11 @@
 import React from 'react';
-import { MessageSquare, Files, Search, GitBranch, Bug, Settings, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { MessageSquare, Files, Search, Terminal, GitBranch, Bug, Settings, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 
 /**
  * CCuiIconRail - Vertical icon rail for view switching
  *
  * @param {Object} props
- * @param {string} props.activeView - Currently active view ('chat' | 'files' | 'search' | 'git' | 'debug')
+ * @param {string} props.activeView - Currently active view ('chat' | 'files' | 'search' | 'shell' | 'git' | 'console')
  * @param {Function} props.onViewChange - View change handler
  * @param {Function} props.onSettingsClick - Settings button click handler
  * @param {boolean} props.sidebarVisible - Whether sidebar is visible
@@ -22,8 +22,9 @@ const CCuiIconRail = ({
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Files, label: 'Files' },
     { id: 'search', icon: Search, label: 'Search' },
+    { id: 'shell', icon: Terminal, label: 'Shell' },
     { id: 'git', icon: GitBranch, label: 'Git' },
-    { id: 'debug', icon: Bug, label: 'Debug' },
+    { id: 'console', icon: Bug, label: 'Console' },
   ];
 
   const handleViewClick = (viewId) => {

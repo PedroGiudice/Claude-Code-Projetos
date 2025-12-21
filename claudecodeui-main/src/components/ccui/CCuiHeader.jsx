@@ -1,8 +1,9 @@
 import React from 'react';
-import { Folder, Cpu, Search, Settings } from 'lucide-react';
+import { Cpu, Search, Settings } from 'lucide-react';
+import { CCuiSpinnerLogo } from './CCuiSpinner';
 
 /**
- * CCuiHeader - Minimal header with traffic lights, project path, and model selector
+ * CCuiHeader - Minimal header with animated logo, project path, and model selector
  *
  * @param {Object} props
  * @param {string} props.projectPath - Current project path
@@ -18,21 +19,16 @@ const CCuiHeader = ({
 }) => {
   return (
     <header className="h-10 bg-ccui-bg-secondary border-b border-ccui-border-primary flex items-center justify-between px-4 z-50 select-none">
-      {/* Left: Traffic Lights + Project Path */}
+      {/* Left: Animated Logo + Project Path */}
       <div className="flex items-center gap-3">
-        {/* Traffic lights */}
-        <div className="flex gap-2 group cursor-pointer">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 group-hover:bg-red-500 border border-red-500/50 transition-colors" />
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 group-hover:bg-yellow-500 border border-yellow-500/50 transition-colors" />
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 group-hover:bg-green-500 border border-green-500/50 transition-colors" />
-        </div>
+        {/* Animated Cyber Hex Logo */}
+        <CCuiSpinnerLogo size={24} />
 
         {/* Divider */}
         <div className="h-4 w-px bg-ccui-border-secondary mx-1" />
 
         {/* Project path */}
         <div className="flex items-center gap-2 text-xs font-medium text-ccui-text-secondary">
-          <Folder className="w-3 h-3" />
           <span>{projectPath}</span>
         </div>
       </div>
