@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Clock } from 'lucide-react';
 
 /**
  * Format elapsed time in HH:MM:SS
@@ -61,13 +61,14 @@ const CCuiStatusBar = ({
         {/* Context Usage */}
         <div className="flex items-center gap-1.5 text-ccui-text-muted">
           <Activity size={12} />
-          <span>Context: {contextPercent}%</span>
+          <span>{contextPercent}% ctx</span>
         </div>
       </div>
 
-      {/* Center: Session Timer */}
-      <div className="text-ccui-text-muted font-mono">
-        Session: {formatElapsedTime(elapsedSeconds)}
+      {/* Center: Session Timer with clock icon */}
+      <div className="flex items-center gap-1.5 text-ccui-text-muted font-mono">
+        <Clock size={12} />
+        <span>{formatElapsedTime(elapsedSeconds)}</span>
       </div>
 
       {/* Right: Encoding and Language */}

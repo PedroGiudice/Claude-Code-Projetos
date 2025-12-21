@@ -60,43 +60,36 @@ const SessionGroup = ({ title, sessions, activeSessionId, onSessionSelect }) => 
 
   return (
     <div className="mb-4">
-      <h3 className="text-xs font-semibold text-ccui-text-muted uppercase tracking-wide px-3 mb-2">
+      <div className="px-3 mb-1.5 text-xxs font-bold text-ccui-text-subtle uppercase tracking-wider">
         {title}
-      </h3>
-      <div className="flex flex-col gap-0.5">
-        {sessions.map(session => {
-          const isActive = session.id === activeSessionId;
-
-          return (
-            <button
-              key={session.id}
-              onClick={() => onSessionSelect(session.id)}
-              className={`
-                relative w-full px-3 py-2 text-left transition-colors
-                ${isActive
-                  ? 'bg-ccui-bg-primary text-ccui-text-primary'
-                  : 'text-ccui-text-secondary hover:bg-ccui-bg-primary/50 hover:text-ccui-text-primary'
-                }
-              `}
-            >
-              {/* Active Indicator Bar */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-ccui-accent rounded-r" />
-              )}
-
-              <div className="flex items-start gap-2">
-                <Clock size={14} className="mt-0.5 text-ccui-text-muted flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{session.title || 'Untitled Session'}</p>
-                  <p className="text-xs text-ccui-text-muted">
-                    {formatTime(session.timestamp)}
-                  </p>
-                </div>
-              </div>
-            </button>
-          );
-        })}
       </div>
+      {sessions.map(session => {
+        const isActive = session.id === activeSessionId;
+
+        return (
+          <div
+            key={session.id}
+            onClick={() => onSessionSelect(session.id)}
+            className={`px-3 py-2 cursor-pointer border-l-2 transition-all ${
+              isActive
+                ? 'border-ccui-accent bg-ccui-bg-active'
+                : 'border-transparent hover:bg-ccui-bg-hover'
+            }`}
+          >
+            <div className={`text-xs truncate ${
+              isActive
+                ? 'text-ccui-text-primary font-medium'
+                : 'text-ccui-text-secondary'
+            }`}>
+              {session.title || 'New Chat'}
+            </div>
+            <div className="text-xxs text-ccui-text-subtle mt-0.5 flex items-center gap-1">
+              <Clock className="w-2.5 h-2.5" />
+              {formatTime(session.timestamp)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -119,44 +112,57 @@ const CCuiSidebar = ({
   const groupedSessions = groupSessionsByTime(sessions);
 
   return (
-    <aside className="w-64 bg-ccui-bg-secondary border-r border-ccui-border-primary flex flex-col">
-      {/* Header with New Chat Button */}
-      <div className="p-3 border-b border-ccui-border-primary">
+    <aside className="w-60 bg-ccui-bg-secondary border-r border-ccui-border-primary flex flex-col z-40">
+      {/* Header */}
+      <div className="h-9 border-b border-ccui-border-primary flex items-center justify-between px-3">
+        <span className="text-xxs uppercase font-bold tracking-wider text-ccui-text-muted">
+          Chats
+        </span>
+      </div>
+
+      {/* New Chat Button */}
+      <div className="p-2">
         <button
           onClick={onNewChat}
-          className="w-full px-4 py-2 bg-ccui-accent hover:bg-ccui-accent/90 text-white rounded flex items-center justify-center gap-2 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-ccui-bg-hover hover:bg-ccui-border-secondary text-ccui-text-primary text-xs py-1.5 rounded border border-ccui-border-tertiary transition-colors group"
         >
-          <Plus size={16} />
-          <span className="text-sm font-medium">New Chat</span>
+          <Plus className="w-3.5 h-3.5 text-ccui-text-muted group-hover:text-ccui-accent" />
+          <span>New Chat</span>
         </button>
       </div>
 
       {/* Sessions List */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto ccui-scrollbar py-2">
         <SessionGroup
-          title="Today"
+          title="TODAY"
           sessions={groupedSessions.today}
           activeSessionId={activeSessionId}
           onSessionSelect={onSessionSelect}
         />
         <SessionGroup
-          title="Yesterday"
+          title="YESTERDAY"
           sessions={groupedSessions.yesterday}
           activeSessionId={activeSessionId}
           onSessionSelect={onSessionSelect}
         />
         <SessionGroup
-          title="Previous 7 Days"
+          title="PREVIOUS 7 DAYS"
           sessions={groupedSessions.previous7Days}
           activeSessionId={activeSessionId}
           onSessionSelect={onSessionSelect}
         />
         <SessionGroup
-          title="Older"
+          title="OLDER"
           sessions={groupedSessions.older}
           activeSessionId={activeSessionId}
           onSessionSelect={onSessionSelect}
         />
+
+        {sessions.length === 0 && (
+          <div className="px-3 py-8 text-center text-ccui-text-subtle text-xs">
+            No chats yet. Start a new conversation!
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -112,15 +112,21 @@ export default function CCuiLayout({
               </div>
 
               {/* Input Area */}
-              <CCuiChatInput
-                onSend={onSendMessage}
-                disabled={isProcessing}
-                placeholder={
-                  isProcessing
-                    ? 'Claude is thinking...'
-                    : 'Describe your task or enter a command...'
-                }
-              />
+              <div className="p-4 bg-gradient-to-t from-black via-black to-transparent">
+                <div className="max-w-3xl mx-auto">
+                  <CCuiChatInput
+                    onSend={onSendMessage}
+                    disabled={isProcessing}
+                    placeholder={
+                      isProcessing
+                        ? 'Claude is thinking...'
+                        : 'Describe your task or enter a command...'
+                    }
+                    onActionsClick={() => console.log('Actions clicked')}
+                    onHistoryClick={() => console.log('History clicked')}
+                  />
+                </div>
+              </div>
             </>
           )}
         </main>

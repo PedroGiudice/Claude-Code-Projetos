@@ -76,8 +76,8 @@ const CCuiChatInput = ({
 
   return (
     <div className="w-full">
-      {/* Input container */}
-      <div className="relative flex items-end gap-3 p-4 bg-ccui-bg-tertiary border border-ccui-border-tertiary rounded-lg">
+      {/* Input container with coral border accent */}
+      <div className="relative flex items-end gap-3 p-4 bg-ccui-bg-tertiary border border-ccui-accent/40 rounded-lg focus-within:border-ccui-accent transition-colors">
         {/* Terminal icon */}
         <div className="flex-shrink-0 pb-2">
           <Terminal
@@ -116,30 +116,18 @@ const CCuiChatInput = ({
         </button>
       </div>
 
-      {/* Shortcuts hint */}
-      <div className="flex items-center gap-4 mt-2 px-1 text-xs text-ccui-text-tertiary">
+      {/* Shortcuts hint - minimal style like reference */}
+      <div className="flex items-center justify-end gap-4 mt-2 px-1 text-xs text-ccui-text-tertiary">
         {onActionsClick && (
-          <span>
-            <kbd className="px-1.5 py-0.5 bg-ccui-bg-hover border border-ccui-border-tertiary rounded text-xs">
-              ⌘K
-            </kbd>{' '}
-            Actions
+          <span className="opacity-60 hover:opacity-100 cursor-pointer" onClick={onActionsClick}>
+            ⌘ Actions
           </span>
         )}
         {onHistoryClick && (
-          <span>
-            <kbd className="px-1.5 py-0.5 bg-ccui-bg-hover border border-ccui-border-tertiary rounded text-xs">
-              ↑
-            </kbd>{' '}
-            History
+          <span className="opacity-60 hover:opacity-100 cursor-pointer" onClick={onHistoryClick}>
+            ↑ History
           </span>
         )}
-        <span className="ml-auto">
-          <kbd className="px-1.5 py-0.5 bg-ccui-bg-hover border border-ccui-border-tertiary rounded text-xs">
-            Enter
-          </kbd>{' '}
-          Send
-        </span>
       </div>
     </div>
   );

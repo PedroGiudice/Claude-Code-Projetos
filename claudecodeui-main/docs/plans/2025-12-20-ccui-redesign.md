@@ -10,6 +10,45 @@
 
 ---
 
+## Visual Reference
+
+![CCui Target Design](./assets/ccui-target-design.png)
+
+### Key Visual Elements from Reference:
+
+| Element | Specification |
+|---------|--------------|
+| **Header** | Traffic lights (●●●), project path `~/project-alpha`, model selector "Claude 3.7 Sonnet" |
+| **Icon Rail** | 48px width, icons: files, search, git, settings (bottom) |
+| **Sidebar** | 240px, "CHATS" header, "+ New Chat" button, temporal groups (TODAY, YESTERDAY, PREVIOUS 7 DAYS) |
+| **Active Session** | Coral/orange left border indicator (#d97757) |
+| **Main Content** | Pure black (#000000), CLAUDE sparkles header, centered messages |
+| **Input** | Terminal style with `>_` icon, "Describe your task..." placeholder |
+| **Shortcuts** | "⌘ Actions" and "↑ History" below input |
+| **Status Bar** | "● READY", "14% ctx", "UTF-8", "TypeScript", session timer |
+
+---
+
+## Subagent Delegation
+
+| Phase | Subagent | Rationale |
+|-------|----------|-----------|
+| **Phase 1: Design System** | `frontend-developer` | Tailwind config, CSS tokens, Prism.js setup |
+| **Phase 2: Layout Components** | `frontend-developer` | Header, IconRail, Sidebar, StatusBar |
+| **Phase 3: Chat Components** | `frontend-developer` | CodeBlock, ThinkingBlock, Input, Message |
+| **Phase 4: Integration** | `frontend-developer` + `test-writer-fixer` | CCuiLayout, CCuiApp, route wiring, integration tests |
+| **Phase 5: Polish** | `frontend-developer` | ToolCall display, final adjustments |
+| **Visual QA Loop** | `/ralph-wiggum` | Iterative comparison against reference image until pixel-perfect |
+
+### Execution Strategy
+
+1. **Sequential phases** - Each phase builds on the previous
+2. **Parallel within phase** - Independent components can be built simultaneously
+3. **QA checkpoints** - After each phase, visual comparison against reference
+4. **Ralph Wiggum loop** - Final polish phase: iterate screenshot → compare → adjust → repeat
+
+---
+
 ## Reference: CCui Design Tokens
 
 ```css
