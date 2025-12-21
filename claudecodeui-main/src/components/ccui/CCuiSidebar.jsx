@@ -1,164 +1,226 @@
 import React from 'react';
+import FileTree from '../FileTree';
+import GitPanel from '../GitPanel';
+import Shell from '../Shell';
+import CCuiSearchView from './CCuiSearchView';
+import CCuiConsoleView from './CCuiConsoleView';
 import { Clock, Plus } from 'lucide-react';
 
 /**
- * Helper function to group sessions by time
- * @param {Array} sessions - Array of session objects with timestamp
- * @returns {Object} Grouped sessions by time category
+ * CCuiSidebar - Dynamic sidebar that changes content based on activeView
+ *
+ * BASE-UI Pattern: Icon Rail controls sidebar content, not main content
+ *
+ * @param {Object} props
+ * @param {string} props.activeView - 'chat' | 'files' | 'search' | 'shell' | 'git' | 'console'
+ * @param {Array} props.sessions - Session list for chat view
+ * @param {Object} props.selectedSession - Currently selected session
+ * @param {Function} props.onSessionSelect - Session selection handler
+ * @param {Function} props.onNewSession - New session handler
  */
-const groupSessionsByTime = (sessions) => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+const CCuiSidebar = ({
+  activeView = 'chat',
+  sessions = [],
+  selectedSession,
+  onSessionSelect,
+  onNewSession,
+  projectPath = '',
+}) => {
 
-  const groups = {
-    today: [],
-    yesterday: [],
-    previous7Days: [],
-    older: []
+  // Group sessions by time
+  const groupSessionsByTime = (sessions) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const groups = {
+      today: [],
+      yesterday: [],
+      thisWeek: [],
+      older: []
+    };
+
+    sessions.forEach(session => {
+      const date = new Date(session.lastActivity || session.createdAt);
+      if (date >= today) {
+        groups.today.push(session);
+      } else if (date >= yesterday) {
+        groups.yesterday.push(session);
+      } else if (date >= weekAgo) {
+        groups.thisWeek.push(session);
+      } else {
+        groups.older.push(session);
+      }
+    });
+
+    return groups;
   };
 
-  sessions.forEach(session => {
-    const sessionDate = new Date(session.timestamp);
+  const renderChatHistory = () => {
+    const groupedSessions = groupSessionsByTime(sessions);
 
-    if (sessionDate >= today) {
-      groups.today.push(session);
-    } else if (sessionDate >= yesterday) {
-      groups.yesterday.push(session);
-    } else if (sessionDate >= sevenDaysAgo) {
-      groups.previous7Days.push(session);
-    } else {
-      groups.older.push(session);
-    }
-  });
-
-  return groups;
-};
-
-/**
- * Format time for display
- * @param {Date|string|number} timestamp
- * @returns {string} Formatted time (HH:MM)
- */
-const formatTime = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-};
-
-/**
- * SessionGroup - Renders a group of sessions
- */
-const SessionGroup = ({ title, sessions, activeSessionId, onSessionSelect }) => {
-  if (sessions.length === 0) return null;
-
-  return (
-    <div className="mb-4">
-      <h3 className="text-xs font-semibold text-ccui-text-muted uppercase tracking-wide px-3 mb-2">
-        {title}
-      </h3>
-      <div className="flex flex-col gap-0.5">
-        {sessions.map(session => {
-          const isActive = session.id === activeSessionId;
-
-          return (
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#252423]">
+          <h2 className="text-sm font-medium text-[#e5e5e5]">History</h2>
+          {onNewSession && (
             <button
-              key={session.id}
-              onClick={() => onSessionSelect(session.id)}
-              className={`
-                relative w-full px-3 py-2 text-left transition-colors
-                ${isActive
-                  ? 'bg-ccui-bg-primary text-ccui-text-primary'
-                  : 'text-ccui-text-secondary hover:bg-ccui-bg-primary/50 hover:text-ccui-text-primary'
-                }
-              `}
+              onClick={onNewSession}
+              className="p-1 rounded hover:bg-[#252423] text-[#d97757] transition-colors"
+              title="New Session"
             >
-              {/* Active Indicator Bar */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-ccui-accent rounded-r" />
+              <Plus size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Session List */}
+        <div className="flex-1 overflow-y-auto">
+          {sessions.length === 0 ? (
+            <div className="px-4 py-8 text-center text-[rgba(255,255,255,0.4)] text-sm">
+              No sessions yet
+            </div>
+          ) : (
+            <>
+              {groupedSessions.today.length > 0 && (
+                <div className="py-2">
+                  <div className="px-4 py-1 text-xs text-[rgba(255,255,255,0.4)] uppercase tracking-wider">Today</div>
+                  {groupedSessions.today.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isSelected={selectedSession?.id === session.id}
+                      onSelect={() => onSessionSelect?.(session)}
+                    />
+                  ))}
+                </div>
               )}
 
-              <div className="flex items-start gap-2">
-                <Clock size={14} className="mt-0.5 text-ccui-text-muted flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{session.title || 'Untitled Session'}</p>
-                  <p className="text-xs text-ccui-text-muted">
-                    {formatTime(session.timestamp)}
-                  </p>
+              {groupedSessions.yesterday.length > 0 && (
+                <div className="py-2">
+                  <div className="px-4 py-1 text-xs text-[rgba(255,255,255,0.4)] uppercase tracking-wider">Yesterday</div>
+                  {groupedSessions.yesterday.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isSelected={selectedSession?.id === session.id}
+                      onSelect={() => onSessionSelect?.(session)}
+                    />
+                  ))}
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              )}
+
+              {groupedSessions.thisWeek.length > 0 && (
+                <div className="py-2">
+                  <div className="px-4 py-1 text-xs text-[rgba(255,255,255,0.4)] uppercase tracking-wider">This Week</div>
+                  {groupedSessions.thisWeek.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isSelected={selectedSession?.id === session.id}
+                      onSelect={() => onSessionSelect?.(session)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {groupedSessions.older.length > 0 && (
+                <div className="py-2">
+                  <div className="px-4 py-1 text-xs text-[rgba(255,255,255,0.4)] uppercase tracking-wider">Older</div>
+                  {groupedSessions.older.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isSelected={selectedSession?.id === session.id}
+                      onSelect={() => onSessionSelect?.(session)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'chat':
+        return renderChatHistory();
+      case 'files':
+        return (
+          <div className="h-full">
+            <div className="px-4 py-3 border-b border-[#252423]">
+              <h2 className="text-sm font-medium text-[#e5e5e5]">Files</h2>
+            </div>
+            <FileTree projectPath={projectPath} />
+          </div>
+        );
+      case 'search':
+        return <CCuiSearchView />;
+      case 'shell':
+        return (
+          <div className="h-full flex flex-col">
+            <div className="px-4 py-3 border-b border-[#252423]">
+              <h2 className="text-sm font-medium text-[#e5e5e5]">Shell</h2>
+            </div>
+            <div className="flex-1">
+              <Shell />
+            </div>
+          </div>
+        );
+      case 'git':
+        return (
+          <div className="h-full">
+            <div className="px-4 py-3 border-b border-[#252423]">
+              <h2 className="text-sm font-medium text-[#e5e5e5]">Git</h2>
+            </div>
+            <GitPanel projectPath={projectPath} />
+          </div>
+        );
+      case 'console':
+        return <CCuiConsoleView />;
+      default:
+        return renderChatHistory();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#1d1c1a] border-r border-[#252423] text-[#e5e5e5]">
+      {renderContent()}
     </div>
   );
 };
 
-/**
- * CCuiSidebar - Chat-centric sidebar with temporal session grouping
- *
- * @param {Object} props
- * @param {Array} props.sessions - Array of session objects
- * @param {string} props.activeSessionId - Currently active session ID
- * @param {Function} props.onSessionSelect - Session select handler
- * @param {Function} props.onNewChat - New chat button click handler
- */
-const CCuiSidebar = ({
-  sessions = [],
-  activeSessionId,
-  onSessionSelect,
-  onNewChat
-}) => {
-  const groupedSessions = groupSessionsByTime(sessions);
+// Session item component
+const SessionItem = ({ session, isSelected, onSelect }) => {
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <aside className="w-64 bg-ccui-bg-secondary border-r border-ccui-border-primary flex flex-col">
-      {/* Header with New Chat Button */}
-      <div className="p-3 border-b border-ccui-border-primary">
-        <button
-          onClick={onNewChat}
-          className="w-full px-4 py-2 bg-ccui-accent hover:bg-ccui-accent/90 text-white rounded flex items-center justify-center gap-2 transition-colors"
-        >
-          <Plus size={16} />
-          <span className="text-sm font-medium">New Chat</span>
-        </button>
+    <button
+      onClick={onSelect}
+      className={`
+        w-full px-4 py-2 text-left transition-colors
+        ${isSelected
+          ? 'bg-[#252423] text-[#e5e5e5]'
+          : 'text-[rgba(255,255,255,0.6)] hover:bg-[#252423]/50'
+        }
+      `}
+    >
+      <div className="text-sm truncate">
+        {session.summary || session.name || 'New Session'}
       </div>
-
-      {/* Sessions List */}
-      <div className="flex-1 overflow-y-auto py-4">
-        <SessionGroup
-          title="Today"
-          sessions={groupedSessions.today}
-          activeSessionId={activeSessionId}
-          onSessionSelect={onSessionSelect}
-        />
-        <SessionGroup
-          title="Yesterday"
-          sessions={groupedSessions.yesterday}
-          activeSessionId={activeSessionId}
-          onSessionSelect={onSessionSelect}
-        />
-        <SessionGroup
-          title="Previous 7 Days"
-          sessions={groupedSessions.previous7Days}
-          activeSessionId={activeSessionId}
-          onSessionSelect={onSessionSelect}
-        />
-        <SessionGroup
-          title="Older"
-          sessions={groupedSessions.older}
-          activeSessionId={activeSessionId}
-          onSessionSelect={onSessionSelect}
-        />
+      <div className="flex items-center gap-1 mt-1 text-xs text-[rgba(255,255,255,0.4)]">
+        <Clock size={10} />
+        <span>{formatTime(session.lastActivity || session.createdAt)}</span>
       </div>
-    </aside>
+    </button>
   );
 };
 

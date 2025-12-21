@@ -3,59 +3,80 @@ import CCuiHeader from './CCuiHeader';
 import CCuiIconRail from './CCuiIconRail';
 import CCuiSidebar from './CCuiSidebar';
 import CCuiStatusBar from './CCuiStatusBar';
-import CCuiChatInput from './CCuiChatInput';
-import CCuiMessage from './CCuiMessage';
 
 /**
- * CCuiLayout - Main application layout with CCui design
+ * CCuiLayout - BASE-UI Pattern Layout
  *
- * This component provides the visual shell. Parent components
- * should pass real data (sessions, messages, WebSocket state).
+ * Architecture:
+ * - Icon Rail → Controls Sidebar content (NOT MainContent)
+ * - MainContent → ALWAYS shows chat (passed as children)
+ * - Sidebar → Dynamic content based on activeView
+ *
+ * This follows the Claude Desktop layout pattern.
  *
  * @param {Object} props
- * @param {string} props.projectPath - Current project path
- * @param {string} props.currentModel - Current AI model
- * @param {Array} props.sessions - Session list for sidebar
- * @param {string} props.activeSessionId - Active session ID
- * @param {Array} props.messages - Current chat messages
- * @param {boolean} props.isProcessing - Whether AI is processing
- * @param {number} props.contextPercent - Context usage percentage
- * @param {Function} props.onSessionSelect - Session selection handler
- * @param {Function} props.onNewChat - New chat handler
- * @param {Function} props.onSendMessage - Message send handler
- * @param {Function} props.onSettingsClick - Settings click handler
- * @param {React.ReactNode} props.children - Optional custom content area
+ * @param {React.ReactNode} props.children - Main content (usually ChatInterface)
+ * @param {string} props.projectPath - Current project path for header
+ * @param {string} props.currentModel - Current model name for header
+ * @param {Array} props.sessions - Sessions list for sidebar history view
+ * @param {Object} props.selectedSession - Currently selected session
+ * @param {Function} props.onSessionSelect - Session selection callback
+ * @param {Function} props.onNewSession - New session callback
+ * @param {Function} props.onSettingsClick - Settings button callback
+ * @param {boolean} props.isProcessing - Whether currently processing
+ * @param {number} props.contextPercent - Context usage percentage (0-100)
  */
-export default function CCuiLayout({
+const CCuiLayout = ({
+  children,
   projectPath = '~/project',
-  currentModel = 'Claude Sonnet',
+  currentModel = 'Claude Opus 4.5',
   sessions = [],
-  activeSessionId,
-  messages = [],
+  selectedSession,
+  onSessionSelect,
+  onNewSession,
+  onSettingsClick,
   isProcessing = false,
   contextPercent = 0,
-  onSessionSelect,
-  onNewChat,
-  onSendMessage,
-  onSettingsClick,
-  children,
-}) {
+}) => {
+  // Sidebar view state - controlled by Icon Rail
   const [sidebarView, setSidebarView] = useState('chat');
-  const messagesEndRef = useRef(null);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef(null);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages]);
-
-  const handleViewChange = useCallback((view) => {
-    setSidebarView(view);
+  // Handle sidebar resize
+  const handleMouseDown = useCallback((e) => {
+    setIsResizing(true);
+    e.preventDefault();
   }, []);
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      const newWidth = e.clientX - 48; // 48px for icon rail
+      if (newWidth >= 200 && newWidth <= 500) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   return (
-    <div className="flex flex-col h-screen w-full bg-ccui-bg-primary text-ccui-text-primary font-sans overflow-hidden ccui-selection">
+    <div className="flex flex-col h-screen w-full bg-[#131211] text-[#e5e5e5] font-mono overflow-hidden">
       {/* Header */}
       <CCuiHeader
         projectPath={projectPath}
@@ -65,65 +86,46 @@ export default function CCuiLayout({
 
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Icon Rail */}
+        {/* Icon Rail - Controls Sidebar View */}
         <CCuiIconRail
           activeView={sidebarView}
-          onViewChange={handleViewChange}
+          onViewChange={setSidebarView}
           onSettingsClick={onSettingsClick}
+          sidebarVisible={sidebarVisible}
+          onSidebarToggle={() => setSidebarVisible(!sidebarVisible)}
         />
 
-        {/* Sidebar - hidden on mobile */}
-        <div className="hidden md:block">
-          <CCuiSidebar
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSessionSelect={onSessionSelect}
-            onNewChat={onNewChat}
-          />
+        {/* Dynamic Sidebar */}
+        {sidebarVisible && (
+          <div
+            className="flex-shrink-0 relative"
+            style={{ width: sidebarWidth }}
+          >
+            <CCuiSidebar
+              activeView={sidebarView}
+              sessions={sessions}
+              selectedSession={selectedSession}
+              onSessionSelect={onSessionSelect}
+              onNewSession={onNewSession}
+            />
+
+            {/* Resize Handle */}
+            <div
+              ref={resizeRef}
+              onMouseDown={handleMouseDown}
+              className={`
+                absolute top-0 right-0 w-1 h-full cursor-col-resize
+                hover:bg-[#d97757]/50 transition-colors
+                ${isResizing ? 'bg-[#d97757]' : 'bg-transparent'}
+              `}
+            />
+          </div>
+        )}
+
+        {/* Main Content - ALWAYS shows children (ChatInterface) */}
+        <div className="flex-1 flex flex-col min-w-0 bg-[#131211]">
+          {children}
         </div>
-
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col relative bg-ccui-bg-primary">
-          {/* Custom content or default chat view */}
-          {children || (
-            <>
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 ccui-scrollbar">
-                <div className="max-w-3xl mx-auto space-y-6">
-                  {messages.length === 0 && (
-                    <div className="text-center py-20">
-                      <div className="text-ccui-text-muted text-sm mb-2">
-                        Welcome to Claude Code UI
-                      </div>
-                      <div className="text-ccui-text-subtle text-xs">
-                        Start a conversation or select a previous chat
-                      </div>
-                    </div>
-                  )}
-                  {messages.map((msg, index) => (
-                    <CCuiMessage
-                      key={msg.id || index}
-                      message={msg}
-                      isStreaming={msg.isStreaming}
-                    />
-                  ))}
-                  <div ref={messagesEndRef} className="h-4" />
-                </div>
-              </div>
-
-              {/* Input Area */}
-              <CCuiChatInput
-                onSend={onSendMessage}
-                disabled={isProcessing}
-                placeholder={
-                  isProcessing
-                    ? 'Claude is thinking...'
-                    : 'Describe your task or enter a command...'
-                }
-              />
-            </>
-          )}
-        </main>
       </div>
 
       {/* Status Bar */}
@@ -133,4 +135,6 @@ export default function CCuiLayout({
       />
     </div>
   );
-}
+};
+
+export default CCuiLayout;

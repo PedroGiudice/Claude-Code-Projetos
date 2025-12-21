@@ -1,8 +1,9 @@
 import React from 'react';
-import { Folder, Cpu, Search, Settings } from 'lucide-react';
+import { Cpu, Search, Settings } from 'lucide-react';
+import { CCuiSpinnerLogo } from './CCuiSpinner';
 
 /**
- * CCuiHeader - Minimal header with traffic lights, project path, and model selector
+ * CCuiHeader - Minimal header with animated logo, project path, and model selector
  *
  * @param {Object} props
  * @param {string} props.projectPath - Current project path
@@ -17,57 +18,40 @@ const CCuiHeader = ({
   onSearchClick
 }) => {
   return (
-    <header className="h-12 bg-ccui-bg-secondary border-b border-ccui-border-primary flex items-center justify-between px-4">
-      {/* Left: Traffic Lights */}
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1.5">
-          <button
-            className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors"
-            aria-label="Close"
-          />
-          <button
-            className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 transition-colors"
-            aria-label="Minimize"
-          />
-          <button
-            className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-400 transition-colors"
-            aria-label="Maximize"
-          />
-        </div>
-      </div>
-
-      {/* Center: Project Path */}
-      <div className="flex items-center gap-2 text-ccui-text-secondary">
-        <Folder size={16} />
-        <span className="text-sm font-medium text-ccui-text-primary truncate max-w-md">
-          {projectPath}
-        </span>
-      </div>
-
-      {/* Right: Model Selector and Actions */}
+    <header className="h-10 bg-ccui-bg-secondary border-b border-ccui-border-primary flex items-center justify-between px-4 z-50 select-none">
+      {/* Left: Animated Logo + Project Path */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1 rounded bg-ccui-bg-primary border border-ccui-border-primary">
-          <Cpu size={14} className="text-ccui-text-muted" />
-          <span className="text-xs text-ccui-text-secondary font-mono">
-            {currentModel}
-          </span>
+        {/* Animated Cyber Hex Logo */}
+        <CCuiSpinnerLogo size={24} />
+
+        {/* Divider */}
+        <div className="h-4 w-px bg-ccui-border-secondary mx-1" />
+
+        {/* Project path */}
+        <div className="flex items-center gap-2 text-xs font-medium text-ccui-text-secondary">
+          <span>{projectPath}</span>
+        </div>
+      </div>
+
+      {/* Right: Model Selector + Actions */}
+      <div className="flex items-center gap-4 text-xxs font-mono text-ccui-text-subtle">
+        {/* Model selector */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-ccui-bg-active border border-ccui-border-secondary cursor-pointer hover:border-ccui-accent/50 transition-colors">
+          <Cpu className="w-3 h-3 text-ccui-accent" />
+          <span className="text-ccui-text-secondary">{currentModel}</span>
         </div>
 
-        <button
-          onClick={onSearchClick}
-          className="p-1.5 rounded hover:bg-ccui-bg-primary transition-colors text-ccui-text-secondary hover:text-ccui-text-primary"
-          aria-label="Search"
-        >
-          <Search size={16} />
-        </button>
-
-        <button
-          onClick={onSettingsClick}
-          className="p-1.5 rounded hover:bg-ccui-bg-primary transition-colors text-ccui-text-secondary hover:text-ccui-text-primary"
-          aria-label="Settings"
-        >
-          <Settings size={16} />
-        </button>
+        {/* Action icons */}
+        <div className="flex items-center gap-3">
+          <Search
+            className="w-3.5 h-3.5 hover:text-ccui-accent cursor-pointer transition-colors"
+            onClick={onSearchClick}
+          />
+          <Settings
+            className="w-3.5 h-3.5 hover:text-ccui-accent cursor-pointer transition-colors"
+            onClick={onSettingsClick}
+          />
+        </div>
       </div>
     </header>
   );

@@ -1,25 +1,30 @@
 import React from 'react';
-import { MessageSquare, Files, Search, GitBranch, Bug, Settings } from 'lucide-react';
+import { MessageSquare, Files, Search, Terminal, GitBranch, Bug, Settings, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 
 /**
  * CCuiIconRail - Vertical icon rail for view switching
  *
  * @param {Object} props
- * @param {string} props.activeView - Currently active view ('chat' | 'files' | 'search' | 'git' | 'debug')
+ * @param {string} props.activeView - Currently active view ('chat' | 'files' | 'search' | 'shell' | 'git' | 'console')
  * @param {Function} props.onViewChange - View change handler
  * @param {Function} props.onSettingsClick - Settings button click handler
+ * @param {boolean} props.sidebarVisible - Whether sidebar is visible
+ * @param {Function} props.onSidebarToggle - Sidebar toggle handler
  */
 const CCuiIconRail = ({
   activeView = 'chat',
   onViewChange,
-  onSettingsClick
+  onSettingsClick,
+  sidebarVisible = true,
+  onSidebarToggle
 }) => {
   const views = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Files, label: 'Files' },
     { id: 'search', icon: Search, label: 'Search' },
+    { id: 'shell', icon: Terminal, label: 'Shell' },
     { id: 'git', icon: GitBranch, label: 'Git' },
-    { id: 'debug', icon: Bug, label: 'Debug' },
+    { id: 'console', icon: Bug, label: 'Console' },
   ];
 
   const handleViewClick = (viewId) => {
@@ -61,14 +66,27 @@ const CCuiIconRail = ({
         })}
       </div>
 
-      {/* Settings at Bottom */}
-      <button
-        onClick={onSettingsClick}
-        className="w-full h-12 flex items-center justify-center text-ccui-text-muted hover:text-ccui-text-secondary transition-colors"
-        aria-label="Settings"
-      >
-        <Settings size={20} />
-      </button>
+      {/* Bottom Actions */}
+      <div className="flex flex-col gap-1">
+        {/* Sidebar Toggle */}
+        <button
+          onClick={onSidebarToggle}
+          className="w-full h-12 flex items-center justify-center text-ccui-text-muted hover:text-ccui-text-secondary transition-colors"
+          aria-label={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          title={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+        >
+          {sidebarVisible ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
+
+        {/* Settings */}
+        <button
+          onClick={onSettingsClick}
+          className="w-full h-12 flex items-center justify-center text-ccui-text-muted hover:text-ccui-text-secondary transition-colors"
+          aria-label="Settings"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
     </nav>
   );
 };
