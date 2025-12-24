@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
  */
 const CCuiSpinner = ({ size = 64, fps = 30, className = '' }) => {
   const [frame, setFrame] = useState(0);
+  const [imageError, setImageError] = useState(false);
   const frameCount = 30;
   const frameNumbers = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290];
 
@@ -23,6 +24,21 @@ const CCuiSpinner = ({ size = 64, fps = 30, className = '' }) => {
     return () => clearInterval(interval);
   }, [fps]);
 
+  // Fallback spinner when images fail to load
+  if (imageError) {
+    return (
+      <div
+        className={`inline-flex items-center justify-center ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <div
+          className="animate-spin rounded-full border-2 border-ccui-accent border-t-transparent"
+          style={{ width: size * 0.8, height: size * 0.8 }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`inline-block ${className}`}
@@ -33,6 +49,7 @@ const CCuiSpinner = ({ size = 64, fps = 30, className = '' }) => {
         alt="Loading..."
         width={size}
         height={size}
+        onError={() => setImageError(true)}
         style={{
           objectFit: 'contain',
           imageRendering: 'crisp-edges',

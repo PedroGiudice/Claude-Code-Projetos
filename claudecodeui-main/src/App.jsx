@@ -21,11 +21,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Settings as SettingsIcon } from 'lucide-react';
-import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MobileNav from './components/MobileNav';
 import Settings from './components/Settings';
-import { CCuiHeader, CCuiIconRail, CCuiStatusBar } from './components/ccui';
+import { CCuiHeader, CCuiIconRail, CCuiStatusBar, CCuiSidebar } from './components/ccui';
 
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -758,6 +757,9 @@ function AppContent() {
       <CCuiHeader
         projectPath={projectPath}
         currentModel={currentModel}
+        projects={projects}
+        selectedProject={selectedProject}
+        onProjectSelect={handleProjectSelect}
         onSettingsClick={() => setShowSettings(true)}
       />
 
@@ -772,31 +774,16 @@ function AppContent() {
           onSidebarToggle={() => setSidebarVisible(!sidebarVisible)}
         />
 
-        {/* Sidebar - Projects/Sessions */}
+        {/* Sidebar - Sessions/Files based on activeTab */}
         {!isMobile && sidebarVisible && (
-          <div className="w-64 bg-ccui-bg-secondary border-r border-ccui-border-primary flex flex-col">
-            <Sidebar
-              projects={projects}
-              selectedProject={selectedProject}
-              selectedSession={selectedSession}
-              onProjectSelect={handleProjectSelect}
-              onSessionSelect={handleSessionSelect}
-              onNewSession={handleNewSession}
-              onSessionDelete={handleSessionDelete}
-              onProjectDelete={handleProjectDelete}
-              isLoading={isLoadingProjects}
-              onRefresh={handleSidebarRefresh}
-              onShowSettings={() => setShowSettings(true)}
-              updateAvailable={updateAvailable}
-              latestVersion={latestVersion}
-              currentVersion={currentVersion}
-              releaseInfo={releaseInfo}
-              onShowVersionModal={() => setShowVersionModal(true)}
-              isPWA={isPWA}
-              isMobile={isMobile}
-              onToggleSidebar={() => setSidebarVisible(false)}
-            />
-          </div>
+          <CCuiSidebar
+            activeView={activeTab}
+            sessions={selectedProject?.sessions || []}
+            selectedSession={selectedSession}
+            onSessionSelect={handleSessionSelect}
+            onNewSession={() => handleNewSession(selectedProject)}
+            projectPath={selectedProject?.fullPath || selectedProject?.path || ''}
+          />
         )}
 
         {/* Mobile Sidebar Overlay */}
@@ -807,27 +794,20 @@ function AppContent() {
               onClick={() => setSidebarOpen(false)}
               aria-label="Close sidebar"
             />
-            <div className="relative w-[85vw] max-w-sm h-full bg-ccui-bg-secondary border-r border-ccui-border-primary">
-              <Sidebar
-                projects={projects}
-                selectedProject={selectedProject}
+            <div className="relative w-[85vw] max-w-sm h-full">
+              <CCuiSidebar
+                activeView={activeTab}
+                sessions={selectedProject?.sessions || []}
                 selectedSession={selectedSession}
-                onProjectSelect={handleProjectSelect}
-                onSessionSelect={handleSessionSelect}
-                onNewSession={handleNewSession}
-                onSessionDelete={handleSessionDelete}
-                onProjectDelete={handleProjectDelete}
-                isLoading={isLoadingProjects}
-                onRefresh={handleSidebarRefresh}
-                onShowSettings={() => setShowSettings(true)}
-                updateAvailable={updateAvailable}
-                latestVersion={latestVersion}
-                currentVersion={currentVersion}
-                releaseInfo={releaseInfo}
-                onShowVersionModal={() => setShowVersionModal(true)}
-                isPWA={isPWA}
-                isMobile={isMobile}
-                onToggleSidebar={() => setSidebarVisible(false)}
+                onSessionSelect={(session) => {
+                  handleSessionSelect(session);
+                  setSidebarOpen(false);
+                }}
+                onNewSession={() => {
+                  handleNewSession(selectedProject);
+                  setSidebarOpen(false);
+                }}
+                projectPath={selectedProject?.fullPath || selectedProject?.path || ''}
               />
             </div>
           </div>

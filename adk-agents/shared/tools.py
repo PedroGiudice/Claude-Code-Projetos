@@ -347,15 +347,14 @@ def read_multiple_files(file_paths: str) -> str:
 # Create FunctionTool instances for the agent
 # =============================================================================
 
-read_file = FunctionTool(func=read_file)
-write_file = FunctionTool(func=write_file)
-list_directory = FunctionTool(func=list_directory)
-search_code = FunctionTool(func=search_code)
-run_command = FunctionTool(func=run_command)
-analyze_python_structure = FunctionTool(func=analyze_python_structure)
-get_directory_tree = FunctionTool(func=get_directory_tree)
-read_multiple_files = FunctionTool(func=read_multiple_files)
-
+read_file = _read_file_impl
+write_file = _write_file_impl
+list_directory = _list_directory_impl
+search_code = _search_code_impl
+run_command = _run_command_impl
+analyze_python_structure = _analyze_python_structure_impl
+get_directory_tree = _get_directory_tree_impl
+read_multiple_files = _read_multiple_files_impl
 
 # Export all tools
 __all__ = [

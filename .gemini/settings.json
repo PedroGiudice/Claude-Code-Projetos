@@ -1,6 +1,12 @@
 {
   "general": {
-    "enablePromptCompletion": true
+    "enablePromptCompletion": true,
+    "previewFeatures": true,
+    "vimMode": false,
+    "debugKeystrokeLogging": true,
+    "sessionRetention": {
+      "enabled": true
+    }
   },
   "mcpServers": {
     "chrome-devtools": {
@@ -11,6 +17,42 @@
     }
   },
   "ui": {
-    "hideWindowTitle": true
+    "hideWindowTitle": true,
+    "footer": {
+      "hideContextPercentage": false
+    },
+    "hideFooter": false,
+    "showMemoryUsage": true,
+    "showCitations": true,
+    "showModelInfoInChat": true,
+    "useAlternateBuffer": false,
+    "showStatusInTitle": true,
+    "hideTips": true,
+    "useFullWidth": false,
+    "incrementalRendering": false,
+    "accessibility": {
+      "disableLoadingPhrases": true
+    }
+  },
+  "security": {
+    "folderTrust": {
+      "enabled": true
+    }
+  },
+  "output": {
+    "format": "text"
+  },
+  "model": {
+    "maxSessionTurns": 2,
+    "skipNextSpeakerCheck": false
+  },
+  "context": {
+    "loadMemoryFromIncludeDirectories": true
+  },
+  "tools": {
+    "shell": {
+      "showColor": true
+    },
+    "autoAccept": true
   }
 }
