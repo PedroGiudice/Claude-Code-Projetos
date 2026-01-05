@@ -75,6 +75,32 @@ export interface Card {
   // Add other relevant Trello card fields as needed
 }
 
+// =============================================================================
+// FIELD SELECTOR - Types and configuration for selective field display/export
+// =============================================================================
+
+export type CardFieldKey = 'name' | 'desc' | 'labels' | 'members' | 'due' | 'idList';
+
+export interface FieldConfig {
+  key: CardFieldKey;
+  label: string;
+  default: boolean;
+  locked?: boolean; // If true, field cannot be deselected
+}
+
+export const CARD_FIELDS: FieldConfig[] = [
+  { key: 'name', label: 'Título', default: true, locked: true },
+  { key: 'desc', label: 'Descrição', default: false },
+  { key: 'labels', label: 'Etiquetas', default: false },
+  { key: 'members', label: 'Membros', default: false },
+  { key: 'due', label: 'Data de Entrega', default: false },
+  { key: 'idList', label: 'Lista', default: false },
+];
+
+export const DEFAULT_SELECTED_FIELDS = new Set<CardFieldKey>(
+  CARD_FIELDS.filter(f => f.default).map(f => f.key)
+);
+
 const API_BASE_URL = 'http://localhost/api/trello/api/v1';
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -423,6 +449,30 @@ const downloadFile = (content: string, filename: string, mimeType: string) => {
 };
 
 /**
+ * Filter enriched card fields based on selected fields
+ * Maps user-facing field keys to actual EnrichedCard properties
+ */
+const filterCardFields = (
+  card: EnrichedCard,
+  selectedFields: Set<CardFieldKey>
+): Partial<EnrichedCard> => {
+  const filtered: Partial<EnrichedCard> = {
+    id: card.id, // Always include ID
+    shortUrl: card.shortUrl, // Always include URL for reference
+    closed: card.closed, // Always include status
+  };
+
+  if (selectedFields.has('name')) filtered.name = card.name;
+  if (selectedFields.has('desc')) filtered.desc = card.desc;
+  if (selectedFields.has('labels')) filtered.labelNames = card.labelNames;
+  if (selectedFields.has('members')) filtered.memberNames = card.memberNames;
+  if (selectedFields.has('due')) filtered.due = card.due;
+  if (selectedFields.has('idList')) filtered.listName = card.listName;
+
+  return filtered;
+};
+
+/**
  * Export cards to file - REAL implementation with download
  *
  * @param cards - Cards to export (can be 1 or many)
@@ -431,6 +481,7 @@ const downloadFile = (content: string, filename: string, mimeType: string) => {
  * @param lists - Lists for enrichment
  * @param labels - Labels for enrichment
  * @param members - Members for enrichment
+ * @param selectedFields - Optional set of fields to include (default: all fields)
  */
 export const exportData = async (
   cards: Card[],
@@ -438,12 +489,18 @@ export const exportData = async (
   filename: string,
   lists: TrelloList[] = [],
   labels: Label[] = [],
-  members: Member[] = []
+  members: Member[] = [],
+  selectedFields?: Set<CardFieldKey>
 ) => {
-  console.log(`[Export] Exporting ${cards.length} card(s) as ${format}`);
+  console.log(`[Export] Exporting ${cards.length} card(s) as ${format}${selectedFields ? ` (fields: ${[...selectedFields].join(', ')})` : ''}`);
 
   // Enrich cards with resolved labels/members
   const enrichedCards = enrichCardsForExport(cards, lists, labels, members);
+
+  // Filter fields if selectedFields is provided
+  const cardsToExport = selectedFields
+    ? enrichedCards.map(card => filterCardFields(card, selectedFields))
+    : enrichedCards;
 
   let content: string;
   let mimeType: string;
@@ -451,22 +508,22 @@ export const exportData = async (
 
   switch (format) {
     case 'json':
-      content = JSON.stringify(enrichedCards, null, 2);
+      content = JSON.stringify(cardsToExport, null, 2);
       mimeType = 'application/json';
       extension = 'json';
       break;
     case 'csv':
-      content = generateCSV(enrichedCards);
+      content = generateCSV(enrichedCards); // CSV uses full data for consistent columns
       mimeType = 'text/csv;charset=utf-8';
       extension = 'csv';
       break;
     case 'markdown':
-      content = generateMarkdown(enrichedCards);
+      content = generateMarkdown(enrichedCards); // Markdown uses full data
       mimeType = 'text/markdown';
       extension = 'md';
       break;
     case 'text':
-      content = generateText(enrichedCards);
+      content = generateText(enrichedCards); // Text uses full data
       mimeType = 'text/plain';
       extension = 'txt';
       break;
@@ -487,14 +544,20 @@ export const copyToClipboard = async (
   format: 'json' | 'csv' | 'markdown' | 'text',
   lists: TrelloList[] = [],
   labels: Label[] = [],
-  members: Member[] = []
+  members: Member[] = [],
+  selectedFields?: Set<CardFieldKey>
 ): Promise<void> => {
   const enrichedCards = enrichCardsForExport(cards, lists, labels, members);
+
+  // Filter fields for JSON export if selectedFields provided
+  const cardsForExport = selectedFields && format === 'json'
+    ? enrichedCards.map(card => filterCardFields(card, selectedFields))
+    : enrichedCards;
 
   let content: string;
   switch (format) {
     case 'json':
-      content = JSON.stringify(enrichedCards, null, 2);
+      content = JSON.stringify(cardsForExport, null, 2);
       break;
     case 'csv':
       content = generateCSV(enrichedCards);
@@ -506,9 +569,18 @@ export const copyToClipboard = async (
       content = generateText(enrichedCards);
       break;
     default:
-      content = JSON.stringify(enrichedCards, null, 2);
+      content = JSON.stringify(cardsForExport, null, 2);
   }
 
   await navigator.clipboard.writeText(content);
   console.log(`[Export] Copied ${cards.length} card(s) to clipboard as ${format}`);
+};
+
+/**
+ * Copy only card titles to clipboard (one per line)
+ */
+export const copyTitlesToClipboard = async (cards: Card[]): Promise<void> => {
+  const titles = cards.map(card => card.name).join('\n');
+  await navigator.clipboard.writeText(titles);
+  console.log(`[Export] Copied ${cards.length} card title(s) to clipboard`);
 };

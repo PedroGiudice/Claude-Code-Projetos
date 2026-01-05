@@ -9,11 +9,15 @@ COPY package.json bun.lock* ./
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy source files
+# Cache buster: forces rebuild when source files change
+# Use: docker compose build --build-arg CACHEBUST=$(date +%s)
+ARG CACHEBUST=1
+
+# Copy source files (invalidated by CACHEBUST arg)
 COPY . .
 
 # Build the application
-RUN bun run build
+RUN echo "Build: $CACHEBUST" && bun run build
 
 # Production stage with nginx
 FROM nginx:alpine

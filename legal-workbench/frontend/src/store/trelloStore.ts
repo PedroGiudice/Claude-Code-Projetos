@@ -7,6 +7,9 @@ export type TrelloList = trelloApi.TrelloList;
 export type Card = trelloApi.Card;
 export type Label = trelloApi.Label;
 export type Member = trelloApi.Member;
+export type CardFieldKey = trelloApi.CardFieldKey;
+export type FieldConfig = trelloApi.FieldConfig;
+export { CARD_FIELDS, DEFAULT_SELECTED_FIELDS } from '../services/trelloApi';
 
 // Filter types
 export type DueFilter = 'all' | 'today' | 'week' | 'overdue' | 'none';
@@ -39,6 +42,9 @@ interface TrelloState {
   statusFilter: StatusFilter;
   memberFilterIds: Set<string>;
 
+  // Field Selector State
+  selectedFields: Set<CardFieldKey>;
+
   // Actions
   setBoards: (boards: Board[]) => void;
   setLists: (lists: TrelloList[]) => void;
@@ -62,6 +68,14 @@ interface TrelloState {
   setStatusFilter: (filter: StatusFilter) => void;
   toggleMemberFilter: (memberId: string) => void;
   clearFilters: () => void;
+
+  // Field Selector Actions
+  toggleField: (field: CardFieldKey) => void;
+  setSelectedFields: (fields: Set<CardFieldKey>) => void;
+  resetFieldsToDefault: () => void;
+
+  // Computed Selectors
+  getFilteredCards: () => Card[];
 
   // Async actions
   fetchInitialData: () => Promise<void>;
@@ -108,6 +122,9 @@ const useTrelloStore = create<TrelloState>((set, get) => ({
   dueFilter: 'all',
   statusFilter: 'open',
   memberFilterIds: new Set(),
+
+  // Field Selector State (default: only 'name' selected)
+  selectedFields: new Set<CardFieldKey>(['name']),
 
   // Actions
   setBoards: (boards) => set({ boards }),
@@ -183,6 +200,87 @@ const useTrelloStore = create<TrelloState>((set, get) => ({
     memberFilterIds: new Set(),
     searchQuery: '',
   }),
+
+  // Field Selector Actions
+  toggleField: (field: CardFieldKey) =>
+    set((state) => {
+      // 'name' is locked and cannot be deselected
+      if (field === 'name') return state;
+
+      const newFields = new Set(state.selectedFields);
+      if (newFields.has(field)) {
+        newFields.delete(field);
+      } else {
+        newFields.add(field);
+      }
+      return { selectedFields: newFields };
+    }),
+
+  setSelectedFields: (fields: Set<CardFieldKey>) => set({ selectedFields: fields }),
+
+  resetFieldsToDefault: () => set({ selectedFields: new Set<CardFieldKey>(['name']) }),
+
+  // Computed Selector: Get filtered cards based on current filter state
+  getFilteredCards: () => {
+    const state = get();
+    const { cards, lists, searchQuery, labelFilterIds, dueFilter, statusFilter, memberFilterIds, selectedListId } = state;
+
+    return cards.filter((card) => {
+      // List filter
+      if (selectedListId && card.idList !== selectedListId) return false;
+
+      // Status filter
+      if (statusFilter === 'open' && card.closed) return false;
+      if (statusFilter === 'archived' && !card.closed) return false;
+
+      // Search query filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = card.name.toLowerCase().includes(query);
+        const matchesDesc = card.desc?.toLowerCase().includes(query);
+        if (!matchesName && !matchesDesc) return false;
+      }
+
+      // Label filter
+      if (labelFilterIds.size > 0) {
+        const hasMatchingLabel = card.idLabels.some((labelId) => labelFilterIds.has(labelId));
+        if (!hasMatchingLabel) return false;
+      }
+
+      // Member filter
+      if (memberFilterIds.size > 0) {
+        const hasMatchingMember = card.idMembers.some((memberId) => memberFilterIds.has(memberId));
+        if (!hasMatchingMember) return false;
+      }
+
+      // Due date filter
+      if (dueFilter !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        if (dueFilter === 'none' && card.due) return false;
+        if (dueFilter === 'today') {
+          if (!card.due) return false;
+          const dueDate = new Date(card.due);
+          const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+          if (dueDateOnly.getTime() !== today.getTime()) return false;
+        }
+        if (dueFilter === 'week') {
+          if (!card.due) return false;
+          const dueDate = new Date(card.due);
+          if (dueDate < today || dueDate > weekFromNow) return false;
+        }
+        if (dueFilter === 'overdue') {
+          if (!card.due) return false;
+          const dueDate = new Date(card.due);
+          if (dueDate >= now) return false;
+        }
+      }
+
+      return true;
+    });
+  },
 
   // Async actions
   fetchInitialData: async () => {

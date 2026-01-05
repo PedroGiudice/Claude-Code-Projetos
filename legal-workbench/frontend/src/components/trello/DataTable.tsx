@@ -21,6 +21,7 @@ export function DataTable() {
     dueFilter,
     statusFilter,
     memberFilterIds,
+    selectedFields,
   } = useTrelloStore();
 
   const allCards = useTrelloStore((state) => state.cards);
@@ -150,20 +151,33 @@ export function DataTable() {
                   onChange={handleSelectAllClick}
                 />
               </th>
+              {/* CARD (name) - always visible */}
               <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider cursor-pointer hover:text-accent-indigo-light transition-colors">CARD ↕</th>
-              <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider cursor-pointer hover:text-accent-indigo-light transition-colors">LIST ↕</th>
-              <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider cursor-pointer hover:text-accent-indigo-light transition-colors">DUE ↕</th>
-              <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider">LABELS</th>
-              <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider">MEMBERS</th>
+              {/* LIST - conditional */}
+              {selectedFields.has('idList') && (
+                <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider cursor-pointer hover:text-accent-indigo-light transition-colors">LIST ↕</th>
+              )}
+              {/* DUE - conditional */}
+              {selectedFields.has('due') && (
+                <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider cursor-pointer hover:text-accent-indigo-light transition-colors">DUE ↕</th>
+              )}
+              {/* LABELS - conditional */}
+              {selectedFields.has('labels') && (
+                <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider">LABELS</th>
+              )}
+              {/* MEMBERS - conditional */}
+              {selectedFields.has('members') && (
+                <th className="py-2 px-3 text-text-muted uppercase font-semibold text-xxs tracking-wider">MEMBERS</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {filteredCards.map((card: Card) => (
               <tr
                 key={card.id}
-                className={`border-b border-border-default cursor-pointer transition-colors duration-100 ease-in-out 
-                ${selectedCardIds.has(card.id) 
-                  ? 'bg-accent-indigo/10' 
+                className={`border-b border-border-default cursor-pointer transition-colors duration-100 ease-in-out
+                ${selectedCardIds.has(card.id)
+                  ? 'bg-accent-indigo/10'
                   : 'hover:bg-bg-input'}`}
                 onClick={() => toggleCardSelection(card.id)}
               >
@@ -175,43 +189,56 @@ export function DataTable() {
                     onChange={() => toggleCardSelection(card.id)}
                   />
                 </td>
+                {/* CARD (name) - always visible */}
                 <td className="py-2 px-3 text-accent-indigo-light font-medium">{card.name}</td>
-                <td className="py-2 px-3 text-text-secondary">{getListName(card.idList)}</td>
-                <td className={`py-2 px-3 font-mono ${card.due && new Date(card.due) < new Date() && !card.closed ? 'text-status-red' : 'text-text-primary'}`}>
-                  {card.due ? format(new Date(card.due), 'dd/MM') : '-'}
-                </td>
-                <td className="py-2 px-3">
-                  {(card.idLabels || []).map((labelId, index) => {
-                    const label = getLabelNameAndColor(labelId);
-                    return label ? (
-                      <span
-                        key={index}
-                        className={`w-2 h-2 rounded-full inline-block mr-1`}
-                        style={{ backgroundColor: label.color || '#cccccc' }} // Fallback color
-                        title={label.name}
-                      ></span>
-                    ) : null;
-                  })}
-                </td>
-                <td className="py-2 px-3">
-                  {(card.idMembers || []).length > 0 ? (
-                    <div className="flex items-center space-x-1">
-                      {(card.idMembers || []).map(memberId => {
-                        const memberFullName = getMemberFullName(memberId);
-                        const initials = memberFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-                        return (
-                          <span 
-                            key={memberId} 
-                            title={memberFullName}
-                            className="text-text-secondary font-mono text-xxxs rounded-full bg-bg-input p-1 flex items-center justify-center w-5 h-5"
-                          >
-                            {initials}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : <span className="text-text-dark">-</span>}
-                </td>
+                {/* LIST - conditional */}
+                {selectedFields.has('idList') && (
+                  <td className="py-2 px-3 text-text-secondary">{getListName(card.idList)}</td>
+                )}
+                {/* DUE - conditional */}
+                {selectedFields.has('due') && (
+                  <td className={`py-2 px-3 font-mono ${card.due && new Date(card.due) < new Date() && !card.closed ? 'text-status-red' : 'text-text-primary'}`}>
+                    {card.due ? format(new Date(card.due), 'dd/MM') : '-'}
+                  </td>
+                )}
+                {/* LABELS - conditional */}
+                {selectedFields.has('labels') && (
+                  <td className="py-2 px-3">
+                    {(card.idLabels || []).map((labelId, index) => {
+                      const label = getLabelNameAndColor(labelId);
+                      return label ? (
+                        <span
+                          key={index}
+                          className={`w-2 h-2 rounded-full inline-block mr-1`}
+                          style={{ backgroundColor: label.color || '#cccccc' }}
+                          title={label.name}
+                        ></span>
+                      ) : null;
+                    })}
+                  </td>
+                )}
+                {/* MEMBERS - conditional */}
+                {selectedFields.has('members') && (
+                  <td className="py-2 px-3">
+                    {(card.idMembers || []).length > 0 ? (
+                      <div className="flex items-center space-x-1">
+                        {(card.idMembers || []).map(memberId => {
+                          const memberFullName = getMemberFullName(memberId);
+                          const initials = memberFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                          return (
+                            <span
+                              key={memberId}
+                              title={memberFullName}
+                              className="text-text-secondary font-mono text-xxxs rounded-full bg-bg-input p-1 flex items-center justify-center w-5 h-5"
+                            >
+                              {initials}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : <span className="text-text-dark">-</span>}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

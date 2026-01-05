@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import useTrelloStore from '@/store/trelloStore';
 import * as trelloApi from '@/services/trelloApi';
-import { Download, Copy, Plus, Archive, Trash2, Link, ListChecks, Tag, Box } from 'lucide-react';
+import { Download, Copy, Plus, Archive, Trash2, Link, ListChecks, Tag, Box, ClipboardList } from 'lucide-react';
+import { FieldSelector } from './FieldSelector';
 
 export function ActionsPanel() {
   const {
@@ -18,6 +19,8 @@ export function ActionsPanel() {
     deleteSelectedCards,
     toggleMoveCardsModal,
     toggleBulkLabelModal,
+    getFilteredCards,
+    selectedFields,
   } = useTrelloStore();
 
   const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'markdown' | 'text'>('json');
@@ -70,7 +73,8 @@ export function ActionsPanel() {
       return;
     }
     try {
-      await trelloApi.exportData(dataToExport, format, `trello-export-${Date.now()}`, lists, labels, members);
+      // Pass selectedFields for JSON export filtering
+      await trelloApi.exportData(dataToExport, format, `trello-export-${Date.now()}`, lists, labels, members, selectedFields);
     } catch (error) {
       console.error("Export failed:", error);
       alert(`Failed to export data: ${(error as Error).message}`);
@@ -88,7 +92,8 @@ export function ActionsPanel() {
     }
 
     try {
-      await trelloApi.copyToClipboard(dataToCopy, exportFormat, lists, labels, members);
+      // Pass selectedFields for JSON export filtering
+      await trelloApi.copyToClipboard(dataToCopy, exportFormat, lists, labels, members, selectedFields);
       alert(`Copied ${dataToCopy.length} card(s) as ${exportFormat.toUpperCase()}`);
     } catch (error) {
       console.error("Copy to clipboard failed:", error);
@@ -99,6 +104,28 @@ export function ActionsPanel() {
   const handleOpenInTrello = () => {
     if (selectedCard?.shortUrl) {
       window.open(selectedCard.shortUrl, '_blank');
+    }
+  };
+
+  // Get filtered cards for copy titles feature
+  const filteredCards = getFilteredCards();
+
+  const handleCopyTitles = async () => {
+    const cardsToCopy = hasSelection
+      ? filteredCards.filter(card => selectedCardIds.has(card.id))
+      : filteredCards;
+
+    if (cardsToCopy.length === 0) {
+      alert('Nenhum cartão para copiar.');
+      return;
+    }
+
+    try {
+      await trelloApi.copyTitlesToClipboard(cardsToCopy);
+      alert(`Copiados ${cardsToCopy.length} título(s) para a área de transferência.`);
+    } catch (error) {
+      console.error('Copy titles failed:', error);
+      alert(`Falha ao copiar títulos: ${(error as Error).message}`);
     }
   };
 
@@ -174,6 +201,26 @@ export function ActionsPanel() {
             disabled={isLoading || cards.length === 0}
           >
             .txt
+          </button>
+        </div>
+
+        {/* Field Selector */}
+        <div className="border-t border-border-default pt-4">
+          <FieldSelector />
+        </div>
+
+        {/* Copy Titles Button */}
+        <div className="border-t border-border-default pt-4">
+          <button
+            onClick={handleCopyTitles}
+            disabled={filteredCards.length === 0 || isLoading}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5
+              bg-bg-input hover:bg-border-light border border-border-default rounded-sm
+              text-sm text-text-primary disabled:opacity-50 disabled:cursor-not-allowed
+              transition-all active:scale-95"
+          >
+            <ClipboardList size={14} />
+            Copiar Títulos ({hasSelection ? numSelected : filteredCards.length})
           </button>
         </div>
       </div>
