@@ -170,7 +170,7 @@ export default function CCuiLayout() {
             <span className="text-sm font-mono text-[#b5b5b5] font-bold tracking-wide">READY</span>
           </div>
           <StatusBarItem icon={Zap} label="0% ctx" />
-          <StatusBarItem icon={Sparkles} label="Claude 3.7 Sonnet" color="text-[#d97757]" active />
+          <StatusBarItem icon={Sparkles} label="Claude Opus 4.5" color="text-[#d97757]" active />
           <StatusBarItem icon={GitBranch} label="main" />
         </div>
 
