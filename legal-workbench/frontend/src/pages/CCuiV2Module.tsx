@@ -12,7 +12,8 @@ export default function CCuiV2Module() {
   return (
     <AuthProvider>
       <WebSocketProvider>
-        <div className="flex flex-col h-full w-full bg-[#000000] overflow-hidden">
+        {/* zoom: 0.85 gives a more compact, professional look */}
+        <div className="flex flex-col h-full w-full bg-[#000000] overflow-hidden" style={{ zoom: 0.85 }}>
           {/* Back to Hub Header */}
           <div className="h-10 bg-[#050505] border-b border-[#27272a] flex items-center px-4 z-50">
             <Link
