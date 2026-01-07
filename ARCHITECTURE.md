@@ -43,8 +43,9 @@ Claude-Code-Projetos/
 │   ├── ferramentas/      # Python tools (stj-dados-abertos, legal-text-extractor)
 │   └── docs/             # LW-specific documentation
 ├── adk-agents/           # Google ADK agents (frontend_commander, etc)
-├── claudecodeui-main/    # Claude Code UI interface
-├── comandos/             # CLI utilitarios (extract-core, fetch-doc, parse-legal)
+├── claudecodeui-main/    # Claude Code UI (forked original)
+├── CCui/                 # CCui components development
+├── BASE-UI/              # UI reference/experiments
 ├── shared/               # Codigo compartilhado (utils, memory)
 ├── skills/               # Skills custom (dashboard-creator, pdf, etc)
 ├── docs/                 # Global documentation and plans
