@@ -37,21 +37,21 @@ WORKDIR /app
 COPY --from=builder /root/.local /home/apiuser/.local
 
 # Copy API application code
-COPY docker/services/stj-api/api/ /app/api/
+COPY --chown=apiuser:apiuser docker/services/stj-api/api/ /app/api/
 
 # Copy shared logging/middleware module
-COPY shared/ /app/shared/
+COPY --chown=apiuser:apiuser shared/ /app/shared/
 
 # Copy backend modules (needed for imports)
-COPY ferramentas/stj-dados-abertos/src /app/backend/src
-COPY ferramentas/stj-dados-abertos/config.py /app/backend/
+COPY --chown=apiuser:apiuser ferramentas/stj-dados-abertos/src /app/backend/src
+COPY --chown=apiuser:apiuser ferramentas/stj-dados-abertos/config.py /app/backend/
 
 # Create data directories with proper permissions
 # config.py uses Path(__file__).parent / "data" = /app/backend/data
 RUN mkdir -p /app/backend/data/database /app/backend/data/database/backups \
              /app/backend/data/logs /app/backend/data/staging \
              /app/backend/data/archive /app/backend/data/metadata \
-    && chown -R apiuser:apiuser /app/backend/data
+    && chown -R apiuser:apiuser /app /app/backend/data
 
 # Set environment variables
 ENV PATH=/home/apiuser/.local/bin:$PATH \
