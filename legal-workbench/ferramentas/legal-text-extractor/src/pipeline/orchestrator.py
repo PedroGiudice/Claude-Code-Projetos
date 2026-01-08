@@ -431,19 +431,27 @@ class PipelineOrchestrator:
         # Compute signature
         signature = self._compute_page_signature(page_data)
 
+        # Infer pattern type for this page
+        page_input = PageSignatureInput.from_layout_page(page_data)
+        pattern_type, _ = infer_pattern_type(page_input)
+
         # Query ContextStore for hints (if enabled)
+        # Uses new get_engine_hint_for_signature which searches globally
         hint = None
-        if self.context_store and self.caso:
-            hint = self.context_store.find_similar_pattern(
-                caso_id=self.caso.id,
+        if self.context_store:
+            # Use the enhanced global search method
+            hint = self.context_store.get_engine_hint_for_signature(
                 signature_vector=signature.features,
+                pattern_type=pattern_type,
+                caso_id=self.caso.id if self.caso else None,
             )
 
             if hint:
                 logger.debug(
                     f"Found hint for page {page_num}: "
                     f"similarity={hint.similarity:.3f}, "
-                    f"engine={hint.suggested_engine.value if hint.suggested_engine else 'none'}"
+                    f"engine={hint.suggested_engine.value if hint.suggested_engine else 'none'}, "
+                    f"source={'case-specific' if hint.pattern_id > 0 else 'global'}"
                 )
 
         # Select engine (considering hint)
@@ -496,6 +504,12 @@ class PipelineOrchestrator:
         """
         Select best engine for a page.
 
+        Selection priority:
+        1. ContextStore hint (if strong enough)
+        2. Layout analysis recommendation
+        3. Historical best engine for pattern type (via ContextStore)
+        4. Complexity-based fallback
+
         Args:
             page_data: Page data from layout analysis
             hint: Pattern hint from ContextStore (optional)
@@ -503,21 +517,37 @@ class PipelineOrchestrator:
         Returns:
             Engine name (e.g., 'pdfplumber', 'tesseract')
         """
-        # If hint is strong and suggests an engine, use it
+        # 1. If hint is strong and suggests an engine, use it
         if hint and hint.should_use and hint.suggested_engine:
-            logger.debug(f"Using hint engine: {hint.suggested_engine.value}")
+            logger.debug(
+                f"Using hint engine: {hint.suggested_engine.value} "
+                f"(confidence={hint.confidence:.2f}, similarity={hint.similarity:.2f})"
+            )
             return hint.suggested_engine.value
 
-        # Otherwise, use recommended engine from layout analysis
+        # 2. Use recommended engine from layout analysis
         recommended = page_data.get("recommended_engine")
         if recommended:
-            logger.debug(f"Using recommended engine: {recommended}")
+            logger.debug(f"Using layout-recommended engine: {recommended}")
             return recommended
 
-        # Fallback: Use complexity mapping
+        # 3. Try pattern type-based recommendation from ContextStore
+        if self.context_store:
+            page_input = PageSignatureInput.from_layout_page(page_data)
+            pattern_type, _ = infer_pattern_type(page_input)
+
+            best_engine = self.context_store.get_best_engine_for_pattern_type(pattern_type)
+            if best_engine:
+                logger.debug(
+                    f"Using historical best engine for {pattern_type.value}: "
+                    f"{best_engine.value}"
+                )
+                return best_engine.value
+
+        # 4. Fallback: Use complexity mapping
         complexity = page_data.get("complexity", PageComplexity.NATIVE_CLEAN)
         engine = COMPLEXITY_ENGINE_MAP.get(complexity, "pdfplumber")
-        logger.debug(f"Using fallback engine: {engine}")
+        logger.debug(f"Using complexity-based fallback engine: {engine}")
         return engine
 
     def _extract_page_text(

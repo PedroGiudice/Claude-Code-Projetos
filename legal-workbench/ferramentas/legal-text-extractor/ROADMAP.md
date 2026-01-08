@@ -206,10 +206,19 @@ python -m src.steps.step_04_classify -i outputs/doc/final.md -m gemini-2.5-pro
 - [ ] Benchmarks de performance
 - [ ] Testes end-to-end com documentos reais
 
-### Fase 3.4: Refinamentos do ImageCleaner
-- [ ] Adicionar suporte a documentos com múltiplas colunas
+### Fase 3.4: Refinamentos do ImageCleaner - EM PROGRESSO
+- [x] Adicionar suporte a documentos com múltiplas colunas
 - [ ] Otimizar detecção de carimbos coloridos (azul, vermelho, verde)
 - [ ] Melhorar threshold adaptativo para scans muito escuros
+
+**Implementado em 2026-01-07 - Detecção Multi-Colunas:**
+- `ColumnLayoutDetector` com algoritmo de Vertical Projection Profile
+- `LayoutMetadata` para armazenar resultados da detecção
+- `ImageCleaner.process_image_with_layout()` para processamento integrado
+- `ImageCleaner.detect_layout()` para detecção standalone
+- Funções de conveniência: `detect_columns()`, `get_column_detector()`
+- 33 testes unitários (100% passing)
+- Performance: <100ms por imagem de tamanho típico
 
 ### Fase 3.5: Integração End-to-End
 - [ ] CLI unificada para pipeline completo
@@ -265,4 +274,4 @@ python -m src.steps.step_04_classify -i outputs/doc/final.md -m gemini-2.5-pro
 
 ---
 
-*Última atualização: 2025-12-10*
+*Ultima atualizacao: 2026-01-07*

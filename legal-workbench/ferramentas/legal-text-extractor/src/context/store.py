@@ -458,3 +458,178 @@ class ContextStore:
                 (caso_id, deprecated)
             )
             return cursor.fetchone()[0]
+
+    def get_engine_hint_for_signature(
+        self,
+        signature_vector: List[float],
+        pattern_type: Optional[PatternType] = None,
+        caso_id: Optional[int] = None,
+        min_occurrences: int = 2,
+    ) -> Optional[PatternHint]:
+        """
+        Busca hint de engine baseado em padrões similares GLOBAIS.
+
+        Diferente de find_similar_pattern que busca apenas no caso específico,
+        este método busca em TODOS os casos para sugerir o melhor engine
+        baseado no histórico de sucesso.
+
+        Estratégia:
+        1. Se caso_id fornecido, primeiro tenta padrão do mesmo caso (preferência)
+        2. Se não encontrar, busca padrões similares em todos os casos
+        3. Retorna o engine com melhor avg_confidence para assinaturas similares
+
+        Args:
+            signature_vector: Vetor de assinatura da página
+            pattern_type: Tipo de padrão (opcional, filtra busca)
+            caso_id: ID do caso (opcional, prioriza padrões do mesmo caso)
+            min_occurrences: Mínimo de ocorrências para considerar confiável
+
+        Returns:
+            PatternHint se encontrado, None caso contrário
+        """
+        # 1. Primeiro, tenta no mesmo caso (se fornecido)
+        if caso_id is not None:
+            hint = self.find_similar_pattern(
+                caso_id=caso_id,
+                signature_vector=signature_vector,
+                pattern_type=pattern_type,
+            )
+            if hint and hint.should_use:
+                logger.debug(f"Using case-specific hint: engine={hint.suggested_engine}")
+                return hint
+
+        # 2. Busca global em todos os casos
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+
+            # Query padrões não-deprecados com ocorrências suficientes
+            query = """
+                SELECT
+                    id, pattern_type, signature_vector, suggested_bbox,
+                    suggested_engine, avg_confidence, created_by_engine,
+                    occurrence_count, caso_id
+                FROM observed_patterns
+                WHERE deprecated = FALSE
+                AND occurrence_count >= ?
+            """
+            params: List = [min_occurrences]
+
+            # Filtra por tipo se especificado
+            if pattern_type:
+                query += " AND pattern_type = ?"
+                params.append(pattern_type.value)
+
+            # Ordena por confiança média (melhores primeiro)
+            query += " ORDER BY avg_confidence DESC, occurrence_count DESC"
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            if not rows:
+                logger.debug("No global patterns found for engine hint")
+                return None
+
+            # Calcula similaridade e agrupa por engine
+            engine_scores: dict[EngineType, List[Tuple[float, float, int]]] = {}
+
+            for row in rows:
+                stored_vector = json.loads(row[2])
+                similarity = self._cosine_similarity(signature_vector, stored_vector)
+
+                if similarity >= self.SIMILARITY_THRESHOLD:
+                    engine = EngineType(row[6])  # created_by_engine
+                    avg_conf = row[5] or 0.8
+                    occurrences = row[7]
+
+                    if engine not in engine_scores:
+                        engine_scores[engine] = []
+                    engine_scores[engine].append((similarity, avg_conf, occurrences))
+
+            if not engine_scores:
+                logger.debug("No similar patterns found globally")
+                return None
+
+            # Calcula score ponderado por engine
+            # Score = avg(similarity * confidence * log(occurrences))
+            best_engine = None
+            best_score = 0.0
+            best_data = None
+
+            for engine, scores in engine_scores.items():
+                total_score = 0.0
+                total_weight = 0.0
+                for sim, conf, occ in scores:
+                    weight = 1.0 + (occ / 10.0)  # Peso baseado em ocorrências
+                    total_score += sim * conf * weight
+                    total_weight += weight
+
+                avg_score = total_score / total_weight if total_weight > 0 else 0
+                if avg_score > best_score:
+                    best_score = avg_score
+                    best_engine = engine
+                    # Pega dados do melhor match individual
+                    best_match = max(scores, key=lambda x: x[0] * x[1])
+                    best_data = best_match
+
+            if best_engine is None or best_data is None:
+                return None
+
+            similarity, confidence, _ = best_data
+            hint = PatternHint(
+                pattern_id=0,  # Global hint, não tem pattern_id específico
+                similarity=similarity,
+                suggested_bbox=None,  # Global hint não sugere bbox
+                suggested_engine=best_engine,
+                confidence=confidence,
+                created_by_engine=best_engine,
+                pattern_type=pattern_type or PatternType.UNKNOWN,
+                occurrence_count=sum(occ for _, _, occ in engine_scores[best_engine]),
+                avg_confidence=confidence,
+            )
+
+            logger.info(
+                f"Global engine hint: {best_engine.value} "
+                f"(score={best_score:.3f}, similarity={similarity:.3f})"
+            )
+
+            return hint
+
+    def get_best_engine_for_pattern_type(
+        self,
+        pattern_type: PatternType,
+    ) -> Optional[EngineType]:
+        """
+        Retorna o melhor engine para um tipo de padrão baseado em estatísticas globais.
+
+        Usa a view engine_performance_by_type para determinar qual engine
+        tem melhor desempenho histórico para o tipo de padrão especificado.
+
+        Args:
+            pattern_type: Tipo de padrão (HEADER, TABLE, TEXT_BLOCK, etc)
+
+        Returns:
+            EngineType com melhor performance, ou None se sem dados
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT engine, avg_confidence, total_occurrences
+                FROM engine_performance_by_type
+                WHERE pattern_type = ?
+                ORDER BY avg_confidence DESC, total_occurrences DESC
+                LIMIT 1
+                """,
+                (pattern_type.value,)
+            )
+            row = cursor.fetchone()
+
+            if row:
+                engine = EngineType(row[0])
+                logger.debug(
+                    f"Best engine for {pattern_type.value}: {engine.value} "
+                    f"(avg_confidence={row[1]:.3f}, occurrences={row[2]})"
+                )
+                return engine
+
+            return None

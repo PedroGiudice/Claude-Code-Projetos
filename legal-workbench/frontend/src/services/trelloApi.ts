@@ -101,7 +101,7 @@ export const DEFAULT_SELECTED_FIELDS = new Set<CardFieldKey>(
   CARD_FIELDS.filter(f => f.default).map(f => f.key)
 );
 
-const API_BASE_URL = 'http://localhost/api/trello/api/v1';
+const API_BASE_URL = import.meta.env.VITE_TRELLO_API_URL || '/api/trello/api/v1';
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

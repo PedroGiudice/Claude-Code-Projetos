@@ -429,5 +429,205 @@ class TestContextStoreLegacyCompat:
         assert should_update is True  # Marker pode sobrescrever Tesseract
 
 
+class TestGlobalEngineHints:
+    """Tests for global engine hint functionality."""
+
+    @pytest.fixture
+    def store(self):
+        """Fixture que cria ContextStore temporario."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test_context.db"
+            yield ContextStore(db_path)
+
+    def test_get_engine_hint_empty_db(self, store):
+        """Hint retorna None em banco vazio."""
+        hint = store.get_engine_hint_for_signature(
+            signature_vector=[0.1, 0.2, 0.3, 0.4, 0.5],
+            pattern_type=PatternType.HEADER,
+        )
+        assert hint is None
+
+    def test_get_engine_hint_prefers_case_specific(self, store):
+        """Hint de caso especifico tem prioridade sobre global."""
+        # Cria caso 1 com padrao MARKER
+        caso1 = store.get_or_create_caso("caso1", "pje")
+        sig1 = SignatureVector(features=[0.5, 0.5, 0.5, 0.5, 0.5], hash="abc1")
+        result1 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.MARKER,
+            confidence=0.95,
+            text_length=1000,
+            pattern_type=PatternType.HEADER,
+        )
+        store.learn_from_page(caso1.id, sig1, result1)
+
+        # Cria caso 2 com padrao TESSERACT (pior)
+        caso2 = store.get_or_create_caso("caso2", "pje")
+        sig2 = SignatureVector(features=[0.51, 0.49, 0.5, 0.5, 0.5], hash="abc2")
+        result2 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.TESSERACT,
+            confidence=0.7,
+            text_length=900,
+            pattern_type=PatternType.HEADER,
+        )
+        store.learn_from_page(caso2.id, sig2, result2)
+
+        # Busca com caso1 - deve encontrar hint do proprio caso
+        hint = store.get_engine_hint_for_signature(
+            signature_vector=[0.5, 0.5, 0.5, 0.5, 0.5],
+            pattern_type=PatternType.HEADER,
+            caso_id=caso1.id,
+        )
+
+        assert hint is not None
+        assert hint.suggested_engine == EngineType.MARKER
+        # pattern_id > 0 indica hint especifico do caso
+        assert hint.pattern_id > 0
+
+    def test_get_engine_hint_global_search(self, store):
+        """Busca global encontra padrao de outro caso."""
+        # Cria padrao em caso1
+        caso1 = store.get_or_create_caso("caso1", "pje")
+        sig1 = SignatureVector(features=[0.5, 0.5, 0.5, 0.5, 0.5], hash="abc1")
+        result1 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.MARKER,
+            confidence=0.95,
+            text_length=1000,
+            pattern_type=PatternType.HEADER,
+        )
+        store.learn_from_page(caso1.id, sig1, result1)
+
+        # Incrementa occurrence_count para passar threshold
+        import sqlite3
+        with sqlite3.connect(store.db_path) as conn:
+            conn.execute("UPDATE observed_patterns SET occurrence_count = 3")
+            conn.commit()
+
+        # Busca SEM caso_id - deve encontrar padrao global
+        hint = store.get_engine_hint_for_signature(
+            signature_vector=[0.51, 0.49, 0.5, 0.5, 0.5],
+            pattern_type=PatternType.HEADER,
+            caso_id=None,  # Sem caso especifico
+            min_occurrences=2,
+        )
+
+        assert hint is not None
+        assert hint.suggested_engine == EngineType.MARKER
+        # pattern_id == 0 indica hint global
+        assert hint.pattern_id == 0
+
+    def test_get_engine_hint_best_engine_wins(self, store):
+        """Engine com melhor performance historica vence."""
+        caso = store.get_or_create_caso("caso1", "pje")
+
+        # Cria multiplos padroes similares com engines diferentes
+        # MARKER com alta confianca
+        sig1 = SignatureVector(features=[0.5, 0.5, 0.5, 0.5, 0.5], hash="abc1")
+        result1 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.MARKER,
+            confidence=0.95,
+            text_length=1000,
+            pattern_type=PatternType.TABLE,
+        )
+        store.learn_from_page(caso.id, sig1, result1)
+
+        # TESSERACT com baixa confianca
+        sig2 = SignatureVector(features=[0.52, 0.48, 0.5, 0.5, 0.5], hash="abc2")
+        result2 = ObservationResult(
+            page_num=2,
+            engine_used=EngineType.TESSERACT,
+            confidence=0.6,
+            text_length=800,
+            pattern_type=PatternType.TABLE,
+        )
+        store.learn_from_page(caso.id, sig2, result2)
+
+        # Atualiza occurrence_count
+        import sqlite3
+        with sqlite3.connect(store.db_path) as conn:
+            conn.execute("UPDATE observed_patterns SET occurrence_count = 5")
+            conn.commit()
+
+        # Busca global - MARKER deve vencer por ter melhor confianca
+        hint = store.get_engine_hint_for_signature(
+            signature_vector=[0.5, 0.5, 0.5, 0.5, 0.5],
+            pattern_type=PatternType.TABLE,
+            caso_id=None,
+            min_occurrences=2,
+        )
+
+        assert hint is not None
+        assert hint.suggested_engine == EngineType.MARKER
+
+    def test_get_best_engine_for_pattern_type(self, store):
+        """Retorna melhor engine para tipo de padrao."""
+        caso = store.get_or_create_caso("caso1", "pje")
+
+        # Cria padroes TABLE com MARKER (alta confianca)
+        sig1 = SignatureVector(features=[0.5, 0.5], hash="table1")
+        result1 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.MARKER,
+            confidence=0.95,
+            text_length=1000,
+            pattern_type=PatternType.TABLE,
+        )
+        store.learn_from_page(caso.id, sig1, result1)
+
+        # Cria padroes HEADER com PDFPLUMBER (alta confianca)
+        sig2 = SignatureVector(features=[0.3, 0.7], hash="header1")
+        result2 = ObservationResult(
+            page_num=2,
+            engine_used=EngineType.PDFPLUMBER,
+            confidence=0.92,
+            text_length=200,
+            pattern_type=PatternType.HEADER,
+        )
+        store.learn_from_page(caso.id, sig2, result2)
+
+        # Consulta melhores engines
+        best_table = store.get_best_engine_for_pattern_type(PatternType.TABLE)
+        best_header = store.get_best_engine_for_pattern_type(PatternType.HEADER)
+
+        assert best_table == EngineType.MARKER
+        assert best_header == EngineType.PDFPLUMBER
+
+    def test_get_best_engine_no_data(self, store):
+        """Retorna None quando nao ha dados."""
+        best = store.get_best_engine_for_pattern_type(PatternType.SIGNATURE)
+        assert best is None
+
+    def test_get_engine_hint_respects_min_occurrences(self, store):
+        """Hint so considera padroes com ocorrencias suficientes."""
+        caso = store.get_or_create_caso("caso1", "pje")
+
+        # Cria padrao com apenas 1 ocorrencia
+        sig1 = SignatureVector(features=[0.5, 0.5, 0.5, 0.5, 0.5], hash="abc1")
+        result1 = ObservationResult(
+            page_num=1,
+            engine_used=EngineType.MARKER,
+            confidence=0.95,
+            text_length=1000,
+            pattern_type=PatternType.HEADER,
+        )
+        store.learn_from_page(caso.id, sig1, result1)
+
+        # Busca com min_occurrences=5 - nao deve encontrar
+        hint = store.get_engine_hint_for_signature(
+            signature_vector=[0.5, 0.5, 0.5, 0.5, 0.5],
+            pattern_type=PatternType.HEADER,
+            caso_id=None,  # Forca busca global
+            min_occurrences=5,
+        )
+
+        # Nao deve encontrar pois occurrence_count = 1 < 5
+        # (exceto se encontrar no caso especifico, que ignora min_occurrences)
+        # Como caso_id=None, a busca e puramente global
+        assert hint is None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

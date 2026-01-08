@@ -2,12 +2,13 @@
 Context Store - Sistema de aprendizado de padrões
 
 Aprende padrões visuais/estruturais ao processar documentos e sugere
-otimizações para processamento futuro.
+otimizacoes para processamento futuro.
 
-Princípios:
-1. Similaridade, não identidade - Sugere, não determina
-2. Engine-aware - Engine inferior não sobrescreve superior
+Principios:
+1. Similaridade, nao identidade - Sugere, nao determina
+2. Engine-aware - Engine inferior nao sobrescreve superior
 3. Feedback loop - Aprende com acertos e erros
+4. Global learning - Aprende entre casos diferentes (v2.0)
 
 Usage:
     from src.context import ContextStore, PatternHint, ObservationResult
@@ -18,18 +19,18 @@ Usage:
     # Cria/recupera caso
     caso = store.get_or_create_caso(numero_cnj="...", sistema="pje")
 
-    # Busca padrão similar antes de processar
-    hint = store.find_similar_pattern(
-        caso_id=caso.id,
+    # Busca hint de engine (GLOBAL - busca em todos os casos)
+    hint = store.get_engine_hint_for_signature(
         signature_vector=[0.1, 0.2, ...],
-        pattern_type=PatternType.HEADER
+        pattern_type=PatternType.HEADER,
+        caso_id=caso.id  # Opcional, prioriza caso especifico
     )
 
-    # Usa hint (se disponível)
+    # Usa hint (se disponivel)
     if hint and hint.should_use:
         engine = hint.suggested_engine
         bbox = hint.suggested_bbox
-        # ... processa com sugestões
+        # ... processa com sugestoes
 
     # Aprende com resultado
     store.learn_from_page(
@@ -38,6 +39,9 @@ Usage:
         result=ObservationResult(...),
         hint=hint  # Opcional
     )
+
+    # Consulta melhor engine para tipo de padrao (baseado em historico)
+    best_engine = store.get_best_engine_for_pattern_type(PatternType.TABLE)
 """
 
 from .models import (
