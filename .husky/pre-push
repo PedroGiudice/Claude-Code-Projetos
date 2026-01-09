@@ -1,0 +1,20 @@
+#!/bin/sh
+# Pre-push hook - Block direct push to main/master
+
+BRANCH=$(git branch --show-current)
+
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+    echo ""
+    echo "BLOQUEADO: Push direto da branch '$BRANCH' nao eh permitido."
+    echo ""
+    echo "O que fazer:"
+    echo "  1. Crie uma branch: git checkout -b work/sua-feature"
+    echo "  2. Push para sua branch: git push -u origin work/sua-feature"
+    echo "  3. Crie um PR ou merge localmente"
+    echo ""
+    echo "Para bypass (emergencia): git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+exit 0
