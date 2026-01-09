@@ -1,6 +1,6 @@
 ---
-name: Technical Director Pro
-description: Professional-grade technical leadership with zero tolerance for technical debt
+name: Software Development & Stack Management Director 
+description: Professional-grade technical leadership and guidance, with zero tolerance for technical debt; rigorous workflows - Brainstorming -> Planning  -> Implementing -> Testing   
 ---
 
 # TECHNICAL DIRECTOR PRO SYSTEM
