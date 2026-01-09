@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+const fs=require("fs"),path=require("path");
+const P=process.env.CLAUDE_PROJECT_DIR||process.cwd();
+const C=path.join(P,".claude");
+const D=process.env.HOOKIFY_DEBUG==="1";
+const d=(...a)=>{if(D)console.error("[hookify]",...a)};
+const pf=c=>{const m=c.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);if(!m)return null;const[,y,b]=m;const o={};y.split("\n").forEach(l=>{const i=l.indexOf(":");if(i===-1)return;const k=l.slice(0,i).trim();let v=l.slice(i+1).trim();if(v==="true")v=true;else if(v==="false")v=false;o[k]=v});return{config:o,message:b.trim()}};
+const lr=()=>{const r=[];try{const f=fs.readdirSync(C).filter(x=>x.startsWith("hookify.")&&x.endsWith(".md"));d("Found:",f);for(const file of f){try{const c=fs.readFileSync(path.join(C,file),"utf8");const p=pf(c);if(!p){d("Skip "+file+": no fm");continue}const{config:cfg,message:msg}=p;if(!cfg.name||!cfg.pattern||!cfg.action){d("Skip "+file+": missing");continue}if(cfg.enabled===false){d("Skip "+file+": disabled");continue}r.push({name:cfg.name,pattern:cfg.pattern,action:cfg.action,event:cfg.event||"file",message:msg,file:file});d("Loaded:",cfg.name)}catch(e){d("Err "+file+":",e.message)}}}catch(e){d("Err dir:",e.message)}return r};
+const mp=(fp,pt)=>{try{return new RegExp(pt).test(fp)}catch(e){d("Bad regex:",pt);return false}};
+(async()=>{let i="";try{i=fs.readFileSync(0,"utf8")}catch(e){d("No stdin");process.exit(0)}if(!i.trim()){d("Empty");process.exit(0)}let h;try{h=JSON.parse(i)}catch(e){d("Bad JSON");process.exit(0)}d("Data:",JSON.stringify(h));const t=h.tool_input||{};const fp=t.file_path||t.path||"";if(!fp){d("No path");process.exit(0)}d("Check:",fp);const rules=lr();if(!rules.length){d("No rules");process.exit(0)}for(const r of rules){if(r.event!=="file")continue;if(mp(fp,r.pattern)){d("MATCH:",r.name);if(r.action==="block"){console.log(r.message);process.exit(2)}}}d("No match");process.exit(0)})().catch(e=>{d("Err:",e.message);process.exit(0)});
