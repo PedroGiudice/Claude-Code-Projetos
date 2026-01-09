@@ -55,6 +55,20 @@ cd legal-workbench/backend && uv sync && uv run uvicorn app.main:app --reload
 | `ARCHITECTURE.md` | North Star (principios inviolaveis) |
 | `legal-workbench/CLAUDE.md` | Regras especificas do LW |
 
+## Task Execution Patterns
+
+- **Swarm**: Medium-complex tasks with parallel subagents
+- **Breakdown**: Decompose large tasks into atomic units before execution
+
+## Git
+
+**OBRIGATORIO:**
+
+1. **Branch para alteracoes significativas** — >3 arquivos OU mudanca estrutural = criar branch
+2. **Pull antes de trabalhar** — `git pull origin main`
+3. **Commit ao finalizar** — Nunca deixar trabalho nao commitado
+4. **Deletar branch apos merge** — Local e remota
+
 ## Experimental Projects
 
 Projetos experimentais foram migrados para [claude-experiments](https://github.com/PedroGiudice/claude-experiments).
