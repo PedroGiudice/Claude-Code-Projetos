@@ -42,6 +42,27 @@ mgrep "pattern" src/      # busca em diretorio especifico
 
 ---
 
+## Erros Aprendidos
+
+**INSTRUÇÃO PARA CLAUDE:** Adicione uma entrada aqui quando:
+- O usuário corrigir um erro seu
+- Você cometer erro grosseiro (syntax error, import errado)
+- Um erro acontecer mais de uma vez
+- Erro "fatal" (mudança em um layer quebra outro — ex: backend quebra frontend)
+
+Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce organicamente.
+
+| Data | Erro | Regra |
+|------|------|-------|
+| — | *Nenhum erro registrado ainda* | — |
+
+<!--
+Formato para adicionar:
+| YYYY-MM-DD | Descrição breve do erro | O que evitar/fazer diferente |
+-->
+
+---
+
 ## Estrutura
 
 ```
