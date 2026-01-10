@@ -6,7 +6,7 @@
 # If not, outputs a warning message to systemMessage.
 ##
 
-SECRETS_FILE="$HOME/.secrets/claude-code-projetos.env"
+SECRETS_FILE="$HOME/.secrets/lex-vector.env"
 OUTPUT='{"continue": true}'
 
 # Check if secrets file exists
@@ -16,7 +16,7 @@ if [ ! -f "$SECRETS_FILE" ]; then
     if [ -f "$SETUP_SCRIPT" ]; then
         echo '{"continue": true, "systemMessage": "⚠️ Secrets não configuradas. Execute: .claude/scripts/setup-secrets.sh"}'
     else
-        echo '{"continue": true, "systemMessage": "⚠️ ~/.secrets/claude-code-projetos.env não encontrado"}'
+        echo '{"continue": true, "systemMessage": "⚠️ ~/.secrets/lex-vector.env não encontrado"}'
     fi
     exit 0
 fi
@@ -25,7 +25,7 @@ fi
 source "$SECRETS_FILE" 2>/dev/null
 
 if [ -z "$GOOGLE_API_KEY" ]; then
-    echo '{"continue": true, "systemMessage": "⚠️ GOOGLE_API_KEY não configurada em ~/.secrets/claude-code-projetos.env"}'
+    echo '{"continue": true, "systemMessage": "⚠️ GOOGLE_API_KEY não configurada em ~/.secrets/lex-vector.env"}'
     exit 0
 fi
 

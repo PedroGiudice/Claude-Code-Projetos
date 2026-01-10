@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "source ~/.secrets/claude-code-projetos.env 2>/dev/null; \"$CLAUDE_PROJECT_DIR/.venv/bin/python\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-memory-summary.py\" 2>/dev/null || true"
+            "command": "source ~/.secrets/lex-vector.env 2>/dev/null; \"$CLAUDE_PROJECT_DIR/.venv/bin/python\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-memory-summary.py\" 2>/dev/null || true"
           }
         ]
       },
@@ -93,7 +93,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "(source ~/.secrets/claude-code-projetos.env 2>/dev/null; \"$CLAUDE_PROJECT_DIR/.venv/bin/python\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-memory-capture.py\" 2>/dev/null || true) &"
+            "command": "(source ~/.secrets/lex-vector.env 2>/dev/null; \"$CLAUDE_PROJECT_DIR/.venv/bin/python\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-memory-capture.py\" 2>/dev/null || true) &"
           }
         ]
       }

@@ -15,14 +15,14 @@ import re
 def get_safe_project_dir():
     """
     Get project directory with path traversal protection.
-    Only allows directories within Claude-Code-Projetos.
+    Only allows directories within lex-vector.
     """
     project_dir = Path(os.getenv('CLAUDE_PROJECT_DIR', os.getcwd())).resolve()
 
     # Define allowed root directories
     allowed_roots = [
-        Path.home() / "claude-work" / "repos" / "Claude-Code-Projetos",  # WSL2 structure
-        Path.home() / "Claude-Code-Projetos",  # Legacy structure
+        Path.home() / "claude-work" / "repos" / "lex-vector",  # WSL2 structure
+        Path.home() / "lex-vector",  # Legacy structure
     ]
 
     # Check if project_dir is within allowed roots

@@ -3,7 +3,7 @@
 # Legal Workbench - Oracle Cloud Bootstrap Script
 # =============================================================================
 # Execute apos criar a VM Oracle Cloud A1.Flex:
-#   curl -fsSL https://raw.githubusercontent.com/PedroGiudice/Claude-Code-Projetos/main/legal-workbench/scripts/bootstrap-oracle.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/PedroGiudice/lex-vector/main/legal-workbench/scripts/bootstrap-oracle.sh | bash
 # =============================================================================
 
 set -e  # Exit on error
@@ -101,14 +101,14 @@ fi
 # =============================================================================
 log_info "Clonando repositorio..."
 
-REPO_DIR="$HOME/Claude-Code-Projetos"
+REPO_DIR="$HOME/lex-vector"
 if [ -d "$REPO_DIR" ]; then
     log_info "Repositorio ja existe. Atualizando..."
     cd "$REPO_DIR"
     git pull origin main
 else
     cd "$HOME"
-    git clone https://github.com/PedroGiudice/Claude-Code-Projetos.git
+    git clone https://github.com/PedroGiudice/lex-vector.git
     cd "$REPO_DIR"
 fi
 
