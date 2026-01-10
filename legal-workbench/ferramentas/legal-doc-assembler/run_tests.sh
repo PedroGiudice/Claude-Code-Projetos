@@ -1,4 +1,4 @@
 #!/bin/bash
-cd /home/cmr-auto/claude-work/repos/Claude-Code-Projetos/legal-workbench/ferramentas/legal-doc-assembler
+cd /home/cmr-auto/claude-work/repos/lex-vector/legal-workbench/ferramentas/legal-doc-assembler
 export PYTHONPATH=.
-/home/cmr-auto/claude-work/repos/Claude-Code-Projetos/.venv/bin/pytest tests/ -v
+/home/cmr-auto/claude-work/repos/lex-vector/.venv/bin/pytest tests/ -v

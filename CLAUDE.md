@@ -21,10 +21,12 @@ cd legal-workbench/frontend && bun install && bun run dev
 ### 2. Nunca Commitar
 - `.venv/`, `__pycache__/`, `*.pdf`, `*.log`, `node_modules/`
 
-### 3. Bun OBRIGATORIO (nunca npm/yarn)
+### 3. Bun OBRIGATORIO (nunca npm/yarn/node)
 ```bash
 bun install && bun run dev && bun run build
 ```
+
+**Para scripts JS:** Sempre `bun run script.js`, nunca `node script.js`
 
 ### 4. mgrep em vez de grep
 ```bash

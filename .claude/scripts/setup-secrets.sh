@@ -9,7 +9,7 @@
 ##
 
 SECRETS_DIR="$HOME/.secrets"
-SECRETS_FILE="$SECRETS_DIR/claude-code-projetos.env"
+SECRETS_FILE="$SECRETS_DIR/lex-vector.env"
 
 # Cores
 RED='\033[0;31m'
@@ -34,7 +34,7 @@ if [ ! -f "$SECRETS_FILE" ]; then
     cat > "$SECRETS_FILE" << 'TEMPLATE'
 # Claude Code Projetos - Secrets
 # Este arquivo NÃO deve ser commitado no git
-# Localização: ~/.secrets/claude-code-projetos.env
+# Localização: ~/.secrets/lex-vector.env
 
 # Google API Key (para Gemini - Context Memory System)
 # Obter em: https://aistudio.google.com/app/apikey
@@ -49,7 +49,7 @@ TEMPLATE
     echo -e "${RED}╔═══════════════════════════════════════════════════╗${NC}"
     echo -e "${RED}║  AÇÃO NECESSÁRIA: Configure suas chaves!          ║${NC}"
     echo -e "${RED}╠═══════════════════════════════════════════════════╣${NC}"
-    echo -e "${RED}║  Edite: ~/.secrets/claude-code-projetos.env       ║${NC}"
+    echo -e "${RED}║  Edite: ~/.secrets/lex-vector.env       ║${NC}"
     echo -e "${RED}║  E adicione suas API keys                         ║${NC}"
     echo -e "${RED}╚═══════════════════════════════════════════════════╝${NC}"
     exit 1
@@ -75,7 +75,7 @@ fi
 
 if [ $MISSING -eq 1 ]; then
     echo -e "\n${RED}Algumas chaves obrigatórias não estão configuradas.${NC}"
-    echo -e "${YELLOW}Edite: ~/.secrets/claude-code-projetos.env${NC}"
+    echo -e "${YELLOW}Edite: ~/.secrets/lex-vector.env${NC}"
     exit 1
 fi
 
@@ -85,14 +85,14 @@ export TRELLO_API_KEY
 export TRELLO_API_TOKEN
 
 # Adicionar ao .bashrc se não estiver lá
-if ! grep -q "claude-code-projetos.env" "$HOME/.bashrc" 2>/dev/null; then
+if ! grep -q "lex-vector.env" "$HOME/.bashrc" 2>/dev/null; then
     echo -e "\n${YELLOW}Adicionando source ao .bashrc...${NC}"
     cat >> "$HOME/.bashrc" << 'BASHRC'
 
 # Claude Code Projetos - Auto-load secrets
-if [ -f ~/.secrets/claude-code-projetos.env ]; then
+if [ -f ~/.secrets/lex-vector.env ]; then
     set -a
-    source ~/.secrets/claude-code-projetos.env
+    source ~/.secrets/lex-vector.env
     set +a
 fi
 BASHRC
