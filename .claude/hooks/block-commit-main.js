@@ -51,12 +51,12 @@ async function main() {
     input = fs.readFileSync(0, 'utf8');
   } catch (e) {
     debug('Sem stdin');
-    // Sem input = não bloquear (deixar passar para próximo hook)
-    process.exit(0);
+    // Sem input = não interferir
+    return;
   }
 
   if (!input.trim()) {
-    process.exit(0);
+    return;
   }
 
   let data;
@@ -64,7 +64,7 @@ async function main() {
     data = JSON.parse(input);
   } catch (e) {
     debug('JSON inválido');
-    process.exit(0);
+    return;
   }
 
   const toolName = data.toolName || data.tool_name || data.tool || '';
@@ -76,12 +76,12 @@ async function main() {
 
   // Só verificar comandos Bash
   if (toolName !== 'Bash') {
-    process.exit(0);
+    return;
   }
 
   // Verificar se é git commit
   if (!isGitCommitCommand(command)) {
-    process.exit(0);
+    return;
   }
 
   debug('Detectado git commit, verificando branch...');
@@ -115,13 +115,11 @@ Aprove manualmente (não recomendado).
 
 > Hook: .claude/hooks/block-commit-main.js`
     }));
-    process.exit(0);
+    return;
   }
 
-  // Não está em main/master - pass to next hook
-  debug('Branch não é main/master, delegando decisão...');
-  // Não emitir nada = deixa o próximo hook (hookify-permission-engine) decidir
-  process.exit(0);
+  // Não está em main/master - não interferir (deixa próximo hook decidir)
+  debug('Branch não é main/master, não emitindo decisão');
 }
 
 main().catch(e => {

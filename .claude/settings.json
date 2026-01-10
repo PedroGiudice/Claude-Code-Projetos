@@ -104,11 +104,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node .claude/hooks/block-commit-main.js"
-          },
-          {
-            "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/hookify-permission-engine.js"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/permission-wrapper.js"
           }
         ]
       }
@@ -172,7 +168,7 @@
     "pr-review-toolkit@claude-plugins-official": true,
     "linear@claude-plugins-official": true,
     "greptile@claude-plugins-official": true,
-    "hookify@claude-plugins-official": true
+    "hookify@claude-plugins-official": false
   },
   "outputStyle": "Technical Director",
   "_comment": "Configuração SIMPLIFICADA - Legal-Braniac removido (2025-11-30)",
@@ -192,5 +188,5 @@
   "_deprecated_hooks_moved_to": ".claude/hooks/_deprecated/",
   "_migration_date": "2025-11-30",
   "_breaking_change": "Legal-Braniac removido. Hooks agora são independentes (validations, skills, tools injection).",
-  "_hookify": "2026-01-09: Usando plugin oficial hookify@claude-plugins-official. Fix: sed -i 's/from hookify.core./from core./g' (issue #13426). Engine local desativado."
+  "_hookify": "2026-01-10: Plugin hookify@claude-plugins-official DESATIVADO. Usando hooks customizados (block-commit-main.js + hookify-permission-engine.js) para melhor controle e debugabilidade."
 }
