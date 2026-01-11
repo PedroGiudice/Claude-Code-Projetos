@@ -13,6 +13,18 @@ import {
   Trash2,
   X,
   MessageSquare,
+  FileText,
+  FileEdit,
+  Terminal,
+  Search,
+  FolderSearch,
+  Globe,
+  Link,
+  ListTodo,
+  Zap,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from 'lucide-react';
 import { useWebSocket } from './contexts/WebSocketContext';
 import {
@@ -35,6 +47,19 @@ declare global {
   }
 }
 
+// Tool call state
+type ToolStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+// Tool call data stored in messages
+interface ToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  status: ToolStatus;
+  result?: string;
+  isError?: boolean;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -42,6 +67,7 @@ interface Message {
   isStreaming?: boolean;
   isError?: boolean;
   isSystem?: boolean;
+  toolCalls?: ToolCall[];
 }
 
 interface CodeBlockProps {
@@ -144,6 +170,182 @@ const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
               <span className="inline-block w-2.5 h-5 bg-[#d97757] ml-1 animate-pulse" />
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Tool icon mapping
+const getToolIcon = (toolName: string): React.ReactNode => {
+  const iconClass = 'w-4 h-4';
+  switch (toolName.toLowerCase()) {
+    case 'read':
+      return <FileText className={iconClass} />;
+    case 'write':
+    case 'edit':
+      return <FileEdit className={iconClass} />;
+    case 'bash':
+      return <Terminal className={iconClass} />;
+    case 'grep':
+      return <Search className={iconClass} />;
+    case 'glob':
+      return <FolderSearch className={iconClass} />;
+    case 'websearch':
+      return <Globe className={iconClass} />;
+    case 'webfetch':
+      return <Link className={iconClass} />;
+    case 'todowrite':
+      return <ListTodo className={iconClass} />;
+    case 'skill':
+      return <Zap className={iconClass} />;
+    default:
+      return <Terminal className={iconClass} />;
+  }
+};
+
+// Format tool input for display
+const formatToolInput = (toolName: string, input: Record<string, unknown>): string => {
+  switch (toolName.toLowerCase()) {
+    case 'read':
+      return (input.file_path as string) || '';
+    case 'write':
+    case 'edit':
+      return (input.file_path as string) || '';
+    case 'bash':
+      return (input.command as string) || '';
+    case 'grep':
+      return `"${input.pattern || ''}" in ${input.path || '.'}`;
+    case 'glob':
+      return `${input.pattern || ''} in ${input.path || '.'}`;
+    case 'websearch':
+      return (input.query as string) || '';
+    case 'webfetch':
+      return (input.url as string) || '';
+    default:
+      return JSON.stringify(input, null, 2);
+  }
+};
+
+// ToolCallBlock component
+interface ToolCallBlockProps {
+  toolCall: ToolCall;
+  isExpanded?: boolean;
+}
+
+const ToolCallBlock: React.FC<ToolCallBlockProps> = ({
+  toolCall,
+  isExpanded: defaultExpanded = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultExpanded);
+  const [showResult, setShowResult] = useState(false);
+
+  const statusIcon = () => {
+    switch (toolCall.status) {
+      case 'pending':
+        return <div className="w-4 h-4 rounded-full border-2 border-[#555]" />;
+      case 'running':
+        return <Loader2 className="w-4 h-4 text-[#d97757] animate-spin" />;
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const statusColor = () => {
+    switch (toolCall.status) {
+      case 'pending':
+        return 'text-[#888]';
+      case 'running':
+        return 'text-[#d97757]';
+      case 'completed':
+        return 'text-green-500';
+      case 'failed':
+        return 'text-red-500';
+      default:
+        return 'text-[#888]';
+    }
+  };
+
+  const displayInput = formatToolInput(toolCall.name, toolCall.input);
+  const hasResult = toolCall.result && toolCall.result.length > 0;
+
+  return (
+    <div className="mb-3 group border border-[#27272a] rounded-lg bg-[#080808] overflow-hidden">
+      {/* Header */}
+      <div
+        className="flex items-center gap-3 cursor-pointer select-none px-4 py-2.5 bg-[#111] hover:bg-[#151515] transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="w-5 h-5 flex items-center justify-center">
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-[#b5b5b5]" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-[#b5b5b5]" />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 text-[#d97757]">
+          {getToolIcon(toolCall.name)}
+          <span className="text-sm font-mono font-semibold">{toolCall.name}</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <span className="text-sm text-[#888] font-mono truncate block">
+            {displayInput.length > 60 ? displayInput.substring(0, 57) + '...' : displayInput}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {statusIcon()}
+          <span className={`text-xs font-mono ${statusColor()}`}>{toolCall.status}</span>
+        </div>
+      </div>
+
+      {/* Expanded Input Details */}
+      {isOpen && (
+        <div className="px-4 py-3 border-t border-[#1a1a1a]">
+          <div className="text-xs text-[#666] font-mono mb-1">Input:</div>
+          <pre className="text-sm text-[#c0c0c0] font-mono leading-relaxed whitespace-pre-wrap bg-[#050505] p-3 rounded border border-[#1a1a1a] overflow-x-auto custom-scrollbar">
+            {typeof toolCall.input === 'object'
+              ? JSON.stringify(toolCall.input, null, 2)
+              : String(toolCall.input)}
+          </pre>
+
+          {/* Result section (collapsible) */}
+          {hasResult && (
+            <div className="mt-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowResult(!showResult);
+                }}
+                className="flex items-center gap-2 text-xs text-[#888] font-mono hover:text-[#b5b5b5] transition-colors"
+              >
+                {showResult ? (
+                  <ChevronDown className="w-3 h-3" />
+                ) : (
+                  <ChevronRight className="w-3 h-3" />
+                )}
+                <span>Result ({toolCall.isError ? 'error' : 'success'})</span>
+              </button>
+
+              {showResult && (
+                <div
+                  className={`mt-2 p-3 rounded border ${toolCall.isError ? 'border-red-500/30 bg-red-500/5' : 'border-[#1a1a1a] bg-[#050505]'}`}
+                >
+                  <pre
+                    className={`text-sm font-mono leading-relaxed whitespace-pre-wrap overflow-x-auto custom-scrollbar ${toolCall.isError ? 'text-red-400' : 'text-[#c0c0c0]'}`}
+                  >
+                    {toolCall.result}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -322,11 +524,96 @@ export default function CCuiChatInterface() {
   useEffect(() => {
     if (!lastMessage) return;
 
-    const wsMessage = lastMessage as any;
+    const wsMessage = lastMessage as unknown as {
+      type: string;
+      data?: {
+        type: string;
+        id?: string;
+        name?: string;
+        input?: Record<string, unknown>;
+        tool_use_id?: string;
+        content?: string | Array<{ type: string; text?: string }>;
+        is_error?: boolean;
+        delta?: { text?: string };
+        message?: { content?: Array<{ type: string; text?: string }> };
+      };
+      error?: string;
+    };
 
     // Handle claude-response messages (streaming content)
     if (wsMessage.type === 'claude-response' && wsMessage.data) {
       const data = wsMessage.data;
+
+      // Handle tool_use - Claude is invoking a tool
+      if (data.type === 'tool_use' && data.id && data.name) {
+        const newToolCall: ToolCall = {
+          id: data.id,
+          name: data.name,
+          input: data.input || {},
+          status: 'running',
+        };
+
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1];
+          // Append to existing assistant message or create new one
+          if (lastMsg && lastMsg.role === 'assistant') {
+            const existingToolCalls = lastMsg.toolCalls || [];
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastMsg,
+                isStreaming: true,
+                toolCalls: [...existingToolCalls, newToolCall],
+              },
+            ];
+          } else {
+            return [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: '',
+                isStreaming: true,
+                toolCalls: [newToolCall],
+              },
+            ];
+          }
+        });
+        setIsTyping(true);
+      }
+
+      // Handle tool_result - Result from tool execution
+      if (data.type === 'tool_result' && data.tool_use_id) {
+        const resultContent =
+          typeof data.content === 'string'
+            ? data.content
+            : Array.isArray(data.content)
+              ? data.content.map((c) => c.text || '').join('')
+              : '';
+
+        setMessages((prev) => {
+          return prev.map((msg) => {
+            if (msg.role === 'assistant' && msg.toolCalls) {
+              const updatedToolCalls = msg.toolCalls.map((tc) => {
+                if (tc.id === data.tool_use_id) {
+                  return {
+                    ...tc,
+                    status: (data.is_error ? 'failed' : 'completed') as ToolStatus,
+                    result:
+                      resultContent.length > 2000
+                        ? resultContent.substring(0, 2000) + '\n... (truncated)'
+                        : resultContent,
+                    isError: data.is_error,
+                  };
+                }
+                return tc;
+              });
+              return { ...msg, toolCalls: updatedToolCalls };
+            }
+            return msg;
+          });
+        });
+      }
 
       // Handle streaming deltas (content_block_delta)
       if (data.type === 'content_block_delta' && data.delta?.text) {
@@ -335,7 +622,7 @@ export default function CCuiChatInterface() {
           if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isStreaming) {
             return [
               ...prev.slice(0, -1),
-              { ...lastMsg, content: lastMsg.content + data.delta.text },
+              { ...lastMsg, content: lastMsg.content + data.delta!.text },
             ];
           } else {
             return [
@@ -343,7 +630,7 @@ export default function CCuiChatInterface() {
               {
                 id: Date.now().toString(),
                 role: 'assistant',
-                content: data.delta.text,
+                content: data.delta!.text!,
                 isStreaming: true,
               },
             ];
@@ -366,8 +653,8 @@ export default function CCuiChatInterface() {
       // Handle assistant messages with content array
       if (data.type === 'assistant' && data.message?.content) {
         const textContent = data.message.content
-          .filter((c: any) => c.type === 'text')
-          .map((c: any) => c.text)
+          .filter((c) => c.type === 'text')
+          .map((c) => c.text || '')
           .join('');
         if (textContent) {
           setMessages((prev) => {
@@ -397,7 +684,14 @@ export default function CCuiChatInterface() {
       setMessages((prev) => {
         const lastMsg = prev[prev.length - 1];
         if (lastMsg && lastMsg.role === 'assistant') {
-          return [...prev.slice(0, -1), { ...lastMsg, isStreaming: false }];
+          // Mark any running tool calls as completed
+          const updatedToolCalls = lastMsg.toolCalls?.map((tc) =>
+            tc.status === 'running' ? { ...tc, status: 'completed' as ToolStatus } : tc
+          );
+          return [
+            ...prev.slice(0, -1),
+            { ...lastMsg, isStreaming: false, toolCalls: updatedToolCalls },
+          ];
         }
         return prev;
       });
@@ -406,15 +700,34 @@ export default function CCuiChatInterface() {
     // Handle errors
     else if (wsMessage.type === 'claude-error') {
       setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `Error: ${wsMessage.error || 'Unknown error'}`,
-          isError: true,
-        },
-      ]);
+      setMessages((prev) => {
+        // Mark any running tool calls as failed
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg && lastMsg.role === 'assistant' && lastMsg.toolCalls) {
+          const updatedToolCalls = lastMsg.toolCalls.map((tc) =>
+            tc.status === 'running' ? { ...tc, status: 'failed' as ToolStatus } : tc
+          );
+          return [
+            ...prev.slice(0, -1),
+            { ...lastMsg, isStreaming: false, toolCalls: updatedToolCalls },
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `Error: ${wsMessage.error || 'Unknown error'}`,
+              isError: true,
+            },
+          ];
+        }
+        return [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `Error: ${wsMessage.error || 'Unknown error'}`,
+            isError: true,
+          },
+        ];
+      });
     }
   }, [lastMessage]);
 
@@ -538,55 +851,106 @@ export default function CCuiChatInterface() {
     }
   };
 
+  // Render tool calls for a message
+  const renderToolCalls = (message: Message): React.ReactNode[] => {
+    if (!message.toolCalls || message.toolCalls.length === 0) {
+      return [];
+    }
+
+    return message.toolCalls.map((toolCall) => (
+      <ToolCallBlock
+        key={`${message.id}-tool-${toolCall.id}`}
+        toolCall={toolCall}
+        isExpanded={toolCall.status === 'running' || toolCall.status === 'failed'}
+      />
+    ));
+  };
+
   const renderMessageContent = (message: Message) => {
     const content = message.content;
-    const parts = content.split(/(```[\w\s]*?\n[\s\S]*?```)/g);
+    const elements: React.ReactNode[] = [];
 
-    return parts
-      .map((part, index) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
-          if (match) {
-            const [, language = 'text', code] = match;
+    // First render any tool calls
+    const toolCallElements = renderToolCalls(message);
+    if (toolCallElements.length > 0) {
+      elements.push(
+        <div key={`${message.id}-tools`} className="mb-4">
+          {toolCallElements}
+        </div>
+      );
+    }
+
+    // Then render the text content
+    if (content && content.trim()) {
+      const parts = content.split(/(```[\w\s]*?\n[\s\S]*?```)/g);
+
+      const textElements = parts
+        .map((part, index) => {
+          if (part.startsWith('```') && part.endsWith('```')) {
+            const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
+            if (match) {
+              const [, language = 'text', code] = match;
+              const isStreamingThisBlock = message.isStreaming && index === parts.length - 1;
+              return (
+                <CodeBlock
+                  key={message.id + '-code-' + index}
+                  code={code.trim()}
+                  language={language.trim()}
+                  isStreaming={isStreamingThisBlock}
+                />
+              );
+            }
+          }
+
+          if (part.trim().startsWith('THINKING:')) {
+            const thinkingContent = part.substring('THINKING:'.length).trim();
             const isStreamingThisBlock = message.isStreaming && index === parts.length - 1;
             return (
-              <CodeBlock
-                key={message.id + '-code-' + index}
-                code={code.trim()}
-                language={language.trim()}
+              <ThinkingBlock
+                key={message.id + '-thinking-' + index}
+                content={thinkingContent}
+                label="Reasoning"
                 isStreaming={isStreamingThisBlock}
               />
             );
           }
-        }
 
-        if (part.trim().startsWith('THINKING:')) {
-          const thinkingContent = part.substring('THINKING:'.length).trim();
-          const isStreamingThisBlock = message.isStreaming && index === parts.length - 1;
+          // Skip empty parts
+          if (!part.trim()) return null;
+
+          const isStreamingThisText = message.isStreaming && index === parts.length - 1;
           return (
-            <ThinkingBlock
-              key={message.id + '-thinking-' + index}
-              content={thinkingContent}
-              label="Reasoning"
-              isStreaming={isStreamingThisBlock}
-            />
+            <p
+              key={message.id + '-text-' + index}
+              className={`leading-relaxed whitespace-pre-wrap font-sans text-[#e3e1de] ${compactMode ? 'text-sm' : 'text-lg'}`}
+            >
+              {part}
+              {isStreamingThisText && (
+                <span className="inline-block w-3 h-6 bg-[#d97757] align-bottom ml-1.5 animate-pulse"></span>
+              )}
+            </p>
           );
-        }
+        })
+        .filter(Boolean);
 
-        const isStreamingThisText = message.isStreaming && index === parts.length - 1;
-        return (
-          <p
-            key={message.id + '-text-' + index}
-            className={`leading-relaxed whitespace-pre-wrap font-sans text-[#e3e1de] ${compactMode ? 'text-sm' : 'text-lg'}`}
-          >
-            {part}
-            {isStreamingThisText && (
-              <span className="inline-block w-3 h-6 bg-[#d97757] align-bottom ml-1.5 animate-pulse"></span>
-            )}
-          </p>
-        );
-      })
-      .filter(Boolean);
+      elements.push(...textElements);
+    }
+
+    // Show streaming indicator if message is streaming but has no content yet
+    if (
+      message.isStreaming &&
+      !content?.trim() &&
+      (!message.toolCalls || message.toolCalls.length === 0)
+    ) {
+      elements.push(
+        <div key={`${message.id}-streaming`} className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 text-[#d97757] animate-spin" />
+          <span className="text-sm text-[#888]">Processing...</span>
+        </div>
+      );
+    }
+
+    return elements;
   };
 
   return (
