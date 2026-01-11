@@ -216,35 +216,6 @@ services:
       - legal-network
 
   # ==========================================================================
-  # API-CCUI-WS - Chat Backend WebSocket
-  # ==========================================================================
-  api-ccui-ws:
-    image: python:3.12-slim
-    working_dir: /app
-    command: >
-      sh -c "pip install -q -r /app/requirements.txt &&
-             uvicorn main:app --host 0.0.0.0 --port 8005 --reload"
-    volumes:
-      - ./docker/services/ccui-ws/main.py:/app/main.py
-      - ./docker/services/ccui-ws/requirements.txt:/app/requirements.txt:ro
-    ports:
-      - "8005:8005"
-    environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ccui-ws.rule=PathPrefix(`/ws`)"
-      - "traefik.http.routers.ccui-ws.entrypoints=web"
-      - "traefik.http.routers.ccui-ws.priority=20"
-      - "traefik.http.routers.ccui-chat.rule=PathPrefix(`/api/chat`)"
-      - "traefik.http.routers.ccui-chat.entrypoints=web"
-      - "traefik.http.routers.ccui-chat.priority=15"
-      - "traefik.http.services.ccui-ws.loadbalancer.server.port=8005"
-    networks:
-      - legal-network
-
-  # ==========================================================================
   # TRAEFIK - Reverse Proxy (Optional for dev, services accessible directly)
   # ==========================================================================
   reverse-proxy:
