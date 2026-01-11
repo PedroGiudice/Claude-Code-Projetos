@@ -30,6 +30,10 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/doc-validator.py\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "source ~/.secrets/lex-vector.env 2>/dev/null; \"$CLAUDE_PROJECT_DIR/.venv/bin/python\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-memory-inject.py\" 2>/dev/null || true"
           }
         ]
       }
@@ -39,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/session-end-git-safety.js"
+            "command": "GIT_SAFETY_THRESHOLD_HOURS=0 cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/session-end-git-safety.js"
           }
         ]
       },

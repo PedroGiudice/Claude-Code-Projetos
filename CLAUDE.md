@@ -40,6 +40,32 @@ mgrep "pattern" src/      # busca em diretorio especifico
 - Multiplos arquivos simultaneos
 - Logs extensos, diffs grandes
 
+### 6. ZERO Emojis
+**PROIBIDO** usar emojis em qualquer output: respostas, codigo, commits, comentarios.
+Motivo: Bug no CLI Rust causa crash em char boundaries de emojis (4 bytes).
+
+---
+
+## Erros Aprendidos
+
+**INSTRUÇÃO PARA CLAUDE:** Adicione uma entrada aqui quando:
+- O usuário corrigir um erro seu
+- Você cometer erro grosseiro (syntax error, import errado)
+- Um erro acontecer mais de uma vez
+- Erro "fatal" (mudança em um layer quebra outro — ex: backend quebra frontend)
+
+Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce organicamente.
+
+| Data | Erro | Regra |
+|------|------|-------|
+| 2026-01-11 | Emoji causou crash do CLI (panic em char boundary) | Regra #6: ZERO emojis |
+| 2026-01-11 | Crash do CLI pode perder edits nao commitados | Commitar frequentemente durante sessao |
+
+<!--
+Formato para adicionar:
+| YYYY-MM-DD | Descrição breve do erro | O que evitar/fazer diferente |
+-->
+
 ---
 
 ## Estrutura
