@@ -1,9 +1,12 @@
 """
 CCui WebSocket Backend
-Simple WebSocket server for Claude Code UI chat interface.
+WebSocket server that spawns Claude CLI and streams responses.
 """
 import os
 import sys
+import asyncio
+import json
+import shutil
 
 # Add shared module path for logging and Sentry
 sys.path.insert(0, '/app')
@@ -17,24 +20,28 @@ except ImportError:
 
 # Configure structured JSON logging
 import logging
-from shared.logging_config import setup_logging
-from shared.middleware import RequestIDMiddleware
+try:
+    from shared.logging_config import setup_logging
+    from shared.middleware import RequestIDMiddleware
+    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
+    logger = setup_logging("ccui-ws", level=log_level)
+    HAS_SHARED = True
+except ImportError:
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("ccui-ws")
+    HAS_SHARED = False
 
-log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
-logger = setup_logging("ccui-ws", level=log_level)
-
-import json
-import asyncio
 from datetime import datetime, timezone
-from typing import Dict, Set
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from typing import Dict, Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = FastAPI(title="CCui WebSocket Backend", version="1.0.0")
+app = FastAPI(title="CCui WebSocket Backend", version="2.0.0")
 
-# Request ID middleware for request tracing
-app.add_middleware(RequestIDMiddleware)
+# Request ID middleware for request tracing (if available)
+if HAS_SHARED:
+    app.add_middleware(RequestIDMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,17 +51,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Check if Claude CLI is available
+CLAUDE_CLI = shutil.which("claude")
+if not CLAUDE_CLI:
+    logger.warning("Claude CLI not found in PATH. Mock mode will be used.")
 
-# Startup event
+
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Service starting", extra={"event": "startup", "version": "1.0.0"})
+    logger.info(f"Service starting (Claude CLI: {'found' if CLAUDE_CLI else 'NOT FOUND'})")
 
-# Connection manager
+
 class ConnectionManager:
+    """Manages WebSocket connections and Claude CLI processes."""
+
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.session_data: Dict[str, dict] = {}
+        self.active_processes: Dict[str, asyncio.subprocess.Process] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
@@ -62,32 +76,44 @@ class ConnectionManager:
         self.session_data[client_id] = {
             "connected_at": datetime.now(timezone.utc).isoformat(),
             "messages": [],
-            "context_used": 0
+            "context_used": 0,
+            "is_processing": False
         }
-        logger.info("Client connected", extra={
-            "event": "ws_connect",
-            "client_id": client_id,
-            "total_connections": len(self.active_connections)
-        })
+        logger.info(f"Client connected: {client_id}")
 
     def disconnect(self, client_id: str):
+        # Kill any running process
+        if client_id in self.active_processes:
+            proc = self.active_processes[client_id]
+            if proc.returncode is None:
+                proc.kill()
+            del self.active_processes[client_id]
+
         if client_id in self.active_connections:
             del self.active_connections[client_id]
         if client_id in self.session_data:
             del self.session_data[client_id]
-        logger.info("Client disconnected", extra={
-            "event": "ws_disconnect",
-            "client_id": client_id,
-            "total_connections": len(self.active_connections)
-        })
+        logger.info(f"Client disconnected: {client_id}")
 
     async def send_json(self, client_id: str, data: dict):
         if client_id in self.active_connections:
-            await self.active_connections[client_id].send_json(data)
+            try:
+                await self.active_connections[client_id].send_json(data)
+            except Exception as e:
+                logger.error(f"Failed to send to {client_id}: {e}")
 
-    async def broadcast(self, data: dict):
-        for client_id, connection in self.active_connections.items():
-            await connection.send_json(data)
+    async def cancel_process(self, client_id: str):
+        """Cancel running Claude process for a client."""
+        if client_id in self.active_processes:
+            proc = self.active_processes[client_id]
+            if proc.returncode is None:
+                proc.terminate()
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    proc.kill()
+            del self.active_processes[client_id]
+            logger.info(f"Process cancelled for {client_id}")
 
 
 manager = ConnectionManager()
@@ -103,6 +129,8 @@ async def health():
     return {
         "status": "healthy",
         "service": "ccui-ws",
+        "version": "2.0.0",
+        "claude_cli": "available" if CLAUDE_CLI else "not_found",
         "connections": len(manager.active_connections),
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -110,50 +138,31 @@ async def health():
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
-    """
-    HTTP endpoint for sending chat messages.
-    Streams response to all connected WebSocket clients with matching token.
-    """
+    """HTTP endpoint for sending chat messages."""
     content = request.message.strip()
     token = request.token
 
     if not content:
         return {"status": "error", "message": "Empty message"}
 
-    logger.info("Chat message received", extra={"event": "chat_request", "content_preview": content[:50]})
+    logger.info(f"Chat request: {content[:50]}...")
 
     # Find connected client with this token
     target_clients = [cid for cid in manager.active_connections.keys() if cid.startswith(token)]
 
     if not target_clients:
-        # No WebSocket connection, return direct response
-        response = generate_response(content)
+        # No WebSocket connection - return error
         return {
-            "status": "ok",
-            "response": response,
+            "status": "error",
+            "message": "No WebSocket connection. Connect via /ws first.",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-    # Generate and stream response
-    response = generate_response(content)
+    # Process for first matching client
+    client_id = target_clients[0]
+    asyncio.create_task(process_claude_request(client_id, content))
 
-    for client_id in target_clients:
-        # Send tokens for streaming effect
-        words = response.split()
-
-        for word in words:
-            await manager.send_json(client_id, {
-                "type": "token",
-                "content": word + " "
-            })
-            await asyncio.sleep(0.015)  # Simulate streaming
-
-        # Send completion
-        await manager.send_json(client_id, {
-            "type": "done"
-        })
-
-    return {"status": "ok", "message": "Response streamed"}
+    return {"status": "ok", "message": "Processing started"}
 
 
 @app.websocket("/ws")
@@ -164,10 +173,10 @@ async def websocket_endpoint(
     client_id = f"{token}_{id(websocket)}"
     await manager.connect(websocket, client_id)
 
-    # Send welcome message
     await manager.send_json(client_id, {
         "type": "connected",
         "message": "Connected to CCui backend",
+        "claude_cli": "available" if CLAUDE_CLI else "mock_mode",
         "client_id": client_id,
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
@@ -179,20 +188,34 @@ async def websocket_endpoint(
     except WebSocketDisconnect:
         manager.disconnect(client_id)
     except Exception as e:
-        logger.error("WebSocket error", extra={"event": "ws_error", "client_id": client_id, "error": str(e)})
+        logger.error(f"WebSocket error for {client_id}: {e}")
         manager.disconnect(client_id)
 
 
 async def handle_message(client_id: str, data: dict):
-    """Process incoming messages and generate responses."""
+    """Process incoming WebSocket messages."""
     msg_type = data.get("type", "unknown")
 
     if msg_type == "chat":
-        await handle_chat_message(client_id, data)
+        content = data.get("content", "").strip()
+        if content:
+            await process_claude_request(client_id, content)
+    elif msg_type == "cancel":
+        await manager.cancel_process(client_id)
+        await manager.send_json(client_id, {"type": "cancelled"})
     elif msg_type == "ping":
-        await manager.send_json(client_id, {"type": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
+        await manager.send_json(client_id, {
+            "type": "pong",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
     elif msg_type == "status":
-        await send_status(client_id)
+        session = manager.session_data.get(client_id, {})
+        await manager.send_json(client_id, {
+            "type": "status",
+            "is_processing": session.get("is_processing", False),
+            "message_count": len(session.get("messages", [])),
+            "connected_at": session.get("connected_at")
+        })
     else:
         await manager.send_json(client_id, {
             "type": "error",
@@ -200,20 +223,18 @@ async def handle_message(client_id: str, data: dict):
         })
 
 
-async def handle_chat_message(client_id: str, data: dict):
-    """Handle chat messages - echo with simulated thinking."""
-    content = data.get("content", "").strip()
+async def process_claude_request(client_id: str, content: str):
+    """Spawn Claude CLI and stream response to client."""
 
-    if not content:
-        return
-
-    # Store user message
+    # Check if already processing
     if client_id in manager.session_data:
-        manager.session_data[client_id]["messages"].append({
-            "role": "user",
-            "content": content,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
+        if manager.session_data[client_id].get("is_processing"):
+            await manager.send_json(client_id, {
+                "type": "error",
+                "message": "Already processing a request. Send 'cancel' to abort."
+            })
+            return
+        manager.session_data[client_id]["is_processing"] = True
 
     # Send acknowledgment
     await manager.send_json(client_id, {
@@ -222,119 +243,196 @@ async def handle_chat_message(client_id: str, data: dict):
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
 
-    # Simulate thinking
+    # Start thinking indicator
     await manager.send_json(client_id, {
         "type": "thinking_start",
-        "label": "Processing"
+        "label": "Claude is thinking..."
     })
 
-    # Brief delay to simulate processing
-    await asyncio.sleep(0.5)
+    if not CLAUDE_CLI:
+        # Mock mode - Claude CLI not available
+        await mock_response(client_id, content)
+        return
 
-    # Generate response based on input
-    response = generate_response(content)
-
-    await manager.send_json(client_id, {
-        "type": "thinking_complete",
-        "duration": "0.5s"
-    })
-
-    # Send response
-    await manager.send_json(client_id, {
-        "type": "message",
-        "role": "assistant",
-        "content": response,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    })
-
-    # Update context usage (simulated)
-    if client_id in manager.session_data:
-        manager.session_data[client_id]["context_used"] += len(content) + len(response)
-        context_percent = min(100, manager.session_data[client_id]["context_used"] // 1000)
-
+    try:
+        await spawn_claude_cli(client_id, content)
+    except Exception as e:
+        logger.error(f"Claude CLI error: {e}")
         await manager.send_json(client_id, {
-            "type": "context_update",
-            "percentUsed": context_percent
+            "type": "error",
+            "message": f"Claude CLI error: {str(e)}"
         })
+    finally:
+        if client_id in manager.session_data:
+            manager.session_data[client_id]["is_processing"] = False
 
 
-def generate_response(content: str) -> str:
-    """Generate a response based on input content."""
-    content_lower = content.lower()
+async def spawn_claude_cli(client_id: str, content: str):
+    """Spawn Claude CLI process and stream output."""
 
-    # Command handling
-    if content.startswith("/"):
-        cmd = content[1:].split()[0].lower()
-        if cmd == "help":
-            return """**Available Commands:**
-- `/help` - Show this help message
-- `/status` - Show session status
-- `/clear` - Clear conversation
-- `/model` - Show current model info
+    # Build command
+    cmd = [
+        CLAUDE_CLI,
+        "-p",  # Print mode (non-interactive)
+        "--output-format", "stream-json",
+        "--verbose",  # Required for stream-json
+        "--permission-mode", "bypassPermissions",
+        content
+    ]
 
-**Tips:**
-- Type naturally to chat
-- Use code blocks with triple backticks
-- Press Enter to send, Shift+Enter for new line"""
-        elif cmd == "status":
-            return "Session active. WebSocket connected. Ready for input."
-        elif cmd == "clear":
-            return "Conversation cleared."
-        elif cmd == "model":
-            return "**Current Model:** Claude 3.7 Sonnet (simulated)\n**Context:** 200K tokens\n**Status:** Ready"
-        else:
-            return f"Unknown command: `/{cmd}`. Type `/help` for available commands."
+    logger.info(f"Spawning Claude CLI for {client_id}")
 
-    # Echo with enhancement
-    if "hello" in content_lower or "hi" in content_lower or "ola" in content_lower:
-        return f"Hello! I'm CCui, your Claude Code interface. How can I help you today?\n\nYou said: *{content}*"
+    # Create subprocess
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=os.getcwd()
+    )
 
-    if "test" in content_lower:
-        return f"""**Test received!**
+    manager.active_processes[client_id] = proc
 
-Your message: `{content}`
+    thinking_sent = False
+    full_response = []
 
-The WebSocket connection is working correctly. Here's what I can do:
-- Process chat messages
-- Execute commands (try `/help`)
-- Show code blocks:
+    try:
+        # Read stdout line by line (stream-json outputs one JSON per line)
+        async for line in proc.stdout:
+            line = line.decode('utf-8').strip()
+            if not line:
+                continue
 
-```python
-print("Hello from CCui!")
-```
+            try:
+                event = json.loads(line)
+                event_type = event.get("type", "")
 
-Feel free to explore!"""
+                # Handle different event types from Claude CLI
+                if event_type == "assistant":
+                    # Assistant message chunk
+                    message = event.get("message", {})
+                    content_blocks = message.get("content", [])
 
-    # Default echo response
-    return f"""Received your message:
+                    for block in content_blocks:
+                        if block.get("type") == "text":
+                            text = block.get("text", "")
+                            if text:
+                                if not thinking_sent:
+                                    await manager.send_json(client_id, {
+                                        "type": "thinking_complete"
+                                    })
+                                    thinking_sent = True
 
+                                full_response.append(text)
+                                # Send as streaming token
+                                await manager.send_json(client_id, {
+                                    "type": "token",
+                                    "content": text
+                                })
+
+                elif event_type == "content_block_delta":
+                    # Streaming text delta
+                    delta = event.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        text = delta.get("text", "")
+                        if text:
+                            if not thinking_sent:
+                                await manager.send_json(client_id, {
+                                    "type": "thinking_complete"
+                                })
+                                thinking_sent = True
+
+                            full_response.append(text)
+                            await manager.send_json(client_id, {
+                                "type": "token",
+                                "content": text
+                            })
+
+                elif event_type == "result":
+                    # Final result
+                    result = event.get("result", "")
+                    if result and not full_response:
+                        full_response.append(result)
+                        await manager.send_json(client_id, {
+                            "type": "token",
+                            "content": result
+                        })
+
+                elif event_type == "error":
+                    error_msg = event.get("error", {}).get("message", "Unknown error")
+                    await manager.send_json(client_id, {
+                        "type": "error",
+                        "message": error_msg
+                    })
+
+            except json.JSONDecodeError:
+                # Not JSON - might be plain text output
+                if line and not line.startswith("{"):
+                    full_response.append(line)
+                    await manager.send_json(client_id, {
+                        "type": "token",
+                        "content": line + "\n"
+                    })
+
+        # Read stderr for any errors
+        stderr_data = await proc.stderr.read()
+        if stderr_data:
+            stderr_text = stderr_data.decode('utf-8').strip()
+            if stderr_text:
+                logger.warning(f"Claude CLI stderr: {stderr_text}")
+
+        await proc.wait()
+
+        # Send completion
+        await manager.send_json(client_id, {"type": "done"})
+
+        # Store in session
+        if client_id in manager.session_data:
+            manager.session_data[client_id]["messages"].append({
+                "role": "assistant",
+                "content": "".join(full_response),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+
+    finally:
+        # Clean up process reference
+        if client_id in manager.active_processes:
+            del manager.active_processes[client_id]
+
+
+async def mock_response(client_id: str, content: str):
+    """Generate mock response when Claude CLI is not available."""
+
+    await asyncio.sleep(0.5)  # Simulate thinking
+
+    await manager.send_json(client_id, {
+        "type": "thinking_complete"
+    })
+
+    response = f"""**Mock Mode** - Claude CLI not found in PATH.
+
+To enable real Claude integration:
+1. Install Claude CLI: `npm install -g @anthropic-ai/claude-code`
+2. Authenticate: `claude login`
+3. Restart this service
+
+Your message was:
 > {content}
-
-This is a demonstration response from the CCui WebSocket backend. The full Claude integration would process this through the Claude API.
 
 *Timestamp: {datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC*"""
 
+    # Stream word by word for effect
+    words = response.split()
+    for word in words:
+        await manager.send_json(client_id, {
+            "type": "token",
+            "content": word + " "
+        })
+        await asyncio.sleep(0.02)
 
-async def send_status(client_id: str):
-    """Send current session status."""
-    session = manager.session_data.get(client_id, {})
-    await manager.send_json(client_id, {
-        "type": "status",
-        "connected_at": session.get("connected_at"),
-        "message_count": len(session.get("messages", [])),
-        "context_used": session.get("context_used", 0)
-    })
+    await manager.send_json(client_id, {"type": "done"})
 
-
-@app.get("/debug/sentry", tags=["Debug"])
-async def debug_sentry():
-    """
-    Test Sentry integration by triggering a test exception.
-
-    This endpoint is for debugging purposes only.
-    In production, this should be disabled or protected.
-    """
-    raise Exception("Sentry test exception from ccui-ws")
+    if client_id in manager.session_data:
+        manager.session_data[client_id]["is_processing"] = False
 
 
 if __name__ == "__main__":
