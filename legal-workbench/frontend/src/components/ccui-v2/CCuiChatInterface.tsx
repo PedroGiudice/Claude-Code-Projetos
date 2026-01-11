@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import {
   ArrowUp,
   Sparkles,
@@ -9,8 +9,17 @@ import {
   Command,
   History,
   Info,
+  Plus,
+  Trash2,
+  X,
+  MessageSquare,
 } from 'lucide-react';
 import { useWebSocket } from './contexts/WebSocketContext';
+import {
+  useChatHistory,
+  type Message as HistoryMessage,
+  type Conversation,
+} from './contexts/ChatHistoryContext';
 import { ReactorSpinner, PhyllotaxisSpinner } from './Spinners';
 
 // Working directory for Claude CLI (configurable)
@@ -141,15 +150,173 @@ const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
   );
 };
 
+// History Panel Component
+interface HistoryPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  conversations: Conversation[];
+  currentConversationId: string | null;
+  onSelectConversation: (conversation: Conversation) => void;
+  onDeleteConversation: (id: string) => void;
+  onNewChat: () => void;
+}
+
+const HistoryPanel: React.FC<HistoryPanelProps> = ({
+  isOpen,
+  onClose,
+  conversations,
+  currentConversationId,
+  onSelectConversation,
+  onDeleteConversation,
+  onNewChat,
+}) => {
+  // Format date for display
+  const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  // Get last message preview
+  const getPreview = (conversation: Conversation): string => {
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    if (lastMessage) {
+      const content = lastMessage.content.trim();
+      if (content.length <= 60) return content;
+      return content.substring(0, 57) + '...';
+    }
+    return 'No messages';
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="relative w-full max-w-md bg-[#0a0a0a] border-l border-[#27272a] h-full flex flex-col animate-in slide-in-from-right duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272a]">
+          <div className="flex items-center gap-3">
+            <History className="w-5 h-5 text-[#d97757]" />
+            <h2 className="text-lg font-semibold text-[#e3e1de]">Chat History</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors text-[#888] hover:text-[#e3e1de]"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="px-4 py-3 border-b border-[#27272a]">
+          <button
+            onClick={() => {
+              onNewChat();
+              onClose();
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#d97757]/10 border border-[#d97757]/30 text-[#d97757] hover:bg-[#d97757]/20 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="font-medium">New Chat</span>
+          </button>
+        </div>
+
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {conversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <MessageSquare className="w-12 h-12 text-[#333] mb-4" />
+              <p className="text-[#666] text-sm">No conversations yet</p>
+              <p className="text-[#555] text-xs mt-1">Start a chat to see your history here</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              {conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`group px-4 py-3 mx-2 my-1 rounded-lg cursor-pointer transition-colors ${
+                    currentConversationId === conversation.id
+                      ? 'bg-[#d97757]/10 border border-[#d97757]/30'
+                      : 'hover:bg-[#1a1a1a] border border-transparent'
+                  }`}
+                  onClick={() => {
+                    onSelectConversation(conversation);
+                    onClose();
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-[#e3e1de] truncate">
+                        {conversation.title}
+                      </h3>
+                      <p className="text-xs text-[#666] mt-1 truncate">
+                        {getPreview(conversation)}
+                      </p>
+                      <p className="text-xs text-[#555] mt-2">
+                        {formatDate(conversation.updatedAt)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conversation.id);
+                      }}
+                      className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[#2a2a2a] text-[#666] hover:text-red-400 transition-all"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-[#27272a] text-center">
+          <p className="text-xs text-[#555]">{conversations.length} / 50 conversations stored</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function CCuiChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage: sendWsMessage, lastMessage } = useWebSocket();
+
+  // Chat history integration
+  const {
+    conversations,
+    currentConversationId,
+    saveConversation,
+    deleteConversation,
+    setCurrentConversationId,
+    startNewConversation,
+  } = useChatHistory();
 
   // Handle incoming WS messages (claudecodeui backend format)
   useEffect(() => {
@@ -261,6 +428,43 @@ export default function CCuiChatInterface() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Auto-save conversation when messages change (only when not streaming)
+  useEffect(() => {
+    // Only save when we have messages and are not currently streaming
+    if (messages.length > 0 && !isTyping) {
+      // Cast Message[] to HistoryMessage[] (they're compatible)
+      saveConversation(messages as HistoryMessage[], currentConversationId);
+    }
+  }, [messages, isTyping, saveConversation, currentConversationId]);
+
+  // Handle new chat
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    startNewConversation();
+  }, [startNewConversation]);
+
+  // Handle selecting a conversation from history
+  const handleSelectConversation = useCallback(
+    (conversation: Conversation) => {
+      setCurrentConversationId(conversation.id);
+      // Cast HistoryMessage[] to Message[] (they're compatible)
+      setMessages(conversation.messages as Message[]);
+    },
+    [setCurrentConversationId]
+  );
+
+  // Handle deleting a conversation
+  const handleDeleteConversation = useCallback(
+    (id: string) => {
+      deleteConversation(id);
+      // If we deleted the current conversation, clear messages
+      if (currentConversationId === id) {
+        setMessages([]);
+      }
+    },
+    [deleteConversation, currentConversationId]
+  );
 
   const handleSlashCommand = (cmd: string, _args: string[]): boolean => {
     switch (cmd.toLowerCase()) {
@@ -498,9 +702,17 @@ export default function CCuiChatInterface() {
             <Command className="w-4 h-4 group-hover:text-[#d97757]" />
             <span>Actions</span>
           </button>
-          <button className="flex items-center gap-2.5 hover:text-[#b5b5b5] transition-colors group">
+          <button
+            onClick={() => setHistoryPanelOpen(true)}
+            className="flex items-center gap-2.5 hover:text-[#b5b5b5] transition-colors group"
+          >
             <History className="w-4 h-4 group-hover:text-[#d97757]" />
             <span>History</span>
+            {conversations.length > 0 && (
+              <span className="text-xs text-[#d97757] bg-[#d97757]/10 px-1.5 py-0.5 rounded-full">
+                {conversations.length}
+              </span>
+            )}
           </button>
           <button className="flex items-center gap-2.5 hover:text-[#b5b5b5] transition-colors group">
             <Info className="w-4 h-4 group-hover:text-[#d97757]" />
@@ -508,6 +720,17 @@ export default function CCuiChatInterface() {
           </button>
         </div>
       </div>
+
+      {/* History Panel */}
+      <HistoryPanel
+        isOpen={historyPanelOpen}
+        onClose={() => setHistoryPanelOpen(false)}
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+        onNewChat={handleNewChat}
+      />
     </div>
   );
 }

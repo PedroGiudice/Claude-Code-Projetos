@@ -9,6 +9,8 @@ export { ReactorSpinner, PhyllotaxisSpinner } from './Spinners';
 // Re-export contexts
 export { WebSocketProvider, useWebSocket } from './contexts/WebSocketContext';
 export { AuthProvider, useAuth } from './contexts/AuthContext';
+export { ChatHistoryProvider, useChatHistory } from './contexts/ChatHistoryContext';
+export type { Message, Conversation } from './contexts/ChatHistoryContext';
 
 // Re-export utils
 export { api } from './utils/api';
