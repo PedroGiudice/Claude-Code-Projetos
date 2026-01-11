@@ -161,18 +161,29 @@ decorrente das obras nao declaradas.
 
 ### Numeros de Processo Identificados (verificar inteiro teor)
 
-1. **TJ-MG** - Apelacao Civel 1.0000.24.171842-8/001
-2. **TJ-PR** - APL 96.2016.8.16.0025 (18a Camara Civel, j. 10.08.2022)
-3. **TJ-AM** - APL 15.2015.8.04.0001
-4. **TJ-SP** - Apelacao Civel (numero a identificar no inteiro teor)
-5. **TJ-MT** - Apelacao Civel (numero a identificar no inteiro teor)
+| Processo | Status | Observacao |
+|----------|--------|------------|
+| **TJ-MG** 1.0000.24.171842-8/001 | NAO ENCONTRADO no Jusbrasil | Verificar diretamente no TJ-MG |
+| **TJ-PR** 96.2016.8.16.0025 | DIVERGENTE - caso criminal (embriaguez) | Numero incorreto na fonte original |
+| **TJ-PR** XXXXX-24.2016.8.16.0030 | CONFIRMADO | Dever de informacao + boa-fe em shopping (j. 14.02.2022) |
+| **TJ-AM** 15.2015.8.04.0001 | CONFIRMADO | Rel. Flavio Pascarelli Lopes (j. 09.07.2019) |
+| **TJ-SP** | A IDENTIFICAR | Numero nao localizado |
+| **TJ-MT** | A IDENTIFICAR | Numero nao localizado |
 
-### REsps do STJ Citados na Pesquisa Original
+### REsps do STJ - Status de Verificacao
 
-1. **REsp 1.984.277/DF** - Onerosidade excessiva em locacao (COVID-19)
-2. **REsp 1.998.206/DF** - Revisao de contratos nao e automatica
-3. **REsp 945.166/GO** - Riscos ordinarios do negocio
-4. **REsp 2.032.878/GO** - Rel. Min. Nancy Andrighi (teoria da imprevisao)
+| Processo | Status | Ementa Verificada |
+|----------|--------|-------------------|
+| **REsp 1.984.277/DF** | CONFIRMADO | 4a Turma - Revisao proporcional de aluguel COVID-19 (coworking) |
+| **REsp 1.998.206/DF** | A VERIFICAR | Citado em outras decisoes |
+| **REsp 945.166/GO** | CONFIRMADO | Rel. Min. Luis Felipe Salomao, 4a Turma (j. 28.02.2012) |
+| **REsp 2.032.878/GO** | CONFIRMADO | Rel. Min. Nancy Andrighi, 3a Turma - Paradigma shopping/lojista |
+
+### Precedente Adicional Identificado
+
+**TJ-PR - XXXXX-24.2016.8.16.0030** (17a Camara Civel, j. 14.02.2022)
+> "Declarada a resolucao do contrato, ante a inexecucao culposa da empreendedora do shopping center, por violar o **dever de informacao** da parte contraria sobre o conteudo do negocio e de frustrar as legitimas expectativas da locataria quanto ao prazo de entrega da loja..."
+> Fundamento: Arts. 421 e 422 CC + Art. 9, II, Lei 8.245/91
 
 ---
 
