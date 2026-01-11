@@ -59,6 +59,7 @@ Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce 
 | Data | Erro | Regra |
 |------|------|-------|
 | 2026-01-11 | Emoji causou crash do CLI (panic em char boundary) | Regra #6: ZERO emojis |
+| 2026-01-11 | Crash do CLI pode perder edits nao commitados | Commitar frequentemente durante sessao |
 
 <!--
 Formato para adicionar:

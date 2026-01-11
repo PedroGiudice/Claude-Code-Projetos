@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/session-end-git-safety.js"
+            "command": "GIT_SAFETY_THRESHOLD_HOURS=0 cd \"$CLAUDE_PROJECT_DIR\" && bun run .claude/hooks/session-end-git-safety.js"
           }
         ]
       },
