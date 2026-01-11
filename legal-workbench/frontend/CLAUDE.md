@@ -60,4 +60,37 @@ frontend/
 
 ---
 
+## Verificacao Obrigatoria
+
+Antes de considerar qualquer tarefa de frontend concluida:
+
+### 1. Build e Lint
+```bash
+cd legal-workbench/frontend
+bun run build   # Deve passar sem erros
+bun run lint    # Zero warnings idealmente
+```
+
+### 2. Testes Unitarios
+```bash
+bun run test              # Vitest - todos os testes
+bun run test ComponentX   # Teste especifico
+```
+
+### 3. Verificacao Visual (quando UI mudou)
+Usar Chrome MCP ou Playwright para verificar:
+- Componente renderiza corretamente
+- Estados de loading/error funcionam
+- Responsividade (se aplicavel)
+
+### 4. Checklist Pre-Commit
+- [ ] Build passa
+- [ ] Lint passa
+- [ ] Testes passam (se existirem para o componente)
+- [ ] Verificacao visual feita (para mudancas de UI)
+
+> **Regra**: NAO commitar sem verificar. Erros descobertos no CI sao evitaveis.
+
+---
+
 *Herdado de: legal-workbench/CLAUDE.md*
