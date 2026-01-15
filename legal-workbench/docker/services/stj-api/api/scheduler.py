@@ -169,6 +169,13 @@ async def run_sync_task(
                 db.criar_schema()
                 inseridos, duplicados, erros = db.inserir_batch(all_records)
 
+                # Rebuild FTS index after inserting new data
+                # DuckDB FTS requires manual rebuild after INSERT operations
+                if inseridos > 0:
+                    logger.info("Rebuilding FTS index after insert...")
+                    db.rebuild_fts_index()
+                    logger.info("FTS index rebuilt successfully")
+
                 _update_sync_status(
                     inserted=inseridos,
                     duplicates=duplicados,

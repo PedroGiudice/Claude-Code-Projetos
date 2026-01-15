@@ -29,18 +29,28 @@ class OrgaoConfig(TypedDict):
 # Project structure
 PROJECT_ROOT: Final[Path] = Path(__file__).parent
 SRC_DIR: Final[Path] = PROJECT_ROOT / "src"
-DATA_ROOT: Final[Path] = PROJECT_ROOT / "data"
 
-# Data directories (all local)
+# Support Docker environment variable for data paths
+# Falls back to local project directory if not set
+_env_data_path = os.getenv("DATA_PATH")
+DATA_ROOT: Final[Path] = Path(_env_data_path) if _env_data_path else PROJECT_ROOT / "data"
+
+# Data directories (all local or Docker-mounted)
 STAGING_DIR: Final[Path] = DATA_ROOT / "staging"
 ARCHIVE_DIR: Final[Path] = DATA_ROOT / "archive"
-DATABASE_DIR: Final[Path] = DATA_ROOT / "database"
 LOGS_DIR: Final[Path] = DATA_ROOT / "logs"
 METADATA_DIR: Final[Path] = DATA_ROOT / "metadata"
 RAW_DATA_PATH: Final[Path] = DATA_ROOT / "raw"  # JSONs originais do CKAN (auditoria)
 
-# Database paths
-DATABASE_PATH: Final[Path] = DATABASE_DIR / "stj.duckdb"
+# Database paths - support Docker environment variable DB_PATH
+_env_db_path = os.getenv("DB_PATH")
+if _env_db_path:
+    DATABASE_PATH: Final[Path] = Path(_env_db_path)
+    DATABASE_DIR: Final[Path] = DATABASE_PATH.parent
+else:
+    DATABASE_DIR: Final[Path] = DATA_ROOT / "database"
+    DATABASE_PATH: Final[Path] = DATABASE_DIR / "stj.duckdb"
+
 DATABASE_BACKUP_DIR: Final[Path] = DATABASE_DIR / "backups"
 METADATA_DB_PATH: Final[Path] = METADATA_DIR / "metadata.db"
 STATS_PATH: Final[Path] = METADATA_DIR / "stats.json"

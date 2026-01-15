@@ -483,6 +483,37 @@ async def export_results(
         raise HTTPException(status_code=500, detail=f"Erro na exportação: {str(e)}")
 
 
+# Rebuild FTS index endpoint
+@app.post("/api/v1/rebuild-fts", tags=["Maintenance"])
+async def rebuild_fts_index(db: STJDatabase = Depends(get_database)):
+    """
+    Rebuild FTS (Full-Text Search) index.
+
+    DuckDB FTS requires manual rebuild after INSERT operations.
+    Call this after sync if search results are not appearing.
+
+    Returns:
+        Dict with rebuild status
+    """
+    try:
+        logger.info("Rebuilding FTS index...")
+        db.rebuild_fts_index()
+        logger.info("FTS index rebuilt successfully")
+
+        # Invalidate cache after rebuilding
+        invalidate_cache()
+
+        return {
+            "status": "success",
+            "message": "FTS index rebuilt successfully",
+            "timestamp": datetime.now()
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to rebuild FTS index: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Erro ao reconstruir indice FTS: {str(e)}")
+
+
 # Root endpoint
 @app.get("/", tags=["Root"])
 async def root():
