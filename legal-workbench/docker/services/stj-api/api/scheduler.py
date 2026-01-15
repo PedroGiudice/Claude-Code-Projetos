@@ -165,6 +165,8 @@ async def run_sync_task(
 
             # Insert into database
             with STJDatabase(db_path=DATABASE_PATH) as db:
+                # Ensure schema exists before inserting
+                db.criar_schema()
                 inseridos, duplicados, erros = db.inserir_batch(all_records)
 
                 _update_sync_status(

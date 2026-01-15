@@ -26,7 +26,7 @@ from config import (
     CONCURRENT_DOWNLOADS,
     CKAN_DATASETS,
 )
-from ckan_client import CKANClient, CKANResource
+from src.ckan_client import CKANClient, CKANResource
 
 console = Console()
 logger = logging.getLogger(__name__)
