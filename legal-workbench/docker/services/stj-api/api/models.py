@@ -159,14 +159,14 @@ class StatsResponse(BaseModel):
 class SyncStatus(BaseModel):
     """Status of a sync operation."""
     status: str = Field(..., description="Status da operação (running, completed, failed)")
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     downloaded: int = 0
     processed: int = 0
     inserted: int = 0
     duplicates: int = 0
     errors: int = 0
-    message: Optional[str]
+    message: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
