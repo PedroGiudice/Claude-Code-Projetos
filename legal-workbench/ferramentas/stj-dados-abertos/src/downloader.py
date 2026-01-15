@@ -14,7 +14,7 @@ from typing import Optional, Final
 import httpx
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 from rich.console import Console
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
@@ -137,7 +137,8 @@ class STJDownloader:
 
     @retry(
         stop=stop_after_attempt(DEFAULT_RETRY_ATTEMPTS),
-        wait=wait_exponential(multiplier=1, min=DEFAULT_RETRY_DELAY, max=30)
+        wait=wait_exponential(multiplier=1, min=DEFAULT_RETRY_DELAY, max=30),
+        retry=retry_if_not_exception_type((json.JSONDecodeError, ValueError))  # Nao retry erros permanentes
     )
     def download_json(self, url: str, filename: str, force: bool = False) -> Optional[Path]:
         """
@@ -250,6 +251,24 @@ class STJDownloader:
                 )
 
                 for config in url_configs:
+                    try:
+                        file_path = self.download_json(
+                            config["url"],
+                            config["filename"],
+                            force=config.get("force", False)
+                        )
+                        if file_path:
+                            downloaded_files.append(file_path)
+                    except (json.JSONDecodeError, ValueError) as e:
+                        # Arquivo corrompido no servidor - logar e continuar
+                        logger.warning(f"Ignorando arquivo corrompido: {config['filename']} - {e}")
+                    except Exception as e:
+                        # Outros erros (apos retry) - logar e continuar
+                        logger.error(f"Falha ao baixar {config['filename']} apos retries: {e}")
+                    progress.update(task, advance=1)
+        else:
+            for config in url_configs:
+                try:
                     file_path = self.download_json(
                         config["url"],
                         config["filename"],
@@ -257,16 +276,12 @@ class STJDownloader:
                     )
                     if file_path:
                         downloaded_files.append(file_path)
-                    progress.update(task, advance=1)
-        else:
-            for config in url_configs:
-                file_path = self.download_json(
-                    config["url"],
-                    config["filename"],
-                    force=config.get("force", False)
-                )
-                if file_path:
-                    downloaded_files.append(file_path)
+                except (json.JSONDecodeError, ValueError) as e:
+                    # Arquivo corrompido no servidor - logar e continuar
+                    logger.warning(f"Ignorando arquivo corrompido: {config['filename']} - {e}")
+                except Exception as e:
+                    # Outros erros (apos retry) - logar e continuar
+                    logger.error(f"Falha ao baixar {config['filename']} apos retries: {e}")
 
         return downloaded_files
 
