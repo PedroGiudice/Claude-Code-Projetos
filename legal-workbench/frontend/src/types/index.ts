@@ -4,7 +4,11 @@ export interface FieldAnnotation {
   start: number;
   end: number;
   paragraphIndex: number;
+  color: string; // Hex color for visual identification
 }
+
+// Input type for creating annotations (color is assigned automatically by the store)
+export type FieldAnnotationInput = Omit<FieldAnnotation, 'color'>;
 
 export interface PatternMatch {
   pattern: string;
@@ -56,7 +60,13 @@ export interface Toast {
 }
 
 // LEDES Converter Types
-export type LedesConversionStatus = 'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error';
+export type LedesConversionStatus =
+  | 'idle'
+  | 'validating'
+  | 'uploading'
+  | 'processing'
+  | 'success'
+  | 'error';
 
 export interface LedesConfig {
   lawFirmId: string;

@@ -1,6 +1,25 @@
 import { create } from 'zustand';
 import { api } from '@/services/api';
-import type { FieldAnnotation, PatternMatch, TextSelection, Toast, Template, TemplateDetails } from '@/types';
+import type {
+  FieldAnnotation,
+  FieldAnnotationInput,
+  PatternMatch,
+  TextSelection,
+  Toast,
+  Template,
+} from '@/types';
+
+// Color palette for field annotations
+const FIELD_COLORS = [
+  '#3b82f6', // blue
+  '#10b981', // emerald
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+];
 
 interface DocumentState {
   // Document state
@@ -23,9 +42,12 @@ interface DocumentState {
   // UI state
   toasts: Toast[];
 
+  // Color management
+  nextColorIndex: number;
+
   // Actions
   uploadDocument: (file: File) => Promise<void>;
-  addAnnotation: (annotation: FieldAnnotation) => void;
+  addAnnotation: (annotation: FieldAnnotationInput) => void;
   removeAnnotation: (fieldName: string) => void;
   updateAnnotation: (oldFieldName: string, newAnnotation: FieldAnnotation) => void;
   setSelectedText: (selection: TextSelection | null) => void;
@@ -53,6 +75,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   isFetchingTemplates: false,
   isLoadingTemplate: false,
   toasts: [],
+  nextColorIndex: 0,
 
   // Upload document
   uploadDocument: async (file: File) => {
@@ -79,42 +102,49 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   // Add annotation
-  addAnnotation: (annotation: FieldAnnotation) => {
-    const { annotations } = get();
+  addAnnotation: (annotation: FieldAnnotationInput) => {
+    const { annotations, nextColorIndex } = get();
 
-    if (annotations.some(a => a.fieldName === annotation.fieldName)) {
+    if (annotations.some((a) => a.fieldName === annotation.fieldName)) {
       get().addToast('Field name already exists', 'error');
       return;
     }
 
-    set({ annotations: [...annotations, annotation] });
-    get().addToast(`Field \"${annotation.fieldName}\" created`, 'success');
+    // Assign color from palette (cycles through colors)
+    const color = FIELD_COLORS[nextColorIndex % FIELD_COLORS.length];
+    const annotationWithColor = { ...annotation, color };
+
+    set({
+      annotations: [...annotations, annotationWithColor],
+      nextColorIndex: nextColorIndex + 1,
+    });
+    get().addToast(`Field "${annotation.fieldName}" created`, 'success');
   },
 
   // Remove annotation
   removeAnnotation: (fieldName: string) => {
-    set(state => ({
-      annotations: state.annotations.filter(a => a.fieldName !== fieldName),
+    set((state) => ({
+      annotations: state.annotations.filter((a) => a.fieldName !== fieldName),
     }));
-    get().addToast(`Field \"${fieldName}\" removed`, 'info');
+    get().addToast(`Field "${fieldName}" removed`, 'info');
   },
 
   // Update annotation
   updateAnnotation: (oldFieldName: string, newAnnotation: FieldAnnotation) => {
     const { annotations } = get();
 
-    if (oldFieldName !== newAnnotation.fieldName &&
-        annotations.some(a => a.fieldName === newAnnotation.fieldName)) {
+    if (
+      oldFieldName !== newAnnotation.fieldName &&
+      annotations.some((a) => a.fieldName === newAnnotation.fieldName)
+    ) {
       get().addToast('Field name already exists', 'error');
       return;
     }
 
-    set(state => ({
-      annotations: state.annotations.map(a =>
-        a.fieldName === oldFieldName ? newAnnotation : a
-      ),
+    set((state) => ({
+      annotations: state.annotations.map((a) => (a.fieldName === oldFieldName ? newAnnotation : a)),
     }));
-    get().addToast(`Field \"${newAnnotation.fieldName}\" updated`, 'success');
+    get().addToast(`Field "${newAnnotation.fieldName}" updated`, 'success');
   },
 
   // Set selected text
@@ -138,7 +168,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     try {
       await api.saveTemplate({ name, documentId, annotations, description });
-      get().addToast(`Template \"${name}\" saved successfully`, 'success');
+      get().addToast(`Template "${name}" saved successfully`, 'success');
       get().fetchTemplates();
     } catch (error) {
       get().addToast('Failed to save template', 'error');
@@ -156,6 +186,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       selectedText: null,
       detectedPatterns: [],
       uploadProgress: 0,
+      nextColorIndex: 0,
     });
   },
 
@@ -171,14 +202,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   // Remove a detected pattern from the list
   removeDetectedPattern: (patternToRemove: PatternMatch) => {
-    set(state => ({
+    set((state) => ({
       detectedPatterns: state.detectedPatterns.filter(
         (p) =>
-          !(p.pattern === patternToRemove.pattern &&
+          !(
+            p.pattern === patternToRemove.pattern &&
             p.text === patternToRemove.text &&
             p.start === patternToRemove.start &&
             p.end === patternToRemove.end &&
-            p.paragraphIndex === patternToRemove.paragraphIndex)
+            p.paragraphIndex === patternToRemove.paragraphIndex
+          )
       ),
     }));
   },
@@ -200,7 +233,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   loadTemplate: async (templateId: string) => {
     set({ isLoadingTemplate: true });
     try {
-      const templateDetails = await api.getTemplateDetails(templateId); 
+      const templateDetails = await api.getTemplateDetails(templateId);
       set({
         annotations: templateDetails.annotations,
         selectedText: null,
@@ -220,7 +253,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const id = Math.random().toString(36).substring(7);
     const toast: Toast = { id, message, type };
 
-    set(state => ({ toasts: [...state.toasts, toast] }));
+    set((state) => ({ toasts: [...state.toasts, toast] }));
 
     // Auto-remove after 5 seconds
     setTimeout(() => {
@@ -230,8 +263,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   // Remove toast
   removeToast: (id: string) => {
-    set(state => ({
-      toasts: state.toasts.filter(t => t.id !== id),
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
     }));
   },
 }));
