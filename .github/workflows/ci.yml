@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [stj-api, text-extractor, doc-assembler, ledes-converter, trello-mcp, ccui-ws]
+        service: [stj-api, text-extractor, doc-assembler, ledes-converter, trello-mcp]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -88,7 +88,7 @@ jobs:
       - name: Build (excluding heavy services)
         run: |
           cd legal-workbench
-          docker compose build frontend-react api-stj api-ledes-converter api-doc-assembler api-trello api-ccui-ws --parallel
+          docker compose build frontend-react api-stj api-ledes-converter api-doc-assembler api-trello --parallel
 
   security-scan:
     runs-on: ubuntu-latest

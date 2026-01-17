@@ -188,42 +188,7 @@ services:
       start_period: 10s
 
   # ============================================================
-  # 8. CCUI WEBSOCKET - Chat Backend for Claude Code UI
-  # ============================================================
-  api-ccui-ws:
-    build:
-      context: .
-      dockerfile: docker/services/ccui-ws/Dockerfile
-    labels:
-      - "traefik.enable=true"
-      # WebSocket route
-      - "traefik.http.routers.ccui-ws.rule=PathPrefix(`/ws`)"
-      - "traefik.http.routers.ccui-ws.entrypoints=web"
-      - "traefik.http.routers.ccui-ws.priority=20"
-      # Chat API route
-      - "traefik.http.routers.ccui-chat.rule=PathPrefix(`/api/chat`)"
-      - "traefik.http.routers.ccui-chat.entrypoints=web"
-      - "traefik.http.routers.ccui-chat.priority=15"
-      - "traefik.http.services.ccui-ws.loadbalancer.server.port=8005"
-    environment:
-      - LOG_LEVEL=INFO
-      - SENTRY_DSN=${SENTRY_DSN:-}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - APP_VERSION=${APP_VERSION:-1.0.0}
-    networks:
-      - legal-network
-    depends_on:
-      - reverse-proxy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8005/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # ============================================================
-  # 9. REDIS - Message Broker for Celery
+  # 8. REDIS - Message Broker for Celery
   # ============================================================
   redis:
     image: redis:7-alpine
@@ -239,7 +204,7 @@ services:
     restart: unless-stopped
 
   # ============================================================
-  # 10. PROMETHEUS - Metrics Collection
+  # 9. PROMETHEUS - Metrics Collection
   # ============================================================
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -265,7 +230,7 @@ services:
       start_period: 10s
 
   # ============================================================
-  # 11. GRAFANA - Metrics Visualization
+  # 10. GRAFANA - Metrics Visualization
   # ============================================================
   grafana:
     image: grafana/grafana:10.2.0

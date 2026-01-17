@@ -17,7 +17,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [frontend, stj-api, text-extractor, doc-assembler, ledes-converter, trello-mcp, ccui-ws]
+        service: [frontend, stj-api, text-extractor, doc-assembler, ledes-converter, trello-mcp]
     steps:
       - uses: actions/checkout@v4
 

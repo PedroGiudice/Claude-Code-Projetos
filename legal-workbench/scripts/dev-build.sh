@@ -17,7 +17,6 @@ if [ -z "$SERVICE" ]; then
     echo "  api-doc-assembler  - Document Generation"
     echo "  api-ledes-converter - LEDES Format Converter"
     echo "  api-trello         - Trello Integration"
-    echo "  api-ccui-ws        - Chat WebSocket Backend"
     echo ""
     exit 1
 fi
