@@ -112,3 +112,20 @@ code {
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
 }
+
+/* TipTap text selection - bright yellow highlight */
+.ProseMirror ::selection {
+  background-color: #fef08a !important; /* yellow-200 */
+  color: #1a1a1a !important;
+}
+
+.ProseMirror::-moz-selection {
+  background-color: #fef08a !important;
+  color: #1a1a1a !important;
+}
+
+/* Field annotation hover effect */
+.field-annotation:hover {
+  filter: brightness(1.1);
+  cursor: pointer;
+}

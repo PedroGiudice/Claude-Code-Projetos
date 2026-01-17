@@ -37,7 +37,17 @@ export const FieldAnnotationMark = Mark.create<FieldAnnotationOptions>({
         parseHTML: (element) => element.getAttribute('data-color'),
         renderHTML: (attributes) => ({
           'data-color': attributes.color,
-          style: `background-color: ${attributes.color}30; border-bottom: 2px solid ${attributes.color};`,
+          // Bold highlight style - impossible to miss
+          style: `
+            background-color: ${attributes.color};
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          `
+            .replace(/\s+/g, ' ')
+            .trim(),
         }),
       },
     };
