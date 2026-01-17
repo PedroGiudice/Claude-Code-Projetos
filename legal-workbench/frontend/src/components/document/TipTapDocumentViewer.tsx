@@ -137,28 +137,45 @@ export function TipTapDocumentViewer() {
         return;
       }
 
-      // Find global position in textContent using indexOf with hint
-      // The textContent is paragraphs.join("\n\n"), so we can calculate
-      // the global start by searching for the selected text
+      // Calculate global position in textContent based on paragraph structure
+      // textContent = paragraphs.join("\n\n"), so we need:
+      //   globalStart = sum of (paragraph[i].length + 2) for i < paragraphIndex
+      //                 + localOffset within the paragraph
       const selectedText = text;
 
-      // Calculate approximate global position from paragraph index
-      // This is used as a hint for indexOf to find the right occurrence
-      let globalHint = 0;
+      // Calculate exact global start position from paragraph structure
+      let globalStart = 0;
       for (let i = 0; i < fromPos.paragraphIndex; i++) {
-        globalHint += paragraphs[i].length + 2; // +2 for "\n\n"
+        globalStart += paragraphs[i].length + 2; // +2 for "\n\n" separator
       }
-
-      // Find the actual position in textContent starting from hint
-      const globalStart = textContent.indexOf(selectedText, globalHint);
-
-      if (globalStart === -1) {
-        // Text not found - something is wrong, ignore
-        console.error('Selected text not found in textContent:', selectedText);
-        return;
-      }
+      // Add local offset within the paragraph
+      globalStart += fromPos.localOffset;
 
       const globalEnd = globalStart + selectedText.length;
+
+      // VALIDATION: Verify the calculated position matches the selected text
+      const textAtPosition = textContent.slice(globalStart, globalEnd);
+      if (textAtPosition !== selectedText) {
+        // Position mismatch - log details for debugging
+        console.error('[DEBUG] Position validation failed!');
+        console.error('[DEBUG] paragraphIndex:', fromPos.paragraphIndex);
+        console.error('[DEBUG] localOffset:', fromPos.localOffset);
+        console.error('[DEBUG] Calculated globalStart:', globalStart);
+        console.error('[DEBUG] Expected text:', selectedText);
+        console.error('[DEBUG] Got text at position:', textAtPosition);
+        console.error(
+          '[DEBUG] textContent preview at position:',
+          textContent.slice(Math.max(0, globalStart - 20), globalStart + 50)
+        );
+
+        // Fallback: try indexOf as last resort
+        const fallbackStart = textContent.indexOf(selectedText);
+        if (fallbackStart !== -1) {
+          console.warn('[DEBUG] Using indexOf fallback, position:', fallbackStart);
+          // Note: This may be wrong if text appears multiple times
+        }
+        return; // Don't set invalid selection
+      }
 
       setSelectedText({
         text: selectedText,
