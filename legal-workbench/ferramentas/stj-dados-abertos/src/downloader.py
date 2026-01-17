@@ -14,17 +14,21 @@ from typing import Optional, Final
 import httpx
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
 from rich.console import Console
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
+import shutil
 from config import (
     STAGING_DIR,
+    RAW_DATA_PATH,
     DEFAULT_TIMEOUT,
     DEFAULT_RETRY_ATTEMPTS,
     DEFAULT_RETRY_DELAY,
-    CONCURRENT_DOWNLOADS
+    CONCURRENT_DOWNLOADS,
+    CKAN_DATASETS,
 )
+from src.ckan_client import CKANClient, CKANResource
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -133,7 +137,8 @@ class STJDownloader:
 
     @retry(
         stop=stop_after_attempt(DEFAULT_RETRY_ATTEMPTS),
-        wait=wait_exponential(multiplier=1, min=DEFAULT_RETRY_DELAY, max=30)
+        wait=wait_exponential(multiplier=1, min=DEFAULT_RETRY_DELAY, max=30),
+        retry=retry_if_not_exception_type((json.JSONDecodeError, ValueError))  # Nao retry erros permanentes
     )
     def download_json(self, url: str, filename: str, force: bool = False) -> Optional[Path]:
         """
@@ -246,6 +251,24 @@ class STJDownloader:
                 )
 
                 for config in url_configs:
+                    try:
+                        file_path = self.download_json(
+                            config["url"],
+                            config["filename"],
+                            force=config.get("force", False)
+                        )
+                        if file_path:
+                            downloaded_files.append(file_path)
+                    except (json.JSONDecodeError, ValueError) as e:
+                        # Arquivo corrompido no servidor - logar e continuar
+                        logger.warning(f"Ignorando arquivo corrompido: {config['filename']} - {e}")
+                    except Exception as e:
+                        # Outros erros (apos retry) - logar e continuar
+                        logger.error(f"Falha ao baixar {config['filename']} apos retries: {e}")
+                    progress.update(task, advance=1)
+        else:
+            for config in url_configs:
+                try:
                     file_path = self.download_json(
                         config["url"],
                         config["filename"],
@@ -253,16 +276,12 @@ class STJDownloader:
                     )
                     if file_path:
                         downloaded_files.append(file_path)
-                    progress.update(task, advance=1)
-        else:
-            for config in url_configs:
-                file_path = self.download_json(
-                    config["url"],
-                    config["filename"],
-                    force=config.get("force", False)
-                )
-                if file_path:
-                    downloaded_files.append(file_path)
+                except (json.JSONDecodeError, ValueError) as e:
+                    # Arquivo corrompido no servidor - logar e continuar
+                    logger.warning(f"Ignorando arquivo corrompido: {config['filename']} - {e}")
+                except Exception as e:
+                    # Outros erros (apos retry) - logar e continuar
+                    logger.error(f"Falha ao baixar {config['filename']} apos retries: {e}")
 
         return downloaded_files
 
@@ -289,6 +308,92 @@ class STJDownloader:
             Lista de Paths dos arquivos
         """
         return sorted(self.staging_dir.glob(pattern))
+
+    def download_from_ckan(
+        self,
+        orgao: str,
+        start_date: str,
+        end_date: str,
+        force: bool = False,
+        show_progress: bool = True
+    ) -> list[Path]:
+        """
+        Download files from CKAN API for a date range.
+
+        Args:
+            orgao: Orgao key (e.g., "primeira_turma")
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+            force: Overwrite existing files
+            show_progress: Show progress bar
+
+        Returns:
+            List of downloaded file paths
+        """
+        downloaded_files = []
+
+        with CKANClient() as ckan:
+            resources = ckan.get_resources_by_date_range(orgao, start_date, end_date)
+
+            if not resources:
+                logger.info(f"No resources found for {orgao} between {start_date} and {end_date}")
+                return downloaded_files
+
+            logger.info(f"Found {len(resources)} resources for {orgao}")
+
+            # Build URL configs for batch download
+            url_configs = []
+            for resource in resources:
+                filename = f"{orgao}_{resource.name}"
+                url_configs.append({
+                    "url": resource.url,
+                    "filename": filename,
+                    "force": force,
+                })
+
+            # Use existing batch download logic
+            downloaded_files = self.download_batch(url_configs, show_progress)
+
+            # Persist to raw/ directory for audit trail
+            if downloaded_files:
+                raw_dir = RAW_DATA_PATH / orgao
+                raw_dir.mkdir(parents=True, exist_ok=True)
+                for file_path in downloaded_files:
+                    raw_dest = raw_dir / file_path.name
+                    if not raw_dest.exists():
+                        shutil.copy(file_path, raw_dest)
+                        logger.debug(f"Arquivo copiado para raw/: {raw_dest}")
+
+        return downloaded_files
+
+    def download_all_orgaos(
+        self,
+        start_date: str,
+        end_date: str,
+        orgaos: Optional[list[str]] = None,
+        force: bool = False
+    ) -> dict[str, list[Path]]:
+        """
+        Download from all orgaos (or specified subset).
+
+        Args:
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+            orgaos: List of orgao keys (default: all)
+            force: Overwrite existing files
+
+        Returns:
+            Dict mapping orgao to list of downloaded files
+        """
+        target_orgaos = orgaos or list(CKAN_DATASETS.keys())
+        results = {}
+
+        for orgao in target_orgaos:
+            logger.info(f"Downloading {orgao}...")
+            files = self.download_from_ckan(orgao, start_date, end_date, force)
+            results[orgao] = files
+
+        return results
 
     def cleanup_staging(self, days_old: int = 7):
         """

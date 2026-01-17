@@ -54,10 +54,11 @@ services:
       - "traefik.http.services.stj.loadbalancer.server.port=8000"
     volumes:
       - shared-data:/data
-      - stj-db:/app/db                           # Persistent DuckDB
+      - /data/stj:/data/stj                      # Block Volume (200GB) for STJ data
     environment:
       - DATA_PATH=/data
-      - DB_PATH=/app/db/stj.duckdb
+      - DB_PATH=/data/stj/db/stj.duckdb          # DuckDB on Block Volume
+      - ACORDAOS_PATH=/data/stj/acordaos         # PDFs on Block Volume
       - LOG_LEVEL=INFO
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=${ENVIRONMENT:-development}
@@ -295,7 +296,6 @@ services:
 # ============================================================
 volumes:
   shared-data:           # Files shared between frontend and backends
-  stj-db:                # DuckDB persistence for STJ
   templates:             # Document templates
   text-extractor-cache:  # Marker cache for PDF processing
   ledes-data:            # Persistent storage for LEDES converter

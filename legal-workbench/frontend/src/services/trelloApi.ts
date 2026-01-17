@@ -104,12 +104,15 @@ export const DEFAULT_SELECTED_FIELDS = new Set<CardFieldKey>(
 const API_BASE_URL = import.meta.env.VITE_TRELLO_API_URL || '/api/trello/api/v1';
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // Use absolute URL to avoid issues with Basic Auth credentials in browser location
+  const baseUrl = window.location.origin.replace(/\/\/[^@]*@/, '//');
+  const url = API_BASE_URL.startsWith('/') ? `${baseUrl}${API_BASE_URL}${endpoint}` : `${API_BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
+    credentials: 'omit', // Don't send Basic Auth credentials to API endpoints
     headers: {
       'Content-Type': 'application/json',
-      // Add any necessary authentication headers here if applicable
-      // 'Authorization': `Bearer YOUR_TOKEN`,
       ...options?.headers,
     },
   });

@@ -221,16 +221,13 @@ class STJDatabase:
             # Índice parcial: últimos 90 dias (queries frequentes)
             # REMOVED: DuckDB não suporta partial indexes yet
 
-            # Full-Text Search em ementas (Gold Standard configuration)
-            logger.info("Criando índice FTS para ementas (Portuguese stemmer + stopwords jurídicas)...")
+            # Full-Text Search (Gold Standard configuration)
+            # Um unico indice com ambos os campos (ementa + texto_integral)
+            logger.info("Criando indice FTS para ementa e texto_integral (Portuguese stemmer + stopwords juridicas)...")
             try:
-                # Drop existing FTS index if it exists (may be using old syntax)
-                self.conn.execute("DROP INDEX IF EXISTS fts_ementa")
-
-                # Gold Standard PRAGMA syntax
                 self.conn.execute("""
                     PRAGMA create_fts_index(
-                        'acordaos', 'id', 'ementa',
+                        'acordaos', 'id', 'ementa', 'texto_integral',
                         stemmer = 'portuguese',
                         stopwords = 'stopwords_juridico',
                         strip_accents = 1,
@@ -238,26 +235,9 @@ class STJDatabase:
                         overwrite = 1
                     )
                 """)
+                logger.info("Indice FTS criado com sucesso")
             except Exception as e:
                 logger.warning(f"FTS index creation warning (may already exist): {e}")
-
-            # Full-Text Search em texto integral (Gold Standard configuration)
-            logger.info("Criando índice FTS para inteiro teor (pode demorar)...")
-            try:
-                self.conn.execute("DROP INDEX IF EXISTS fts_texto_integral")
-
-                self.conn.execute("""
-                    PRAGMA create_fts_index(
-                        'acordaos', 'id', 'texto_integral',
-                        stemmer = 'portuguese',
-                        stopwords = 'stopwords_juridico',
-                        strip_accents = 1,
-                        lower = 1,
-                        overwrite = 1
-                    )
-                """)
-            except Exception as e:
-                logger.warning(f"FTS index creation warning: {e}")
 
             # Tabela de estatísticas (cache de contagens)
             self.conn.execute("""
@@ -277,7 +257,7 @@ class STJDatabase:
 
     def inserir_batch(self, registros: List[Dict], atualizar_duplicados: bool = False) -> Tuple[int, int, int]:
         """
-        Insere lote de registros com deduplicação por hash.
+        Insere lote de registros com deduplicacao por hash.
 
         Args:
             registros: Lista de dicts com dados processados
@@ -289,8 +269,23 @@ class STJDatabase:
         if not registros:
             return 0, 0, 0
 
+        # FASE 1: Deduplicar registros de entrada (mesmo acordao pode estar em multiplos arquivos)
+        registros_unicos = {}
+        duplicados_entrada = 0
+        for r in registros:
+            h = r['hash_conteudo']
+            if h not in registros_unicos:
+                registros_unicos[h] = r
+            else:
+                duplicados_entrada += 1
+
+        if duplicados_entrada > 0:
+            logger.info(f"Deduplicacao de entrada: {duplicados_entrada} duplicatas removidas, {len(registros_unicos)} unicos")
+
+        registros = list(registros_unicos.values())
+
         inseridos = 0
-        duplicados = 0
+        duplicados = duplicados_entrada  # Contar duplicatas de entrada
         erros = 0
 
         try:
@@ -400,48 +395,58 @@ class STJDatabase:
         limit: int = 100
     ) -> List[Dict]:
         """
-        Busca termo em ementas usando Full-Text Search.
+        Busca termo em ementas usando Full-Text Search (BM25).
 
         Args:
-            termo: Termo para buscar
-            orgao: Filtrar por órgão julgador (opcional)
-            dias: Buscar nos últimos N dias
-            limit: Máximo de resultados
+            termo: Termo para buscar (suporta stemming portugues)
+            orgao: Filtrar por orgao julgador (opcional)
+            dias: Buscar nos ultimos N dias
+            limit: Maximo de resultados
 
         Returns:
-            Lista de dicts com resultados
+            Lista de dicts com resultados ordenados por relevancia
         """
         try:
-            # Note: FTS scoring syntax varies by DuckDB version
-            # Using simple LIKE for compatibility
+            # Usar FTS com BM25 para ranking por relevancia
+            # fields := 'ementa' para buscar apenas na ementa
             query = f"""
                 SELECT
+                    id,
                     numero_processo,
                     orgao_julgador,
                     tipo_decisao,
                     relator,
                     data_publicacao,
                     data_julgamento,
-                    ementa
-                FROM acordaos
-                WHERE ementa LIKE ?
-                    AND data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
+                    ementa,
+                    resultado_julgamento,
+                    score
+                FROM (
+                    SELECT *,
+                        fts_main_acordaos.match_bm25(id, ?, fields := 'ementa') AS score
+                    FROM acordaos
+                    WHERE data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
             """
 
-            params = [f"%{termo}%"]
+            params = [termo]
 
             if orgao:
                 query += " AND orgao_julgador = ?"
                 params.append(orgao)
 
-            query += " ORDER BY data_publicacao DESC LIMIT ?"
+            query += """
+                ) sq
+                WHERE score IS NOT NULL
+                ORDER BY score DESC
+                LIMIT ?
+            """
             params.append(limit)
 
             results = self.conn.execute(query, params).fetchall()
 
             # Converter para dicts
-            columns = ['numero_processo', 'orgao_julgador', 'tipo_decisao', 'relator',
-                      'data_publicacao', 'data_julgamento', 'ementa']
+            columns = ['id', 'numero_processo', 'orgao_julgador', 'tipo_decisao', 'relator',
+                      'data_publicacao', 'data_julgamento', 'ementa', 'resultado_julgamento', 'score']
             return [dict(zip(columns, row)) for row in results]
 
         except Exception as e:
@@ -452,27 +457,27 @@ class STJDatabase:
         self,
         termo: str,
         orgao: Optional[str] = None,
-        dias: int = 30,
-        limit: int = 50
+        dias: int = 365,
+        limit: int = 100
     ) -> List[Dict]:
         """
-        Busca termo no inteiro teor dos acórdãos.
-
-        ATENÇÃO: Pode ser LENTO em bancos grandes (50GB+).
-        Use índice FTS e limite temporal.
+        Busca termo no inteiro teor dos acordaos usando Full-Text Search (BM25).
 
         Args:
-            termo: Termo para buscar
-            orgao: Filtrar por órgão julgador (opcional)
-            dias: Buscar nos últimos N dias (padrão: 30 - mais rápido)
-            limit: Máximo de resultados
+            termo: Termo para buscar (suporta stemming portugues)
+            orgao: Filtrar por orgao julgador (opcional)
+            dias: Buscar nos ultimos N dias
+            limit: Maximo de resultados
 
         Returns:
-            Lista de dicts com resultados
+            Lista de dicts com resultados ordenados por relevancia
         """
         try:
+            # Usar FTS com BM25 para ranking por relevancia
+            # fields := 'texto_integral' para buscar no inteiro teor
             query = f"""
                 SELECT
+                    id,
                     numero_processo,
                     orgao_julgador,
                     tipo_decisao,
@@ -480,30 +485,39 @@ class STJDatabase:
                     data_publicacao,
                     data_julgamento,
                     ementa,
-                    LENGTH(texto_integral) as tamanho_texto
-                FROM acordaos
-                WHERE texto_integral LIKE ?
-                    AND data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
+                    resultado_julgamento,
+                    LENGTH(texto_integral) as tamanho_texto,
+                    score
+                FROM (
+                    SELECT *,
+                        fts_main_acordaos.match_bm25(id, ?, fields := 'texto_integral') AS score
+                    FROM acordaos
+                    WHERE data_publicacao >= CURRENT_DATE - INTERVAL '{dias} DAY'
             """
 
-            params = [f"%{termo}%"]
+            params = [termo]
 
             if orgao:
                 query += " AND orgao_julgador = ?"
                 params.append(orgao)
 
-            query += " ORDER BY data_publicacao DESC LIMIT ?"
+            query += """
+                ) sq
+                WHERE score IS NOT NULL
+                ORDER BY score DESC
+                LIMIT ?
+            """
             params.append(limit)
 
             results = self.conn.execute(query, params).fetchall()
 
             # Converter para dicts
-            columns = ['numero_processo', 'orgao_julgador', 'tipo_decisao', 'relator',
-                      'data_publicacao', 'data_julgamento', 'ementa', 'tamanho_texto']
+            columns = ['id', 'numero_processo', 'orgao_julgador', 'tipo_decisao', 'relator',
+                      'data_publicacao', 'data_julgamento', 'ementa', 'resultado_julgamento', 'tamanho_texto', 'score']
             return [dict(zip(columns, row)) for row in results]
 
         except Exception as e:
-            logger.error(f"Erro na busca de acórdão: {e}")
+            logger.error(f"Erro na busca de acordao: {e}")
             return []
 
     def obter_estatisticas(self) -> Dict:
@@ -594,17 +608,12 @@ class STJDatabase:
         DuckDB FTS requires manual rebuild after data modifications.
         """
         try:
-            logger.info("Reconstruindo índices FTS...")
+            logger.info("Reconstruindo indice FTS...")
 
-            # Drop existing FTS indexes
-            self.conn.execute("DROP INDEX IF EXISTS fts_ementa")
-            self.conn.execute("DROP INDEX IF EXISTS fts_texto_integral")
-
-            # Recreate with Gold Standard configuration
-            logger.info("Recriando FTS para ementas...")
+            # Recriar indice FTS com ambos os campos (Gold Standard configuration)
             self.conn.execute("""
                 PRAGMA create_fts_index(
-                    'acordaos', 'id', 'ementa',
+                    'acordaos', 'id', 'ementa', 'texto_integral',
                     stemmer = 'portuguese',
                     stopwords = 'stopwords_juridico',
                     strip_accents = 1,
@@ -613,23 +622,11 @@ class STJDatabase:
                 )
             """)
 
-            logger.info("Recriando FTS para texto integral...")
-            self.conn.execute("""
-                PRAGMA create_fts_index(
-                    'acordaos', 'id', 'texto_integral',
-                    stemmer = 'portuguese',
-                    stopwords = 'stopwords_juridico',
-                    strip_accents = 1,
-                    lower = 1,
-                    overwrite = 1
-                )
-            """)
-
-            console.print("[green]✅ Índices FTS reconstruídos[/green]")
-            logger.info("Índices FTS reconstruídos com sucesso")
+            console.print("[green]Indice FTS reconstruido[/green]")
+            logger.info("Indice FTS reconstruido com sucesso")
 
         except Exception as e:
-            logger.error(f"Erro ao reconstruir índices FTS: {e}")
+            logger.error(f"Erro ao reconstruir indice FTS: {e}")
             raise
 
     def exportar_csv(self, query: str, output_path: Path):

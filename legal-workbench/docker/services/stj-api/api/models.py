@@ -98,16 +98,19 @@ class ExportResponse(BaseModel):
 
 # Response models
 class AcordaoSummary(BaseModel):
-    """Summary of an acordão (for search results)."""
+    """Summary of an acordao (for search results)."""
     id: str
     numero_processo: str
     orgao_julgador: str
-    tipo_decisao: Optional[str]
-    relator: Optional[str]
-    data_publicacao: Optional[datetime]
-    data_julgamento: Optional[datetime]
-    ementa: Optional[str]
-    resultado_julgamento: Optional[str]
+    tipo_decisao: Optional[str] = None
+    relator: Optional[str] = None
+    data_publicacao: Optional[datetime] = None
+    data_julgamento: Optional[datetime] = None
+    ementa: Optional[str] = None
+    resultado_julgamento: Optional[str] = None
+    # FTS fields
+    score: Optional[float] = Field(None, description="BM25 relevance score from FTS")
+    tamanho_texto: Optional[int] = Field(None, description="Size of texto_integral in chars")
 
     class Config:
         from_attributes = True
@@ -159,14 +162,14 @@ class StatsResponse(BaseModel):
 class SyncStatus(BaseModel):
     """Status of a sync operation."""
     status: str = Field(..., description="Status da operação (running, completed, failed)")
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     downloaded: int = 0
     processed: int = 0
     inserted: int = 0
     duplicates: int = 0
     errors: int = 0
-    message: Optional[str]
+    message: Optional[str] = None
 
 
 class HealthResponse(BaseModel):

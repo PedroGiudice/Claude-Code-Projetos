@@ -214,6 +214,10 @@ class TestSearchOperations:
 
             db.inserir_batch(registros)
 
+            # Rebuild FTS index after inserting test data
+            # DuckDB FTS requires manual rebuild after INSERT
+            db.rebuild_fts_index()
+
         # Re-abrir para testes
         return STJDatabase(temp_db)
 
