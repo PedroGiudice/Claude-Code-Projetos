@@ -15,11 +15,11 @@ App
     ├── DocumentViewer (Center - flex-1)
     │   ├── Paragraph List
     │   │   └── FieldAnnotation (inline)
-    │   └── TextSelectionPopup (conditional)
-    └── AnnotationList (Right - 300px)
-        ├── Annotation Items
-        │   └── Delete Button
-        ├── Save Template Modal (conditional)
+    │   └── FloatingToolbar (conditional - appears on text selection)
+    └── RightPanel (Right - 300px)
+        ├── FieldList (field management)
+        │   └── FieldItem components
+        ├── SaveModal (conditional)
         └── ToastContainer
 ```
 
@@ -91,8 +91,9 @@ UI Update
 | Header | App branding, clear action | documentId | clearDocument |
 | Sidebar | Upload & instructions | documentId, detectedPatterns | uploadDocument |
 | DocumentViewer | Document display | paragraphs, annotations, selectedText | setSelectedText |
-| TextSelectionPopup | Field creation | selectedText | addAnnotation |
-| AnnotationList | Annotation management | annotations | removeAnnotation, saveTemplate |
+| FloatingToolbar | Quick field creation on selection | selectedText | addAnnotation |
+| FieldList | Field management | annotations | removeAnnotation |
+| SaveModal | Template saving | annotations | saveTemplate |
 | DropZone | File input | isUploading | onFileSelect callback |
 | UploadProgress | Progress display | uploadProgress | None |
 | Button | Reusable button | None | onClick callback |
@@ -328,8 +329,8 @@ src/
 ## Design Patterns Used
 
 ### Container/Presenter
-- Containers: MainLayout, DocumentViewer, AnnotationList
-- Presenters: Button, Input, Modal, Toast
+- Containers: MainLayout, DocumentViewer, FieldList
+- Presenters: Button, Input, Modal, Toast, FloatingToolbar
 
 ### Custom Hooks
 Extract reusable logic from components into hooks.
