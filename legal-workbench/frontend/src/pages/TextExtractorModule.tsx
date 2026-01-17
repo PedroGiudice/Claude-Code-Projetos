@@ -5,6 +5,7 @@ import {
   ConfigPanel,
   OutputPanel,
   ConsolePanel,
+  SettingsModal,
 } from '@/components/text-extractor';
 import {
   Upload,
@@ -21,9 +22,10 @@ import '@/styles/text-extractor.css';
 type ActivePanel = 'upload' | 'config' | 'output' | 'console';
 
 export default function TextExtractorModule() {
-  const { status, addLog } = useTextExtractorStore();
+  const { status } = useTextExtractorStore();
   const [activePanel, setActivePanel] = useState<ActivePanel>('upload');
   const [consoleCollapsed, setConsoleCollapsed] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Initialize console on mount
   useEffect(() => {
@@ -82,7 +84,12 @@ export default function TextExtractorModule() {
             <History size={16} />
             <span>HISTORY</span>
           </button>
-          <button type="button" className="te-header-btn" aria-label="Settings">
+          <button
+            type="button"
+            className="te-header-btn"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
             <Settings size={16} />
             <span>SETTINGS</span>
           </button>
@@ -179,6 +186,9 @@ export default function TextExtractorModule() {
         isCollapsed={consoleCollapsed}
         onToggleCollapse={() => setConsoleCollapsed(!consoleCollapsed)}
       />
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

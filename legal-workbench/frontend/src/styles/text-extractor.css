@@ -1463,3 +1463,213 @@
     flex-direction: column;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Settings Modal
+   -------------------------------------------------------------------------- */
+.te-settings-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.te-settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(5, 5, 5, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.te-settings-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 16px;
+  background-color: var(--te-bg-secondary);
+  border: 1px dashed var(--te-accent-primary);
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(80, 250, 123, 0.15);
+  overflow: hidden;
+}
+
+.te-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px dashed var(--te-border-default);
+}
+
+.te-settings-title {
+  font-family: var(--te-font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--te-accent-primary);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.te-settings-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px dashed var(--te-border-default);
+  border-radius: 4px;
+  color: var(--te-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.te-settings-close:hover {
+  border-color: var(--te-accent-error);
+  color: var(--te-accent-error);
+}
+
+.te-settings-content {
+  padding: 20px;
+}
+
+.te-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.te-settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.te-settings-section-icon {
+  color: var(--te-accent-secondary);
+}
+
+.te-settings-section-title {
+  font-family: var(--te-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--te-accent-primary);
+  letter-spacing: 0.5px;
+}
+
+.te-settings-section-desc {
+  font-family: var(--te-font-mono);
+  font-size: 11px;
+  color: var(--te-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.te-settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.te-settings-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: var(--te-bg-surface);
+  border: 1px dashed var(--te-border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.te-settings-option:hover {
+  border-color: var(--te-accent-muted);
+  background-color: var(--te-bg-elevated);
+}
+
+.te-settings-option--active {
+  border-color: var(--te-accent-primary);
+  background-color: rgba(80, 250, 123, 0.05);
+}
+
+.te-settings-radio-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.te-settings-option-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 1px dashed var(--te-border-default);
+  border-radius: 50%;
+  color: var(--te-accent-primary);
+  transition: all 0.2s ease;
+}
+
+.te-settings-option--active .te-settings-option-check {
+  border-color: var(--te-accent-primary);
+  background-color: rgba(80, 250, 123, 0.1);
+}
+
+.te-settings-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.te-settings-option-label {
+  font-family: var(--te-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--te-text-primary);
+}
+
+.te-settings-option-desc {
+  font-family: var(--te-font-mono);
+  font-size: 10px;
+  color: var(--te-text-muted);
+}
+
+.te-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px dashed var(--te-border-default);
+  background-color: var(--te-bg-surface);
+}
+
+.te-settings-hint {
+  font-family: var(--te-font-mono);
+  font-size: 10px;
+  color: var(--te-text-muted);
+}
+
+.te-settings-done {
+  padding: 8px 20px;
+  background-color: var(--te-accent-primary);
+  border: none;
+  border-radius: 4px;
+  color: var(--te-bg-primary);
+  font-family: var(--te-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.te-settings-done:hover {
+  background-color: #00cc7d;
+  box-shadow: 0 0 20px rgba(80, 250, 123, 0.3);
+}
