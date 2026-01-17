@@ -6,16 +6,45 @@ Use this template when dispatching an implementer subagent.
 
 **NEVER use `general-purpose`.** Always select the appropriate specialized subagent:
 
-| Task Type | Subagent |
-|-----------|----------|
-| Python/FastAPI backend | `qualidade-codigo` ou `backend-developer` (quando disponivel) |
-| React/TypeScript frontend | `frontend-developer` |
-| Infrastructure/Deploy | `cicd-operator` ou `devops-automator` |
-| Database/Migrations | `qualidade-codigo` |
-| Testing | `test-writer-fixer` ou `tdd-coach` |
-| Documentation | `documentation-architect` |
-| AI/LLM features | `ai-engineer` |
-| FastHTML/HTMX | `fasthtml-bff-developer` |
+### Implementation Subagents
+
+| Task Type | Subagent | Notes |
+|-----------|----------|-------|
+| Python/FastAPI backend | `backend-developer` | Primary choice for backend |
+| React/TypeScript frontend | `frontend-developer` | Primary choice for frontend |
+| Infrastructure/Deploy OCI | `cicd-operator` | Oracle Cloud, Docker, SSH |
+| Infrastructure/Deploy GCP | `cloud-run-deployer` | Google Cloud Run |
+| DevOps Planning | `devops-automator` | CI/CD pipelines design |
+| Testing (write/fix) | `test-writer-fixer` | Write and fix tests |
+| Testing (TDD coach) | `tdd-coach` | Guide TDD process |
+| Documentation | `documentation-architect` | README, docs |
+| AI/LLM features | `ai-engineer` | RAG, prompts, LLM apps |
+| FastHTML/HTMX | `fasthtml-bff-developer` | Backend-for-Frontend |
+| Refactoring | `code-refactor-master` | Reorganize, clean up |
+| Hooks debugging | `hook-tester-fixer` | Claude Code hooks |
+
+### Review Subagents
+
+| Review Type | Subagent | Notes |
+|-------------|----------|-------|
+| Python code quality | `backend-auditor` | ruff, mypy, bandit |
+| React code quality | `frontend-auditor` | eslint, tsc, prettier |
+| Plan compliance | `plan-reviewer` | Spec vs implementation |
+
+### Research Subagents
+
+| Task Type | Subagent | Notes |
+|-----------|----------|-------|
+| Codebase exploration | `Explore` | Built-in, fast search |
+| Web research | `web-research-specialist` | GitHub, forums, docs |
+| Architecture design | `backend-architect` | Consultative design |
+
+### Other Subagents
+
+| Task Type | Subagent | Notes |
+|-----------|----------|-------|
+| Auth debugging | `auth-route-debugger` | Keycloak, cookies |
+| Large files/E2E | `gemini-assistant` | Gemini CLI for >600 lines |
 
 ## Template
 
