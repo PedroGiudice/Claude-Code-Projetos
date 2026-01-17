@@ -28,13 +28,24 @@ class ApiService {
     // CRITICAL: Use axios directly, NOT this.client
     // this.client has default Content-Type: application/json which corrupts FormData
     // Browser must set Content-Type with correct multipart boundary automatically
-    const response = await axios.post<UploadResponse>(
+    interface BackendUploadResponse {
+      document_id: string;
+      text_content: string;
+      paragraphs: string[];
+      metadata: Record<string, unknown>;
+    }
+    const response = await axios.post<BackendUploadResponse>(
       `${API_BASE}/upload`,
       formData
       // No headers - browser sets Content-Type: multipart/form-data; boundary=...
     );
 
-    return response.data;
+    // Map backend snake_case to frontend camelCase
+    return {
+      documentId: response.data.document_id,
+      textContent: response.data.text_content,
+      paragraphs: response.data.paragraphs,
+    };
   }
 
   async detectPatterns(text: string): Promise<PatternMatch[]> {
