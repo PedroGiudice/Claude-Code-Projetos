@@ -4,8 +4,20 @@ Use this template when dispatching a spec compliance reviewer subagent.
 
 **Purpose:** Verify implementer built what was requested (nothing more, nothing less)
 
+## CRITICAL: Use Specialized Subagents
+
+**NEVER use `general-purpose`.** Select based on what was implemented:
+
+| Code Type | Subagent |
+|-----------|----------|
+| Python/FastAPI | `backend-auditor` |
+| React/TypeScript | `frontend-auditor` |
+| Infrastructure/DevOps | `cicd-operator` |
+
+## Template
+
 ```
-Task tool (general-purpose):
+Task tool (backend-auditor OR frontend-auditor):
   description: "Review spec compliance for Task N"
   prompt: |
     You are reviewing whether an implementation matches its specification.

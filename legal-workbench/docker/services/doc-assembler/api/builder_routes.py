@@ -8,7 +8,11 @@ import os
 import re
 import json
 import shutil
+import logging
+import traceback
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from datetime import datetime
 from typing import List, Dict, Any
 from uuid import uuid4
@@ -359,6 +363,12 @@ async def upload_document(file: UploadFile = File(...)):
     Returns:
         UploadResponse with document ID and extracted content
     """
+    # Log request metadata for debugging
+    logger.info(
+        "Upload request: filename=%s, content_type=%s, size=%s",
+        file.filename, file.content_type, file.size
+    )
+
     # Validate file type
     if not file.filename.endswith(".docx"):
         raise HTTPException(
@@ -377,6 +387,11 @@ async def upload_document(file: UploadFile = File(...)):
             content = await file.read()
             f.write(content)
 
+        logger.info(
+            "File content: size=%d bytes, first_bytes=%s",
+            len(content), content[:20].hex() if content else "empty"
+        )
+
         # Extract text and metadata
         extracted = extract_text_from_docx(temp_file_path)
 
@@ -388,6 +403,9 @@ async def upload_document(file: UploadFile = File(...)):
         )
 
     except Exception as e:
+        logger.error(
+            "Upload failed: %s\n%s", str(e), traceback.format_exc()
+        )
         # Clean up on error
         if temp_file_path.exists():
             temp_file_path.unlink()
