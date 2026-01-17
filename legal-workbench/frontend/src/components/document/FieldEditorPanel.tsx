@@ -36,12 +36,12 @@ export function FieldEditorPanel() {
       paragraphIndex: selectedText.paragraphIndex,
     });
 
-    window.getSelection()?.removeAllRanges();
+    // TipTap gerencia a selecao internamente
     setSelectedText(null);
   };
 
   const handleCancel = () => {
-    window.getSelection()?.removeAllRanges();
+    // TipTap gerencia a selecao internamente
     setSelectedText(null);
   };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DocumentViewer } from '@/components/document/DocumentViewer';
+import { TipTapDocumentViewer } from '@/components/document/TipTapDocumentViewer';
 import { FieldList } from '@/components/document/FieldList';
 import { FieldEditorPanel } from '@/components/document/FieldEditorPanel';
 import { TemplateList } from '@/components/templates/TemplateList';
@@ -107,7 +107,7 @@ export default function DocAssemblerModule() {
 
         {/* Center - Document Viewer */}
         <main className="flex-1 overflow-hidden">
-          {hasDocument ? <DocumentViewer /> : <EmptyState />}
+          {hasDocument ? <TipTapDocumentViewer /> : <EmptyState />}
         </main>
 
         {/* Right Sidebar - Field Editor Panel */}
