@@ -115,8 +115,9 @@ export function TipTapDocumentViewer() {
 
       const { from, to, empty } = editor.state.selection;
 
+      // Only update selection if user made an actual selection
+      // Don't clear on empty - let explicit actions (Escape, create field) clear it
       if (empty) {
-        setSelectedText(null);
         return;
       }
 
