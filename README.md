@@ -1,6 +1,8 @@
 # Lex-Vector (LV)
 
-Plataforma de automacao juridica brasileira. Extracao de documentos PDF, analise com LLM, e organizacao de dados juridicos.
+> **Idioma:** Português brasileiro com acentuação correta. "eh" em vez de "é" é inaceitável.
+
+Plataforma de automação jurídica brasileira. Extração de documentos PDF, análise com LLM, e organização de dados jurídicos.
 
 > **Nota:** O diretório `legal-workbench/` é o nome de código interno do projeto Lex-Vector.
 
@@ -23,13 +25,13 @@ legal-workbench/
 ├── frontend/        # Next.js SPA
 ├── ferramentas/     # Python backends e tools
 │   └── legal-text-extractor/  # LTE (Marker + Gemini)
-├── docker/          # Servicos Docker
-└── docs/            # Documentacao
+├── docker/          # Serviços Docker
+└── docs/            # Documentação
 ```
 
-## Servicos
+## Serviços
 
-| Servico | Porta | Proposito |
+| Serviço | Porta | Propósito |
 |---------|-------|-----------|
 | legal-frontend | 3000 | Interface Next.js |
 | legal-api | 8000 | API principal |
@@ -47,29 +49,29 @@ cd legal-workbench/frontend && bun install && bun run dev
 cd legal-workbench/ferramentas/legal-text-extractor && source .venv/bin/activate && python main.py
 ```
 
-## Documentacao
+## Documentação
 
-| Arquivo | Conteudo |
+| Arquivo | Conteúdo |
 |---------|----------|
 | `CLAUDE.md` | Regras operacionais para Claude Code |
-| `ARCHITECTURE.md` | North Star (principios inviolaveis) |
-| `legal-workbench/CLAUDE.md` | Regras especificas do LV |
+| `ARCHITECTURE.md` | North Star (princípios invioláveis) |
+| `legal-workbench/CLAUDE.md` | Regras específicas do LV |
 
 ## Task Execution Patterns
 
-- **Swarm**: Tarefas medio-complexas com subagentes paralelos
-- **Breakdown**: Decompor tarefas grandes em unidades atomicas antes da execucao
+- **Swarm**: Tarefas médio-complexas com subagentes paralelos
+- **Breakdown**: Decompor tarefas grandes em unidades atômicas antes da execução
 
-> **Terminologia:** "Subagentes" sao Task tools (`.claude/agents/*.md`) executados via Claude Code. "Agentes" ADK autonomos estao em repositorio separado.
+> **Terminologia:** "Subagentes" são Task tools (`.claude/agents/*.md`) executados via Claude Code. "Agentes" ADK autônomos estão em repositório separado.
 
 ## Git
 
-**OBRIGATORIO:**
+**OBRIGATÓRIO:**
 
-1. **Branch para alteracoes significativas** — >3 arquivos OU mudanca estrutural = criar branch
+1. **Branch para alterações significativas** — >3 arquivos OU mudança estrutural = criar branch
 2. **Pull antes de trabalhar** — `git pull origin main`
-3. **Commit ao finalizar** — Nunca deixar trabalho nao commitado
-4. **Deletar branch apos merge** — Local e remota
+3. **Commit ao finalizar** — Nunca deixar trabalho não commitado
+4. **Deletar branch após merge** — Local e remota
 
 ## Experimental Projects
 
