@@ -26,8 +26,11 @@ CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0
 JOBS_DB_PATH = os.getenv("JOBS_DB_PATH", "/app/data/jobs.db")
 MARKER_CACHE_DIR = os.getenv("MARKER_CACHE_DIR", "/app/cache")
 MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
-JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "600"))
+JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "2100"))  # 35 minutes for large PDFs
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Marker-specific timeout (30 minutes for CPU-only processing of large legal documents)
+MARKER_TIMEOUT = int(os.getenv("MARKER_TIMEOUT", "1800"))
 
 # Create Celery app
 celery_app = Celery(
@@ -58,7 +61,7 @@ class MarkerTimeoutError(Exception):
 
 def marker_timeout_handler(signum, frame):
     """Handle timeout signal for Marker extraction."""
-    raise MarkerTimeoutError("Marker extraction timed out after 5 minutes")
+    raise MarkerTimeoutError(f"Marker extraction timed out after {MARKER_TIMEOUT} seconds")
 
 
 # Singleton for Marker model artifacts (lazy loading)
@@ -72,9 +75,24 @@ def get_marker_artifacts():
     if _marker_artifacts is None:
         try:
             from marker.models import create_model_dict
-            logger.info("Loading Marker models... (this may take a while)")
+
+            # Log environment config for debugging
+            torch_device = os.getenv("TORCH_DEVICE", "auto")
+            detector_batch = os.getenv("DETECTOR_BATCH_SIZE", "default")
+            recognition_batch = os.getenv("RECOGNITION_BATCH_SIZE", "default")
+
+            logger.info("Loading Marker models...")
+            logger.info("  TORCH_DEVICE=%s", torch_device)
+            logger.info("  DETECTOR_BATCH_SIZE=%s", detector_batch)
+            logger.info("  RECOGNITION_BATCH_SIZE=%s", recognition_batch)
+            logger.info("  MARKER_TIMEOUT=%s seconds", MARKER_TIMEOUT)
+            logger.info("This may take several minutes on CPU...")
+
+            start_time = time.time()
             _marker_artifacts = create_model_dict()
-            logger.info("Marker models loaded successfully")
+            load_time = time.time() - start_time
+
+            logger.info("Marker models loaded successfully in %.1f seconds", load_time)
         except Exception as e:
             logger.error("Failed to load Marker models: %s", e)
             raise
@@ -136,13 +154,16 @@ def extract_with_marker(pdf_path: str, options: Dict[str, Any]) -> tuple[str, in
             "keep_pagefooter_in_output": False,
         }
 
+        pdf_size = os.path.getsize(pdf_path)
+        logger.info("PDF file: %s", pdf_path)
+        logger.info("PDF size: %.2f MB", pdf_size / (1024 * 1024))
         logger.debug("Marker config: %s", config_dict)
-        logger.debug("PDF path: %s, size: %d bytes", pdf_path, os.path.getsize(pdf_path))
 
         # Create config parser
         config_parser = ConfigParser(config_dict)
 
         # Create converter with optimized config
+        logger.info("Creating PDF converter...")
         converter = PdfConverter(
             config=config_parser.generate_config_dict(),
             artifact_dict=artifact_dict,
@@ -150,8 +171,8 @@ def extract_with_marker(pdf_path: str, options: Dict[str, Any]) -> tuple[str, in
             renderer=config_parser.get_renderer(),
         )
 
-        # Set timeout for Marker extraction (5 minutes)
-        MARKER_TIMEOUT = 300
+        # Set timeout for Marker extraction
+        logger.info("Starting extraction with %d second timeout...", MARKER_TIMEOUT)
         original_handler = signal.signal(signal.SIGALRM, marker_timeout_handler)
         signal.alarm(MARKER_TIMEOUT)
 
