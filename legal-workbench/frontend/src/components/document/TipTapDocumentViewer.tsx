@@ -93,6 +93,7 @@ function syncAnnotationsToEditor(editor: Editor, annotations: FieldAnnotation[])
 
 export function TipTapDocumentViewer() {
   const paragraphs = useDocumentStore((state) => state.paragraphs);
+  const textContent = useDocumentStore((state) => state.textContent);
   const setSelectedText = useDocumentStore((state) => state.setSelectedText);
   const annotations = useDocumentStore((state) => state.annotations);
   // TODO: Implement pattern detection highlighting with TipTap marks
@@ -127,14 +128,43 @@ export function TipTapDocumentViewer() {
       }
 
       const text = editor.state.doc.textBetween(from, to);
-      const { paragraphIndex, localOffset: start } = getLocalPosition(editor, from);
-      const { localOffset: end } = getLocalPosition(editor, to);
+      const fromPos = getLocalPosition(editor, from);
+      const toPos = getLocalPosition(editor, to);
+
+      // Validate same paragraph - cross-paragraph selections not supported
+      if (fromPos.paragraphIndex !== toPos.paragraphIndex) {
+        // Cross-paragraph selection - ignore
+        return;
+      }
+
+      // Find global position in textContent using indexOf with hint
+      // The textContent is paragraphs.join("\n\n"), so we can calculate
+      // the global start by searching for the selected text
+      const selectedText = text;
+
+      // Calculate approximate global position from paragraph index
+      // This is used as a hint for indexOf to find the right occurrence
+      let globalHint = 0;
+      for (let i = 0; i < fromPos.paragraphIndex; i++) {
+        globalHint += paragraphs[i].length + 2; // +2 for "\n\n"
+      }
+
+      // Find the actual position in textContent starting from hint
+      const globalStart = textContent.indexOf(selectedText, globalHint);
+
+      if (globalStart === -1) {
+        // Text not found - something is wrong, ignore
+        console.error('Selected text not found in textContent:', selectedText);
+        return;
+      }
+
+      const globalEnd = globalStart + selectedText.length;
 
       setSelectedText({
-        text,
-        start,
-        end,
-        paragraphIndex,
+        text: selectedText,
+        start: globalStart,
+        end: globalEnd,
+        paragraphIndex: fromPos.paragraphIndex,
       });
     },
   });

@@ -161,7 +161,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   // Save template
   saveTemplate: async (name: string, description?: string) => {
-    const { documentId, annotations, paragraphs } = get();
+    const { documentId, annotations } = get();
 
     if (!documentId) {
       get().addToast('No document loaded', 'error');
@@ -174,8 +174,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     try {
-      // Pass paragraphs for position conversion (local -> global)
-      await api.saveTemplate({ name, documentId, annotations, paragraphs, description });
+      // Positions are already global (calculated using textContent.indexOf in TipTapDocumentViewer)
+      await api.saveTemplate({ name, documentId, annotations, description });
       get().addToast(`Template "${name}" saved successfully`, 'success');
       get().fetchTemplates();
     } catch (error) {

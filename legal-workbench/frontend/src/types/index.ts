@@ -36,8 +36,7 @@ export interface SaveTemplateRequest {
   name: string;
   documentId: string;
   annotations: FieldAnnotation[];
-  paragraphs: string[]; // Required for position conversion
-  description?: string; // Added optional description
+  description?: string;
 }
 
 export interface Template {
