@@ -1,13 +1,15 @@
 # CLAUDE.md
 
-Instrucoes operacionais para Claude Code neste repositorio.
+**PORTUGUÊS BRASILEIRO COM ACENTUAÇÃO CORRETA.** Usar "eh" em vez de "é" é inaceitável. Acentos são obrigatórios: é, á, ã, ç, etc.
+
+Instruções operacionais para Claude Code neste repositório.
 
 **Arquitetura:** `ARCHITECTURE.md` (North Star)
-**Licoes:** `DISASTER_HISTORY.md`
+**Lições:** `DISASTER_HISTORY.md`
 
 ---
 
-## Regras Criticas
+## Regras Críticas
 
 ### 1. Sempre Usar venv/uv
 ```bash
@@ -21,7 +23,7 @@ cd legal-workbench/frontend && bun install && bun run dev
 ### 2. Nunca Commitar
 - `.venv/`, `__pycache__/`, `*.pdf`, `*.log`, `node_modules/`
 
-### 3. Bun OBRIGATORIO (nunca npm/yarn/node)
+### 3. Bun OBRIGATÓRIO (nunca npm/yarn/node)
 ```bash
 bun install && bun run dev && bun run build
 ```
@@ -31,24 +33,24 @@ bun install && bun run dev && bun run build
 ### 4. mgrep em vez de grep
 ```bash
 mgrep "pattern"           # em vez de grep -r "pattern"
-mgrep "pattern" src/      # busca em diretorio especifico
+mgrep "pattern" src/      # busca em diretório específico
 ```
 
 ### 5. Gemini para Context Offloading
 **SEMPRE** usar `gemini-assistant` (modelo: gemini-3-flash) para:
 - Arquivos > 500 linhas
-- Multiplos arquivos simultaneos
+- Múltiplos arquivos simultâneos
 - Logs extensos, diffs grandes
 
 ### 6. ZERO Emojis
-**PROIBIDO** usar emojis em qualquer output: respostas, codigo, commits, comentarios.
+**PROIBIDO** usar emojis em qualquer output: respostas, código, commits, comentários.
 Motivo: Bug no CLI Rust causa crash em char boundaries de emojis (4 bytes).
 
-### 7. Testes Obrigatorios (Backend)
+### 7. Testes Obrigatórios (Backend)
 Pre-commit executa **ruff + pytest** automaticamente para arquivos Python em `ferramentas/`.
 - Commit bloqueado se testes falharem
-- Bypass (emergencia): `git commit --no-verify`
-- CI tambem bloqueia merge se testes falharem
+- Bypass (emergência): `git commit --no-verify`
+- CI também bloqueia merge se testes falharem
 
 ---
 
@@ -60,15 +62,16 @@ Pre-commit executa **ruff + pytest** automaticamente para arquivos Python em `fe
 - Um erro acontecer mais de uma vez
 - Erro "fatal" (mudança em um layer quebra outro — ex: backend quebra frontend)
 
-Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce organicamente.
+Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce orgânicamente.
 
 | Data | Erro | Regra |
 |------|------|-------|
 | 2026-01-11 | Emoji causou crash do CLI (panic em char boundary) | Regra #6: ZERO emojis |
-| 2026-01-11 | Crash do CLI pode perder edits nao commitados | **Commitar frequentemente durante sessao** |
-| 2026-01-13 | Feedback loop so roda no commit, nao proativamente | Commitar apos cada mudanca logica para validar cedo |
-| 2026-01-13 | Troquei modelo especificado pelo usuario (gemini-3-pro-preview) | **NUNCA substituir modelo indicado pelo usuario - usar EXATAMENTE o especificado** |
-| 2026-01-17 | Build local (bun) nao atualiza Docker no OCI - fiz rsync do dist mas container usa build interno | **SEMPRE usar cicd-operator para deploy no LW** - Docker faz build interno, rsync nao basta |
+| 2026-01-11 | Crash do CLI pode perder edits não commitados | **Commitar frequentemente durante sessão** |
+| 2026-01-13 | Feedback loop só roda no commit, não proativamente | Commitar após cada mudança lógica para validar cedo |
+| 2026-01-13 | Troquei modelo especificado pelo usuário (gemini-3-pro-preview) | **NUNCA substituir modelo indicado pelo usuário - usar EXATAMENTE o especificado** |
+| 2026-01-17 | Build local (bun) não atualiza Docker no OCI - fiz rsync do dist mas container usa build interno | **SEMPRE usar cicd-operator para deploy no LW** - Docker faz build interno, rsync não basta |
+| 2026-01-17 | Assumi que testes falhando = deps faltando. Na verdade, LTE usa Marker (não pytesseract/pdf2image/anthropic) | **VER CLAUDE.md DO MÓDULO antes de rodar testes** - código legado tem imports obsoletos |
 
 <!--
 Formato para adicionar:
@@ -109,14 +112,14 @@ legal-workbench/       # Lex-Vector (LV) - Projeto principal
 
 ## Debugging
 
-Tecnica dos 5 Porques para bugs nao-triviais:
-1. Sintoma → 2. Por que? → 3. Por que? → 4. Por que? → 5. **CAUSA RAIZ**
+Técnica dos 5 Porquês para bugs não-triviais:
+1. Sintoma → 2. Por quê? → 3. Por quê? → 4. Por quê? → 5. **CAUSA RAIZ**
 
 ---
 
 ## Hooks
 
-Validar apos mudancas:
+Validar após mudanças:
 ```bash
 tail -50 ~/.vibe-log/hooks.log
 ```
@@ -126,8 +129,8 @@ Red flags: `MODULE_NOT_FOUND`, `command not found`
 
 ## Subagentes Discovery
 
-Subagentes de `.claude/agents/*.md` descobertos no inicio da sessao.
-Novo subagente? Reinicie a sessao.
+Subagentes de `.claude/agents/*.md` descobertos no início da sessão.
+Novo subagente? Reinicie a sessão.
 
 ---
 
