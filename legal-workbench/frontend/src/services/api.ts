@@ -76,16 +76,39 @@ class ApiService {
     const payload = {
       template_name: data.name,
       document_id: data.documentId,
-      annotations: data.annotations,
       description: data.description,
+      // Map annotation fields: fieldName->field_name, text->original_text
+      annotations: data.annotations.map((a) => ({
+        field_name: a.fieldName,
+        original_text: a.text,
+        start: a.start,
+        end: a.end,
+        paragraph_index: a.paragraphIndex,
+      })),
     };
     const response = await this.client.post<{ template_id: string }>('/save', payload);
     return { templateId: response.data.template_id };
   }
 
   async getTemplates(): Promise<Template[]> {
-    const response = await this.client.get<{ templates: Template[]; count: number }>('/templates');
-    return response.data.templates;
+    interface BackendTemplate {
+      id: string;
+      name: string;
+      description?: string;
+      created_at: string;
+      field_count: number;
+    }
+    const response = await this.client.get<{ templates: BackendTemplate[]; count: number }>(
+      '/templates'
+    );
+    // Map backend snake_case to frontend camelCase
+    return response.data.templates.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      createdAt: t.created_at,
+      fieldCount: t.field_count,
+    }));
   }
 
   async getTemplateDetails(templateId: string): Promise<TemplateDetails> {
