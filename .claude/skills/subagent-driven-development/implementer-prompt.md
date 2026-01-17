@@ -2,11 +2,28 @@
 
 Use this template when dispatching an implementer subagent.
 
+## CRITICAL: Use Specialized Subagents
+
+**NEVER use `general-purpose`.** Always select the appropriate specialized subagent:
+
+| Task Type | Subagent |
+|-----------|----------|
+| Python/FastAPI backend | `qualidade-codigo` ou `backend-developer` (quando disponivel) |
+| React/TypeScript frontend | `frontend-developer` |
+| Infrastructure/Deploy | `cicd-operator` ou `devops-automator` |
+| Database/Migrations | `qualidade-codigo` |
+| Testing | `test-writer-fixer` ou `tdd-coach` |
+| Documentation | `documentation-architect` |
+| AI/LLM features | `ai-engineer` |
+| FastHTML/HTMX | `fasthtml-bff-developer` |
+
+## Template
+
 ```
-Task tool (general-purpose):
+Task tool (<specialized-subagent>):
   description: "Implement Task N: [task name]"
   prompt: |
-    You are implementing Task N: [task name]
+    Voce esta implementando Task N: [task name]
 
     ## Task Description
 
