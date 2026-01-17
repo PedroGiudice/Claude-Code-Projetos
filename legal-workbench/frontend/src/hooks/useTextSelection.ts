@@ -29,7 +29,8 @@ export function useTextSelection(options: UseTextSelectionOptions = {}) {
       }
 
       // Find the paragraph index and positions
-      const paragraphElement = range.startContainer.parentElement?.closest('[data-paragraph-index]');
+      const paragraphElement =
+        range.startContainer.parentElement?.closest('[data-paragraph-index]');
 
       if (!paragraphElement) {
         return;
@@ -40,8 +41,7 @@ export function useTextSelection(options: UseTextSelectionOptions = {}) {
         10
       );
 
-      // Get text content of the paragraph to calculate positions
-      const paragraphText = paragraphElement.textContent || '';
+      // Calculate positions within the paragraph
       const beforeSelection = range.cloneRange();
       beforeSelection.selectNodeContents(paragraphElement);
       beforeSelection.setEnd(range.startContainer, range.startOffset);
@@ -59,10 +59,14 @@ export function useTextSelection(options: UseTextSelectionOptions = {}) {
       options.onSelectionChange?.call(null, textSelection);
     };
 
-    const handleMouseDown = () => {
-      // Clear selection when starting a new selection
-      setSelection(null);
-      options.onSelectionChange?.call(null, null);
+    const handleMouseDown = (event: MouseEvent) => {
+      // Only clear selection when clicking INSIDE the document container
+      // This prevents clearing when user clicks on FieldEditorPanel or other UI elements
+      const container = options.containerRef?.current;
+      if (container && container.contains(event.target as Node)) {
+        setSelection(null);
+        options.onSelectionChange?.call(null, null);
+      }
     };
 
     document.addEventListener('mouseup', handleMouseUp);

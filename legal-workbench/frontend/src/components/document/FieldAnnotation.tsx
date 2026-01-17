@@ -1,19 +1,19 @@
-import React from 'react';
 import type { FieldAnnotation as FieldAnnotationType } from '@/types';
 
 interface FieldAnnotationProps {
   annotation: FieldAnnotationType;
   text: string;
-  onClick?: () => void;
 }
 
-export function FieldAnnotation({ annotation, text, onClick }: FieldAnnotationProps) {
+export function FieldAnnotation({ annotation, text }: FieldAnnotationProps) {
   return (
     <span
-      className="field-annotation"
-      onClick={onClick}
-      title={`Field: ${annotation.fieldName}`}
-      data-field-name={annotation.fieldName}
+      className="rounded-sm px-0.5 transition-colors"
+      style={{
+        backgroundColor: `${annotation.color}30`, // 30 = ~19% opacity in hex
+        borderBottom: `2px solid ${annotation.color}`,
+      }}
+      title={annotation.fieldName}
     >
       {text}
     </span>

@@ -4,7 +4,11 @@ export interface FieldAnnotation {
   start: number;
   end: number;
   paragraphIndex: number;
+  color: string; // Hex color for visual identification
 }
+
+// Input type for creating annotations (color is assigned automatically by the store)
+export type FieldAnnotationInput = Omit<FieldAnnotation, 'color'>;
 
 export interface PatternMatch {
   pattern: string;
@@ -32,7 +36,7 @@ export interface SaveTemplateRequest {
   name: string;
   documentId: string;
   annotations: FieldAnnotation[];
-  description?: string; // Added optional description
+  description?: string;
 }
 
 export interface Template {
@@ -56,7 +60,13 @@ export interface Toast {
 }
 
 // LEDES Converter Types
-export type LedesConversionStatus = 'idle' | 'validating' | 'uploading' | 'processing' | 'success' | 'error';
+export type LedesConversionStatus =
+  | 'idle'
+  | 'validating'
+  | 'uploading'
+  | 'processing'
+  | 'success'
+  | 'error';
 
 export interface LedesConfig {
   lawFirmId: string;
@@ -90,4 +100,26 @@ export interface ConvertLedesResponse {
 export interface LedesFileValidation {
   valid: boolean;
   error?: string;
+}
+
+// Doc Assembler Types
+export interface AssembleRequest {
+  template_path: string;
+  data: Record<string, string>;
+  output_filename?: string;
+  auto_normalize?: boolean;
+}
+
+export interface AssembleResponse {
+  success: boolean;
+  output_path: string;
+  download_url: string;
+  filename: string;
+  message: string;
+}
+
+export interface TemplateField {
+  name: string;
+  value: string;
+  category?: string;
 }

@@ -472,9 +472,25 @@ async def save_template(request: SaveTemplateRequest):
         extracted = extract_text_from_docx(source_path)
         text_content = extracted["text_content"]
 
+        # DEBUG: Log text content info
+        logger.info(f"Validating template: text_content length={len(text_content)}")
+        logger.info(f"Backend paragraphs count: {len(extracted.get('paragraphs', []))}")
+
         # Validate annotations are within text bounds
         for annotation in request.annotations:
+            # DEBUG: Log annotation details
+            orig_text = annotation.original_text[:30] + "..." if len(annotation.original_text) > 30 else annotation.original_text
+            logger.info(
+                f"Annotation '{annotation.field_name}': "
+                f"start={annotation.start}, end={annotation.end}, "
+                f"original_text='{orig_text}'"
+            )
+
             if annotation.start < 0 or annotation.end > len(text_content):
+                logger.error(
+                    f"Out of bounds: start={annotation.start}, end={annotation.end}, "
+                    f"text_content_len={len(text_content)}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Annotation out of bounds: {annotation.field_name}"
@@ -483,6 +499,10 @@ async def save_template(request: SaveTemplateRequest):
             # Validate original text matches
             actual_text = text_content[annotation.start:annotation.end]
             if actual_text != annotation.original_text:
+                logger.error(
+                    f"Text mismatch for '{annotation.field_name}': "
+                    f"expected='{annotation.original_text}', got='{actual_text}'"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Text mismatch for field '{annotation.field_name}': expected '{annotation.original_text}', got '{actual_text}'"

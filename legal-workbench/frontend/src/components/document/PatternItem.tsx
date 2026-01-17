@@ -1,5 +1,5 @@
 import React from 'react';
-import { PatternMatch, FieldAnnotation } from '@/types';
+import { PatternMatch, FieldAnnotationInput } from '@/types';
 import { useDocumentStore } from '@/store/documentStore';
 import { PlusCircle } from 'lucide-react';
 
@@ -9,13 +9,15 @@ interface PatternItemProps {
 
 export function PatternItem({ patternMatch }: PatternItemProps) {
   const addAnnotation = useDocumentStore((state) => state.addAnnotation);
-  const addToast = useDocumentStore((state) => state.addToast);
   const removeDetectedPattern = useDocumentStore((state) => state.removeDetectedPattern);
 
   const handleAcceptPattern = () => {
-    const fieldName = patternMatch.pattern.toLowerCase().replace(/[^a-z0-9_]/g, '_ ') + '_' + Math.random().toString(36).substring(7);
+    const fieldName =
+      patternMatch.pattern.toLowerCase().replace(/[^a-z0-9_]/g, '_') +
+      '_' +
+      Math.random().toString(36).substring(7);
 
-    const newAnnotation: FieldAnnotation = {
+    const newAnnotation: FieldAnnotationInput = {
       fieldName: fieldName,
       text: patternMatch.text,
       start: patternMatch.start,
@@ -23,7 +25,7 @@ export function PatternItem({ patternMatch }: PatternItemProps) {
       paragraphIndex: patternMatch.paragraphIndex,
     };
     addAnnotation(newAnnotation);
-    removeDetectedPattern(patternMatch); 
+    removeDetectedPattern(patternMatch);
   };
 
   return (
@@ -32,9 +34,7 @@ export function PatternItem({ patternMatch }: PatternItemProps) {
         <code className="text-xs font-mono text-gh-accent-success block">
           {patternMatch.pattern}
         </code>
-        <p className="text-xs text-gh-text-secondary mt-1 truncate">
-          "{patternMatch.text}"
-        </p>
+        <p className="text-xs text-gh-text-secondary mt-1 truncate">"{patternMatch.text}"</p>
       </div>
       <button
         onClick={handleAcceptPattern}
