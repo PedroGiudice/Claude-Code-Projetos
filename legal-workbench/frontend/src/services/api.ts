@@ -78,6 +78,23 @@ class ApiService {
   async deleteTemplate(templateId: string): Promise<void> {
     await this.client.delete(`/templates/${templateId}`);
   }
+
+  async assembleDocument(data: {
+    template_path: string;
+    data: Record<string, string>;
+    output_filename?: string;
+    auto_normalize?: boolean;
+  }): Promise<{
+    success: boolean;
+    output_path: string;
+    download_url: string;
+    filename: string;
+    message: string;
+  }> {
+    // Use main API endpoint, not builder
+    const response = await axios.post('/api/doc/api/v1/assemble', data);
+    return response.data;
+  }
 }
 
 export const api = new ApiService();
