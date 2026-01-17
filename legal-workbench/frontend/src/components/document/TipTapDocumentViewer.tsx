@@ -101,14 +101,19 @@ export function TipTapDocumentViewer() {
   // Track if we're syncing to avoid update loops
   const isSyncing = useRef(false);
 
+  // TipTap selection fix: editable:true allows smooth selection
+  // We use keyboard/paste/drop handlers to prevent actual editing while keeping selection UX
   const editor = useEditor({
     extensions: [Document, Paragraph, Text, FieldAnnotationMark],
     content: paragraphsToTipTapContent(paragraphs),
-    editable: false, // Read-only mode
+    editable: true, // Enable for better selection UX
     editorProps: {
       attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none',
+        class: 'prose prose-invert prose-sm max-w-none focus:outline-none select-text',
       },
+      handleKeyDown: () => true, // Block all keyboard input
+      handlePaste: () => true, // Block paste
+      handleDrop: () => true, // Block drag-drop
     },
     onSelectionUpdate: ({ editor }) => {
       if (isSyncing.current) return;
