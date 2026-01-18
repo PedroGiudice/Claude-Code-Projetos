@@ -79,7 +79,9 @@ services:
       - "traefik.http.routers.text.entrypoints=web"
       - "traefik.http.routers.text.priority=10"
       - "traefik.http.middlewares.text-strip.stripprefix.prefixes=/api/text"
-      - "traefik.http.routers.text.middlewares=text-strip"
+      # Allow large PDF uploads (100MB max)
+      - "traefik.http.middlewares.text-buffering.buffering.maxRequestBodyBytes=104857600"
+      - "traefik.http.routers.text.middlewares=text-strip,text-buffering"
       - "traefik.http.services.text.loadbalancer.server.port=8001"
     volumes:
       - shared-data:/data
