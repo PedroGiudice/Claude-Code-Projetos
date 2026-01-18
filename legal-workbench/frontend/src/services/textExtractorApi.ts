@@ -5,6 +5,7 @@ import type {
   JobStatusResponse,
   ExtractionResult,
 } from '@/types/textExtractor';
+import { lteLogger } from '@/utils/lteLogger';
 
 const API_BASE_URL = '/api/text/api/v1';
 
@@ -14,6 +15,43 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Request interceptor for logging
+api.interceptors.request.use(
+  (config) => {
+    const url = `${config.baseURL || ''}${config.url || ''}`;
+    lteLogger.request(config.method?.toUpperCase() || 'GET', url, config.data);
+    return config;
+  },
+  (error) => {
+    lteLogger.error('Request interceptor error', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for logging
+api.interceptors.response.use(
+  (response) => {
+    const url = `${response.config.baseURL || ''}${response.config.url || ''}`;
+    lteLogger.response(
+      response.config.method?.toUpperCase() || 'GET',
+      url,
+      response.status,
+      response.data
+    );
+    return response;
+  },
+  (error) => {
+    const url = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+    const status = error.response?.status || 0;
+    lteLogger.error(`API Error: ${error.config?.method?.toUpperCase() || 'GET'} ${url}`, {
+      status,
+      message: error.message,
+      data: error.response?.data,
+    });
+    return Promise.reject(error);
+  }
+);
 
 export const textExtractorApi = {
   /**
