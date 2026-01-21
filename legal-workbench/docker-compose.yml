@@ -28,11 +28,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./docker/traefik:/etc/traefik/dynamic:ro
       - ./docker/traefik/letsencrypt:/letsencrypt
+      - ./docker/traefik/.htpasswd:/etc/traefik/.htpasswd:ro
     networks:
       - legal-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.auth.basicauth.users=PGR:$$apr1$$srv7aVBj$$lh5oVstYMwaEi5vB6ppgC/,MCBS:$$apr1$$tFXQKb/8$$EfbMbctlMOT5RsYlUkDtI/,ABP:$$apr1$$kvqG8i1i$$RE9g6iKuWL/VoPnNOTQmU1"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/.htpasswd"
 
   # ============================================================
   # 2. REACT FRONTEND - Legal Workbench SPA
