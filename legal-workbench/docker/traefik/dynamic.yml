@@ -17,6 +17,11 @@ http:
         certResolver: letsencrypt
 
   middlewares:
+    # Global Basic Auth for protected routes
+    auth:
+      basicAuth:
+        usersFile: "/etc/traefik/.htpasswd"
+
     ollama-strip:
       stripPrefix:
         prefixes:

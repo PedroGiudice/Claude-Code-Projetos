@@ -5,12 +5,15 @@ services:
   reverse-proxy:
     image: traefik:v3.6.5
     command:
+      - "--ping=true"
+      - "--ping.entrypoint=ping"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.ping.address=:8082"
       # Redirect HTTP -> HTTPS
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -33,10 +36,9 @@ services:
       - legal-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/.htpasswd"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -54,7 +56,7 @@ services:
       - "traefik.http.routers.react.tls=true"
       - "traefik.http.routers.react.tls.certresolver=letsencrypt"
       - "traefik.http.routers.react.priority=1"
-      - "traefik.http.routers.react.middlewares=auth"
+      - "traefik.http.routers.react.middlewares=auth@file"
       - "traefik.http.services.react.loadbalancer.server.port=3000"
     networks:
       - legal-network
