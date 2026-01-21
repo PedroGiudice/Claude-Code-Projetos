@@ -1,0 +1,34 @@
+# Traefik Dynamic Configuration for External Services
+# This file configures routers for services outside Docker Compose
+
+http:
+  routers:
+    # Ollama API - For HotCocoa personalization
+    ollama:
+      rule: "PathPrefix(`/api/ollama`)"
+      entryPoints:
+        - websecure
+      priority: 15
+      service: ollama
+      middlewares:
+        - ollama-strip
+        - ollama-auth
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    ollama-strip:
+      stripPrefix:
+        prefixes:
+          - "/api/ollama"
+
+    ollama-auth:
+      basicAuth:
+        users:
+          - "hotcocoa:$apr1$VbOqcKRh$nTLOfydOQFwadT.2xtsRY1"
+
+  services:
+    ollama:
+      loadBalancer:
+        servers:
+          - url: "http://172.18.0.1:11434"
