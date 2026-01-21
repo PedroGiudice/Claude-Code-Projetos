@@ -5,19 +5,44 @@ services:
   reverse-proxy:
     image: traefik:v3.6.5
     command:
-      - "--api.insecure=false"                   # Dashboard disabled for security
-      - "--providers.docker=true"                # Auto-discover containers
+      - "--ping=true"
+      - "--ping.entrypoint=ping"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      # Entrypoints
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.ping.address=:8082"
+      # Redirect HTTP -> HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.email=pedro@lexvector.com.br"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # File provider for external services
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
     ports:
-      - "80:80"       # Main entry point
+      - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/traefik:/etc/traefik/dynamic:ro
+      - ./docker/traefik/letsencrypt:/letsencrypt
+      - ./docker/traefik/.htpasswd:/etc/traefik/.htpasswd:ro
     networks:
       - legal-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.auth.basicauth.users=PGR:$$apr1$$srv7aVBj$$lh5oVstYMwaEi5vB6ppgC/,MCBS:$$apr1$$tFXQKb/8$$EfbMbctlMOT5RsYlUkDtI/,ABP:$$apr1$$kvqG8i1i$$RE9g6iKuWL/VoPnNOTQmU1"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ============================================================
   # 2. REACT FRONTEND - Legal Workbench SPA
@@ -26,16 +51,25 @@ services:
     build: ./frontend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.react.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.react.entrypoints=web"
-      - "traefik.http.routers.react.priority=1"    # Catch-all (lowest priority)
-      - "traefik.http.routers.react.middlewares=auth"
+      - "traefik.http.routers.react.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/`)"
+      - "traefik.http.routers.react.entrypoints=websecure"
+      - "traefik.http.routers.react.tls=true"
+      - "traefik.http.routers.react.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.react.priority=1"
+      - "traefik.http.routers.react.middlewares=auth@file"
       - "traefik.http.services.react.loadbalancer.server.port=3000"
     networks:
       - legal-network
     depends_on:
       - reverse-proxy
       - api-doc-assembler
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ============================================================
   # 3. STJ SERVICE - Jurisprudence API
@@ -46,9 +80,11 @@ services:
       dockerfile: docker/services/stj-api/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.stj.rule=PathPrefix(`/api/stj`)"
-      - "traefik.http.routers.stj.entrypoints=web"
-      - "traefik.http.routers.stj.priority=10"   # Higher priority than hub
+      - "traefik.http.routers.stj.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/stj`)"
+      - "traefik.http.routers.stj.entrypoints=websecure"
+      - "traefik.http.routers.stj.tls=true"
+      - "traefik.http.routers.stj.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.stj.priority=10"
       - "traefik.http.middlewares.stj-strip.stripprefix.prefixes=/api/stj"
       - "traefik.http.routers.stj.middlewares=stj-strip"
       - "traefik.http.services.stj.loadbalancer.server.port=8000"
@@ -65,6 +101,13 @@ services:
       - APP_VERSION=${APP_VERSION:-1.0.0}
     networks:
       - legal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=5).raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # ============================================================
   # 4. TEXT EXTRACTOR SERVICE - PDF Processing
@@ -75,11 +118,12 @@ services:
       dockerfile: docker/services/text-extractor/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.text.rule=PathPrefix(`/api/text`)"
-      - "traefik.http.routers.text.entrypoints=web"
+      - "traefik.http.routers.text.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/text`)"
+      - "traefik.http.routers.text.entrypoints=websecure"
+      - "traefik.http.routers.text.tls=true"
+      - "traefik.http.routers.text.tls.certresolver=letsencrypt"
       - "traefik.http.routers.text.priority=10"
       - "traefik.http.middlewares.text-strip.stripprefix.prefixes=/api/text"
-      # Allow large PDF uploads (100MB max)
       - "traefik.http.middlewares.text-buffering.buffering.maxRequestBodyBytes=104857600"
       - "traefik.http.routers.text.middlewares=text-strip,text-buffering"
       - "traefik.http.services.text.loadbalancer.server.port=8001"
@@ -111,6 +155,13 @@ services:
       - legal-network
     depends_on:
       - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # ============================================================
   # 5. DOC ASSEMBLER SERVICE - Document Generation
@@ -121,23 +172,33 @@ services:
       dockerfile: docker/services/doc-assembler/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.doc.rule=PathPrefix(`/api/doc`)"
-      - "traefik.http.routers.doc.entrypoints=web"
+      - "traefik.http.routers.doc.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/doc`)"
+      - "traefik.http.routers.doc.entrypoints=websecure"
+      - "traefik.http.routers.doc.tls=true"
+      - "traefik.http.routers.doc.tls.certresolver=letsencrypt"
       - "traefik.http.routers.doc.priority=10"
       - "traefik.http.middlewares.doc-strip.stripprefix.prefixes=/api/doc"
       - "traefik.http.routers.doc.middlewares=doc-strip"
       - "traefik.http.services.doc.loadbalancer.server.port=8002"
     volumes:
       - shared-data:/data
-      - templates:/app/templates
+      - templates:/app/custom-templates
     environment:
       - DATA_PATH=/data
       - TEMPLATES_PATH=/app/templates
+      - CUSTOM_TEMPLATES_PATH=/app/custom-templates
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - APP_VERSION=${APP_VERSION:-1.0.0}
     networks:
       - legal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ============================================================
   # 6. TRELLO MCP SERVICE - Task Integration
@@ -148,8 +209,10 @@ services:
       dockerfile: docker/services/trello-mcp/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.trello.rule=PathPrefix(`/api/trello`)"
-      - "traefik.http.routers.trello.entrypoints=web"
+      - "traefik.http.routers.trello.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/trello`)"
+      - "traefik.http.routers.trello.entrypoints=websecure"
+      - "traefik.http.routers.trello.tls=true"
+      - "traefik.http.routers.trello.tls.certresolver=letsencrypt"
       - "traefik.http.routers.trello.priority=10"
       - "traefik.http.middlewares.trello-strip.stripprefix.prefixes=/api/trello"
       - "traefik.http.routers.trello.middlewares=trello-strip"
@@ -162,6 +225,13 @@ services:
       - APP_VERSION=${APP_VERSION:-1.0.0}
     networks:
       - legal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8004/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   # ============================================================
   # 7. LEDES CONVERTER - DOCX to LEDES Format
@@ -172,8 +242,10 @@ services:
       dockerfile: docker/services/ledes-converter/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ledes.rule=PathPrefix(`/api/ledes`)"
-      - "traefik.http.routers.ledes.entrypoints=web"
+      - "traefik.http.routers.ledes.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/ledes`)"
+      - "traefik.http.routers.ledes.entrypoints=websecure"
+      - "traefik.http.routers.ledes.tls=true"
+      - "traefik.http.routers.ledes.tls.certresolver=letsencrypt"
       - "traefik.http.routers.ledes.priority=10"
       - "traefik.http.middlewares.ledes-strip.stripprefix.prefixes=/api/ledes"
       - "traefik.http.routers.ledes.middlewares=ledes-strip"
@@ -199,7 +271,46 @@ services:
       start_period: 10s
 
   # ============================================================
-  # 8. REDIS - Message Broker for Celery
+  # 8. CCUI WebSocket - Claude Code UI Backend
+  # ============================================================
+  api-ccui-ws:
+    build:
+      context: .
+      dockerfile: docker/services/ccui-ws/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      # Chat API endpoint
+      - "traefik.http.routers.ccui-chat.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/chat`)"
+      - "traefik.http.routers.ccui-chat.entrypoints=websecure"
+      - "traefik.http.routers.ccui-chat.tls=true"
+      - "traefik.http.routers.ccui-chat.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ccui-chat.priority=15"
+      # WebSocket endpoint
+      - "traefik.http.routers.ccui-ws.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.ccui-ws.entrypoints=websecure"
+      - "traefik.http.routers.ccui-ws.tls=true"
+      - "traefik.http.routers.ccui-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ccui-ws.priority=20"
+      - "traefik.http.services.ccui-ws.loadbalancer.server.port=8005"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - LOG_LEVEL=INFO
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    networks:
+      - legal-network
+    depends_on:
+      - reverse-proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================================
+  # 9. REDIS - Message Broker for Celery
   # ============================================================
   redis:
     image: redis:7-alpine
