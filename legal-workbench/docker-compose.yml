@@ -152,10 +152,11 @@ services:
       - "traefik.http.services.doc.loadbalancer.server.port=8002"
     volumes:
       - shared-data:/data
-      - templates:/app/templates
+      - templates:/app/custom-templates
     environment:
       - DATA_PATH=/data
       - TEMPLATES_PATH=/app/templates
+      - CUSTOM_TEMPLATES_PATH=/app/custom-templates
       - SENTRY_DSN=${SENTRY_DSN:-}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - APP_VERSION=${APP_VERSION:-1.0.0}
