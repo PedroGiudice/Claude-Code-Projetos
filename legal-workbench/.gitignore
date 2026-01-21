@@ -8,3 +8,6 @@ frontend/coverage/
 
 # Let's Encrypt certificates (generated on server)
 docker/traefik/letsencrypt/acme.json
+
+# Basic Auth credentials (sensitive)
+docker/traefik/.htpasswd
