@@ -27,9 +27,9 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://releases.lexvector.com.br/tauri/{{target}}/{{arch}}/{{current_version}}"
+        "https://github.com/PedroGiudice/lex-vector/releases/latest/download/latest.json"
       ],
-      "pubkey": ""
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAwMENGQjY1MkIyQzk4NzMKUldSem1Dd3JaZnNNQUtJWGlVbHJGM0Z4YXpNSmtlL3hrdUZaUHlYOHlOOVJEd1lRMTE1bWJETDgK"
     }
   },
   "bundle": {
