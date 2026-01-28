@@ -1,6 +1,27 @@
 # ARCHITECTURE.md - North Star
 
-Sistema de automacao juridica brasileira com agentes Python.
+Sistema de automacao juridica brasileira.
+
+---
+
+## FOCO PRINCIPAL: App Tauri (Desktop)
+
+**O produto principal e o app desktop Tauri**, nao os servicos Docker.
+
+| Componente | Prioridade | Descricao |
+|------------|------------|-----------|
+| **App Tauri** | PRINCIPAL | Desktop app (Windows/Linux/Mac) |
+| Docker/APIs | Suporte | Backend para funcoes avancadas (Modal GPU, etc) |
+| DuckDNS/Traefik | Teste | Apenas para testes de integracao |
+
+### Build do App Tauri
+```bash
+cd legal-workbench/frontend
+bun install
+bun run tauri build   # Gera .deb, .rpm, .AppImage
+```
+
+Artefatos em: `src-tauri/target/release/bundle/`
 
 ---
 
@@ -124,22 +145,21 @@ Hooks JS usam `bun run` em vez de `node` (~25% mais rapido). Bun 1.3.4 instalado
 
 | Tecnologia | Versao | Uso |
 |------------|--------|-----|
-| Python | 3.11+ | Backends FastAPI |
-| Bun | 1.3.4 | Frontend build, hooks JS |
-| Node.js | v22 | Fallback |
+| **Tauri** | 2.x | Desktop app framework (PRINCIPAL) |
+| **Rust** | 1.70+ | Backend do Tauri |
 | React | 18.2 | Frontend SPA |
-| TipTap | 3.15 | Rich text editor (Doc Assembler) |
+| Bun | 1.3.4 | Frontend build, hooks JS |
 | Vite | 5.0 | Build tool |
+| TipTap | 3.15 | Rich text editor (Doc Assembler) |
+| Python | 3.11+ | Backends FastAPI, ferramentas |
 | FastAPI | 0.109+ | APIs Python |
-| Docker | 24+ | Containerizacao |
-| Traefik | 3.6.5 | Reverse proxy |
-| Sentry | 2.0.0 | Error tracking |
-| Ubuntu | 24.04 (WSL2) | Dev environment |
+| Modal | - | GPU serverless (Marker extraction) |
+| Docker | 24+ | Containerizacao (dev/test) |
+| Traefik | 3.6.5 | Reverse proxy (dev/test) |
 
 ---
 
-**Ultima atualizacao:** 2026-01-17
-- Adicionada secao "Legal Workbench - Arquitetura de Servicos"
-- Stack atualizada com TipTap, Sentry v2, versoes especificas
-- Frontend atualizado: Vite + React 18 (nao Next.js)
-- Infraestrutura Oracle Cloud documentada
+**Ultima atualizacao:** 2026-01-28
+- FOCO PRINCIPAL definido: App Tauri (desktop)
+- Stack atualizada com Tauri, Rust, Modal
+- Docker/Traefik marcados como dev/test

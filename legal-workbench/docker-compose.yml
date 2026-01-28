@@ -51,7 +51,7 @@ services:
     build: ./frontend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.react.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/`)"
+      - "traefik.http.routers.react.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/`)"
       - "traefik.http.routers.react.entrypoints=websecure"
       - "traefik.http.routers.react.tls=true"
       - "traefik.http.routers.react.tls.certresolver=letsencrypt"
@@ -80,7 +80,7 @@ services:
       dockerfile: docker/services/stj-api/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.stj.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/stj`)"
+      - "traefik.http.routers.stj.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/stj`)"
       - "traefik.http.routers.stj.entrypoints=websecure"
       - "traefik.http.routers.stj.tls=true"
       - "traefik.http.routers.stj.tls.certresolver=letsencrypt"
@@ -118,7 +118,7 @@ services:
       dockerfile: docker/services/text-extractor/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.text.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/text`)"
+      - "traefik.http.routers.text.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/text`)"
       - "traefik.http.routers.text.entrypoints=websecure"
       - "traefik.http.routers.text.tls=true"
       - "traefik.http.routers.text.tls.certresolver=letsencrypt"
@@ -172,7 +172,7 @@ services:
       dockerfile: docker/services/doc-assembler/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.doc.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/doc`)"
+      - "traefik.http.routers.doc.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/doc`)"
       - "traefik.http.routers.doc.entrypoints=websecure"
       - "traefik.http.routers.doc.tls=true"
       - "traefik.http.routers.doc.tls.certresolver=letsencrypt"
@@ -209,7 +209,7 @@ services:
       dockerfile: docker/services/trello-mcp/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.trello.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/trello`)"
+      - "traefik.http.routers.trello.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/trello`)"
       - "traefik.http.routers.trello.entrypoints=websecure"
       - "traefik.http.routers.trello.tls=true"
       - "traefik.http.routers.trello.tls.certresolver=letsencrypt"
@@ -242,7 +242,7 @@ services:
       dockerfile: docker/services/ledes-converter/Dockerfile
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ledes.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/ledes`)"
+      - "traefik.http.routers.ledes.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/ledes`)"
       - "traefik.http.routers.ledes.entrypoints=websecure"
       - "traefik.http.routers.ledes.tls=true"
       - "traefik.http.routers.ledes.tls.certresolver=letsencrypt"
@@ -280,13 +280,13 @@ services:
     labels:
       - "traefik.enable=true"
       # Chat API endpoint
-      - "traefik.http.routers.ccui-chat.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/api/chat`)"
+      - "traefik.http.routers.ccui-chat.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/api/chat`)"
       - "traefik.http.routers.ccui-chat.entrypoints=websecure"
       - "traefik.http.routers.ccui-chat.tls=true"
       - "traefik.http.routers.ccui-chat.tls.certresolver=letsencrypt"
       - "traefik.http.routers.ccui-chat.priority=15"
       # WebSocket endpoint
-      - "traefik.http.routers.ccui-ws.rule=Host(`legalworkbench.duckdns.org`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.ccui-ws.rule=Host(`legalwb.duckdns.org`) && PathPrefix(`/ws`)"
       - "traefik.http.routers.ccui-ws.entrypoints=websecure"
       - "traefik.http.routers.ccui-ws.tls=true"
       - "traefik.http.routers.ccui-ws.tls.certresolver=letsencrypt"
