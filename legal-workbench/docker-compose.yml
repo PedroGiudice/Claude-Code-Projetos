@@ -14,9 +14,8 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.ping.address=:8082"
-      # Redirect HTTP -> HTTPS
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # NOTE: Global HTTP->HTTPS redirect removed to allow Tailscale HTTP access
+      # Individual services use redirect-to-https middleware when needed
       # Let's Encrypt
       - "--certificatesresolvers.letsencrypt.acme.email=pedro@lexvector.com.br"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
@@ -126,6 +125,11 @@ services:
       - "traefik.http.middlewares.text-strip.stripprefix.prefixes=/api/text"
       - "traefik.http.middlewares.text-buffering.buffering.maxRequestBodyBytes=104857600"
       - "traefik.http.routers.text.middlewares=text-strip,text-buffering"
+      # HTTP route for Tailscale/local access (no TLS)
+      - "traefik.http.routers.text-http.rule=PathPrefix(`/api/text`)"
+      - "traefik.http.routers.text-http.entrypoints=web"
+      - "traefik.http.routers.text-http.priority=5"
+      - "traefik.http.routers.text-http.middlewares=text-strip,text-buffering"
       - "traefik.http.services.text.loadbalancer.server.port=8001"
     volumes:
       - shared-data:/data

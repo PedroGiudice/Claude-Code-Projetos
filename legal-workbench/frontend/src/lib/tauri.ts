@@ -3,7 +3,7 @@
  */
 
 // API base URL for production backend
-const PRODUCTION_API = 'http://64.181.162.38';
+const PRODUCTION_API = 'http://100.114.203.28';
 
 /**
  * Detect if running inside Tauri desktop app

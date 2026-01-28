@@ -31,6 +31,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from celery.result import AsyncResult
 import redis.asyncio as aioredis
 
@@ -83,6 +84,15 @@ app = FastAPI(
     description="PDF text extraction service with Marker and pdfplumber engines",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# CORS middleware for Tauri app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Tauri uses tauri://localhost
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Request ID middleware for request tracing

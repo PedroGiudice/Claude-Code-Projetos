@@ -3,6 +3,17 @@
 
 http:
   routers:
+    # Text Extractor HTTP - For Tauri app via Tailscale
+    text-http:
+      rule: "PathPrefix(`/api/text`)"
+      entryPoints:
+        - web
+      priority: 10
+      service: text-extractor
+      middlewares:
+        - text-strip
+        - text-buffering
+
     # Ollama API - For HotCocoa personalization
     ollama:
       rule: "PathPrefix(`/api/ollama`)"
@@ -17,6 +28,16 @@ http:
         certResolver: letsencrypt
 
   middlewares:
+    # Text Extractor middlewares
+    text-strip:
+      stripPrefix:
+        prefixes:
+          - "/api/text"
+
+    text-buffering:
+      buffering:
+        maxRequestBodyBytes: 104857600
+
     # Global Basic Auth for protected routes
     auth:
       basicAuth:
@@ -33,6 +54,11 @@ http:
           - "hotcocoa:$apr1$VbOqcKRh$nTLOfydOQFwadT.2xtsRY1"
 
   services:
+    text-extractor:
+      loadBalancer:
+        servers:
+          - url: "http://10.89.0.57:8001"
+
     ollama:
       loadBalancer:
         servers:
