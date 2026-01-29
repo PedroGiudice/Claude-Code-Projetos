@@ -95,6 +95,46 @@ bun tauri signer generate -p "nova-senha" -w ~/.tauri/lex-vector.key --force
 
 **IMPORTANTE**: Ao regenerar chaves, atualizar `pubkey` em `tauri.conf.json`.
 
+## Workflow: VM Build -> Instalacao Local
+
+O build e feito na VM Oracle (lw-pro) e transferido via Tailscale para a maquina local.
+
+### IPs Tailscale
+
+| Maquina | IP | Papel |
+|---------|-----|-------|
+| VM Oracle (lw-pro) | 100.114.203.28 | Build server |
+| Notebook Linux | 100.102.249.9 | Desktop local |
+
+### 1. Build na VM (executado pelo Claude)
+
+```bash
+cd legal-workbench/frontend
+bun run tauri build --bundles deb
+```
+
+Artefato gerado: `src-tauri/target/release/bundle/deb/Legal Workbench_X.Y.Z_amd64.deb`
+
+### 2. Transferir para maquina local
+
+**No notebook Linux:**
+```bash
+# Copiar .deb da VM
+scp opc@100.114.203.28:/home/opc/lex-vector/legal-workbench/frontend/src-tauri/target/release/bundle/deb/*.deb ~/Downloads/
+
+# Instalar
+sudo dpkg -i ~/Downloads/Legal\ Workbench_*.deb
+```
+
+### 3. Executar
+
+```bash
+# Via launcher do sistema ou:
+legal-workbench
+```
+
+---
+
 ## Instalacao Manual
 
 ```bash
