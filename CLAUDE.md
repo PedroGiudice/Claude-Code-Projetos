@@ -48,6 +48,14 @@ Motivo: Bug no CLI Rust causa crash em char boundaries de emojis (4 bytes).
 
 ### 7. Testes Obrigatórios (Backend)
 Pre-commit executa **ruff + pytest** automaticamente para arquivos Python em `ferramentas/`.
+
+### 8. Podman (não Docker)
+```bash
+podman ps                  # listar containers
+podman logs <container>    # ver logs
+podman compose up -d       # subir serviços
+```
+**NUNCA usar `docker` diretamente** - este ambiente usa Podman.
 - Commit bloqueado se testes falharem
 - Bypass (emergência): `git commit --no-verify`
 - CI também bloqueia merge se testes falharem
