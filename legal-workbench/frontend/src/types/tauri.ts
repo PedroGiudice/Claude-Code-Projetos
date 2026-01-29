@@ -33,6 +33,14 @@ export interface CachedResult {
   cached_at: number; // Unix timestamp
 }
 
+// History entry for display
+export interface HistoryEntry {
+  file_hash: string;
+  file_path: string;
+  cached_at: number; // Unix timestamp
+  file_name: string; // Derived from file_path
+}
+
 // Command result types
 export interface TauriCommands {
   list_process_folders: (args: { rootPath: string }) => Promise<ProcessFolder[]>;
@@ -46,6 +54,7 @@ export interface TauriCommands {
     backendUrl: string;
   }) => Promise<void>;
   hash_file: (args: { filePath: string }) => Promise<string>;
+  list_cache_entries: () => Promise<HistoryEntry[]>;
 }
 
 // Error type from Tauri commands

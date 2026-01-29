@@ -20,6 +20,7 @@ pub fn run() {
             cache::get_cached_result,
             cache::save_cached_result,
             cache::hash_file,
+            cache::list_cache_entries,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,3 +6,4 @@ export { MarginPreview } from './MarginPreview';
 export { IgnoreTermsList } from './IgnoreTermsList';
 export { ProgressOverlay } from './ProgressOverlay';
 export { SettingsModal } from './SettingsModal';
+export { HistoryPanel } from './HistoryPanel';

@@ -117,7 +117,7 @@ def extract_pdf(pdf_bytes: bytes, force_ocr: bool = False, page_range: list = No
         # - disable_image_extraction: True = não inclui imagens no output (só texto)
         # - common_element_threshold: 0.4 = ignora elementos em >40% das páginas (assinaturas, headers)
         # - drop_repeated_text: True = remove texto duplicado
-        # - OcrBuilder_recognition_batch_size: 32 = batch maior = OCR mais rápido em GPU
+        # - OcrBuilder_recognition_batch_size: 64 = batch maior = OCR mais rápido em GPU
         config = {
             "output_format": "markdown",
             "paginate_output": True,
@@ -128,7 +128,7 @@ def extract_pdf(pdf_bytes: bytes, force_ocr: bool = False, page_range: list = No
             "common_element_min_blocks": 5,
             "drop_repeated_text": True,
             # Performance OCR
-            "OcrBuilder_recognition_batch_size": 32,
+            "OcrBuilder_recognition_batch_size": 64,
         }
         if page_range:
             config["page_range"] = page_range
@@ -301,7 +301,7 @@ def extract_pdf_chunked(
                 "common_element_threshold": 0.4,
                 "common_element_min_blocks": 5,
                 "drop_repeated_text": True,
-                "OcrBuilder_recognition_batch_size": 32,
+                "OcrBuilder_recognition_batch_size": 64,
             }
 
             converter = PdfConverter(artifact_dict=models, config=config)
@@ -380,7 +380,7 @@ def extract_pdf_chunked(
                 "common_element_threshold": 0.4,
                 "common_element_min_blocks": 5,
                 "drop_repeated_text": True,
-                "OcrBuilder_recognition_batch_size": 32,
+                "OcrBuilder_recognition_batch_size": 64,
                 "page_range": page_range,
             }
 
@@ -479,7 +479,7 @@ def extract_chunk_t4(pdf_bytes: bytes, page_range: list[int], chunk_id: int, for
             "common_element_threshold": 0.4,
             "common_element_min_blocks": 5,
             "drop_repeated_text": True,
-            "OcrBuilder_recognition_batch_size": 32,
+            "OcrBuilder_recognition_batch_size": 64,
             "page_range": page_range,
         }
 

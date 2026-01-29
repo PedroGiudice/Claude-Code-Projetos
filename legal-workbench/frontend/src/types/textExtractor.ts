@@ -1,5 +1,10 @@
 // Text Extractor Types
 
+import type { HistoryEntry } from './tauri';
+
+// Re-export for convenience
+export type { HistoryEntry };
+
 export type ExtractionEngine = 'marker' | 'pdfplumber';
 export type GpuMode = 'auto' | 'economy' | 'performance';
 export type ExtractionStatus =
@@ -112,6 +117,11 @@ export interface TextExtractorState {
   // Console
   logs: LogEntry[];
 
+  // History
+  history: HistoryEntry[];
+  historyOpen: boolean;
+  historyLoading: boolean;
+
   // Actions
   setFile: (file: File | null) => void;
   setEngine: (engine: ExtractionEngine) => void;
@@ -127,4 +137,9 @@ export interface TextExtractorState {
   reset: () => void;
   addLog: (message: string, level?: LogLevel) => void;
   clearLogs: () => void;
+
+  // History Actions
+  setHistoryOpen: (open: boolean) => void;
+  loadHistory: () => Promise<void>;
+  loadFromHistory: (entry: HistoryEntry) => Promise<void>;
 }

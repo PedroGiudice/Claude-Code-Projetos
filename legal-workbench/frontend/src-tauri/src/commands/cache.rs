@@ -88,3 +88,24 @@ pub async fn hash_file(file_path: String) -> Result<String, AppError> {
 
     Ok(format!("{:x}", hasher.finalize()))
 }
+
+#[tauri::command]
+pub async fn list_cache_entries(app: tauri::AppHandle) -> Result<Vec<serde_json::Value>, AppError> {
+    let db_path = get_db_path(&app);
+    let conn = Connection::open(&db_path)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT file_hash, file_path, cached_at FROM api_cache ORDER BY cached_at DESC LIMIT 50"
+    )?;
+
+    let entries = stmt.query_map([], |row| {
+        Ok(serde_json::json!({
+            "file_hash": row.get::<_, String>(0)?,
+            "file_path": row.get::<_, String>(1)?,
+            "cached_at": row.get::<_, i64>(2)?
+        }))
+    })?;
+
+    let result: Vec<serde_json::Value> = entries.filter_map(|e| e.ok()).collect();
+    Ok(result)
+}

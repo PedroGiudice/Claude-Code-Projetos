@@ -6,6 +6,7 @@ import {
   OutputPanel,
   ConsolePanel,
   SettingsModal,
+  HistoryPanel,
 } from '@/components/text-extractor';
 import {
   Upload,
@@ -22,7 +23,15 @@ import '@/styles/text-extractor.css';
 type ActivePanel = 'upload' | 'config' | 'output' | 'console';
 
 export default function TextExtractorModule() {
-  const { status } = useTextExtractorStore();
+  const {
+    status,
+    history,
+    historyOpen,
+    historyLoading,
+    setHistoryOpen,
+    loadHistory,
+    loadFromHistory,
+  } = useTextExtractorStore();
   const [activePanel, setActivePanel] = useState<ActivePanel>('upload');
   const [consoleCollapsed, setConsoleCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -70,6 +79,11 @@ export default function TextExtractorModule() {
     store.loadPreset(preset as 'lgpd' | 'court' | 'contract');
   };
 
+  const handleOpenHistory = () => {
+    loadHistory();
+    setHistoryOpen(true);
+  };
+
   return (
     <div className="te-module">
       {/* Header */}
@@ -80,7 +94,12 @@ export default function TextExtractorModule() {
           <span className="te-version">v1.0.0</span>
         </div>
         <div className="te-header-right">
-          <button type="button" className="te-header-btn" aria-label="View history">
+          <button
+            type="button"
+            className="te-header-btn"
+            aria-label="View history"
+            onClick={handleOpenHistory}
+          >
             <History size={16} />
             <span>HISTORY</span>
           </button>
@@ -189,6 +208,15 @@ export default function TextExtractorModule() {
 
       {/* Settings Modal */}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* History Panel */}
+      <HistoryPanel
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entries={history}
+        isLoading={historyLoading}
+        onSelect={loadFromHistory}
+      />
     </div>
   );
 }

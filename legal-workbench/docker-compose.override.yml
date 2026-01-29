@@ -1,0 +1,12 @@
+# Override for Podman rootless
+# This file maps the Podman socket for Traefik
+
+services:
+  reverse-proxy:
+    security_opt:
+      - label=disable
+    volumes:
+      - /run/user/1000/podman/podman.sock:/var/run/docker.sock:z
+      - ./docker/traefik:/etc/traefik/dynamic:ro
+      - ./docker/traefik/letsencrypt:/letsencrypt
+      - ./docker/traefik/.htpasswd:/etc/traefik/.htpasswd:ro

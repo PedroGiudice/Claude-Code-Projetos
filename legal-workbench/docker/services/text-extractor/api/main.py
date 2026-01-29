@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+import hashlib
 
 # Add shared module path for logging and Sentry
 sys.path.insert(0, '/app')
@@ -266,11 +267,7 @@ async def extract_text(
     try:
         if file:
             # Handle multipart upload
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
             content = await file.read()
-            temp_file.write(content)
-            temp_file.close()
-            temp_path = temp_file.name
         else:
             # Handle base64 upload
             try:
@@ -278,10 +275,27 @@ async def extract_text(
             except Exception:
                 raise HTTPException(status_code=400, detail="Invalid base64 encoding")
 
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-            temp_file.write(content)
-            temp_file.close()
-            temp_path = temp_file.name
+        # Calcular hash do PDF para cache
+        pdf_hash = hashlib.sha256(content).hexdigest()
+
+        # Verificar cache
+        cached_job_id = await redis_client.get(f"pdf_cache:{pdf_hash}")
+        if cached_job_id:
+            # Buscar resultado do job cacheado
+            cached_result = await get_job(cached_job_id)
+            if cached_result and cached_result.get("status") == JobStatus.COMPLETED.value:
+                logger.info("Cache hit for PDF hash %s, returning job %s", pdf_hash[:8], cached_job_id)
+                return ExtractionResponse(
+                    job_id=cached_job_id,
+                    status=JobStatus.COMPLETED,
+                    created_at=datetime.fromisoformat(cached_result["created_at"])
+                )
+
+        # Salvar arquivo temporario
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        temp_file.write(content)
+        temp_file.close()
+        temp_path = temp_file.name
 
         # Parse options if provided
         import json
@@ -305,11 +319,15 @@ async def extract_text(
         # NOTE: Temp file cleanup is handled by the Celery worker in its finally block
         # Do NOT cleanup here - causes race condition where file is deleted before worker reads it
 
+        # Salvar hash->job_id no cache (TTL 7 dias)
+        await redis_client.setex(f"pdf_cache:{pdf_hash}", 604800, job_id)
+
         logger.info("Extraction job submitted", extra={
             "job_id": job_id,
             "engine": engine.value,
             "gpu_mode": gpu_mode.value,
-            "use_gemini": use_gemini
+            "use_gemini": use_gemini,
+            "pdf_hash": pdf_hash[:8]
         })
 
         return ExtractionResponse(

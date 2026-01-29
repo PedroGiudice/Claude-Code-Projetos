@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 from celery import Celery, Task
+from celery.exceptions import SoftTimeLimitExceeded
 from celery.signals import task_prerun, task_postrun, task_failure
 
 # Configure logger
@@ -64,9 +65,23 @@ class MarkerTimeoutError(Exception):
     pass
 
 
+class ModalTimeoutError(Exception):
+    """Raised when Modal extraction exceeds timeout."""
+    pass
+
+
+# Timeout for Modal calls (30 minutes)
+MODAL_TIMEOUT = int(os.getenv("MODAL_TIMEOUT", "1800"))
+
+
 def marker_timeout_handler(signum, frame):
     """Handle timeout signal for Marker extraction."""
     raise MarkerTimeoutError(f"Marker extraction timed out after {MARKER_TIMEOUT} seconds")
+
+
+def modal_timeout_handler(signum, frame):
+    """Handle timeout signal for Modal extraction."""
+    raise ModalTimeoutError(f"Modal call exceeded {MODAL_TIMEOUT}s")
 
 
 # Singleton for Marker model artifacts (lazy loading)
@@ -285,9 +300,18 @@ def extract_with_modal(pdf_path: str, options: Dict[str, Any], gpu_mode: str = "
         # Use extract_smart which respects gpu_mode
         extract_fn = modal.Function.from_name("lw-marker-extractor", "extract_smart")
 
-        # Call Modal function (blocking) with gpu_mode
+        # Call Modal function (blocking) with gpu_mode and timeout protection
+        logger.info("Setting Modal timeout: %d seconds", MODAL_TIMEOUT)
+        old_handler = signal.signal(signal.SIGALRM, modal_timeout_handler)
+        signal.alarm(MODAL_TIMEOUT)
+
         start_time = time.time()
-        result = extract_fn.remote(pdf_bytes, force_ocr=False, mode=gpu_mode)
+        try:
+            result = extract_fn.remote(pdf_bytes, force_ocr=False, mode=gpu_mode)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+
         modal_time = time.time() - start_time
 
         logger.info("Modal extraction completed in %.2fs", modal_time)
@@ -389,7 +413,11 @@ class ExtractionTask(Task):
     base=ExtractionTask,
     name="extract_pdf",
     time_limit=JOB_TIMEOUT_SECONDS,
-    soft_time_limit=JOB_TIMEOUT_SECONDS - 30
+    soft_time_limit=JOB_TIMEOUT_SECONDS - 30,
+    autoretry_for=(RuntimeError, ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    max_retries=3,
 )
 def extract_pdf(
     self,
@@ -494,6 +522,12 @@ def extract_pdf(
             "pages_processed": pages_processed,
             "execution_time": execution_time
         }
+
+    except SoftTimeLimitExceeded:
+        save_job_log(job_id, "ERROR", "Job timeout - partial state saved")
+        update_job_db(job_id, status="failed", error_message="Timeout exceeded")
+        logger.error("Job %s hit soft time limit", job_id)
+        raise
 
     except Exception as e:
         # Error handling is done by on_failure

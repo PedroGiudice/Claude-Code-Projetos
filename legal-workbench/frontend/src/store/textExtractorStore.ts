@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { textExtractorApi } from '@/services/textExtractorApi';
+import { isTauri } from '@/lib/tauri';
 import type {
   FileInfo,
   Margins,
   LogEntry,
   TextExtractorState,
   GpuMode,
+  HistoryEntry,
 } from '@/types/textExtractor';
 
 // LGPD preset terms
@@ -68,6 +70,11 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
 
   // Console
   logs: [],
+
+  // History
+  history: [] as HistoryEntry[],
+  historyOpen: false,
+  historyLoading: false,
 
   // Actions
   setFile: (file) => {
@@ -144,6 +151,37 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
     }
 
     set({ status: 'processing', progress: 0 });
+
+    // Check local cache first (Tauri only)
+    if (isTauri()) {
+      try {
+        addLog('Checking local cache...', 'info');
+        const { invoke } = await import('@tauri-apps/api/core');
+
+        // Calculate hash from file content
+        const arrayBuffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Check cache
+        const cachedJson = await invoke<string | null>('get_cached_result', { fileHash });
+
+        if (cachedJson) {
+          const result = JSON.parse(cachedJson);
+          set({ result, status: 'success', progress: 100 });
+          addLog('Cache hit! Loaded from local storage.', 'success');
+          addLog(`Original extraction: ${result.pages_processed} pages in ${result.execution_time_seconds.toFixed(1)}s`, 'info');
+          return;
+        }
+
+        addLog('Cache miss. Sending to backend...', 'info');
+      } catch (cacheError) {
+        addLog('Cache check skipped (error)', 'warning');
+        console.error('Cache error:', cacheError);
+      }
+    }
+
     addLog(`Submitting extraction job...`, 'info');
     addLog(`Engine: ${engine}${useGemini ? ' + Gemini' : ''} | GPU: ${gpuMode}`, 'info');
 
@@ -206,6 +244,28 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
                 'info'
               );
             }
+
+            // Save to local cache (Tauri only)
+            const { file } = get();
+            if (isTauri() && file) {
+              try {
+                const { invoke } = await import('@tauri-apps/api/core');
+                const arrayBuffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                await invoke('save_cached_result', {
+                  fileHash,
+                  filePath: file.name,
+                  apiResponse: JSON.stringify(result),
+                  backendUrl: window.location.origin,
+                });
+                addLog('Result cached locally', 'info');
+              } catch (cacheError) {
+                console.error('Failed to cache result:', cacheError);
+              }
+            }
           } catch (resultError: any) {
             set({ status: 'error' });
             addLog('Failed to fetch results', 'error');
@@ -259,6 +319,64 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
 
   clearLogs: () => {
     set({ logs: [] });
+  },
+
+  // History Actions
+  setHistoryOpen: (open) => set({ historyOpen: open }),
+
+  loadHistory: async () => {
+    if (!isTauri()) return;
+
+    set({ historyLoading: true });
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const entries = await invoke<Array<{
+        file_hash: string;
+        file_path: string;
+        cached_at: number;
+      }>>('list_cache_entries');
+
+      const history: HistoryEntry[] = entries.map(e => ({
+        ...e,
+        file_name: e.file_path.split('/').pop() || e.file_path.split('\\').pop() || 'Unknown',
+      }));
+
+      set({ history, historyLoading: false });
+    } catch (error) {
+      console.error('Failed to load history:', error);
+      set({ historyLoading: false });
+    }
+  },
+
+  loadFromHistory: async (entry) => {
+    const { addLog } = get();
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const cachedJson = await invoke<string | null>('get_cached_result', {
+        fileHash: entry.file_hash
+      });
+
+      if (cachedJson) {
+        const result = JSON.parse(cachedJson);
+        set({
+          result,
+          status: 'success',
+          historyOpen: false,
+          fileInfo: {
+            name: entry.file_name,
+            size: 0,
+            type: 'application/pdf'
+          }
+        });
+        addLog(`Loaded from cache: ${entry.file_name}`, 'success');
+        addLog(`Cached at: ${new Date(entry.cached_at * 1000).toLocaleString('pt-BR')}`, 'info');
+      } else {
+        addLog('Cache entry not found', 'error');
+      }
+    } catch (error) {
+      addLog('Failed to load from cache', 'error');
+    }
   },
 }));
 
