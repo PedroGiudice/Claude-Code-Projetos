@@ -422,6 +422,106 @@ def extract_pdf_chunked(
         os.unlink(pdf_path)
 
 
+@app.cls(
+    image=image,
+    gpu="T4",
+    timeout=1800,  # 30 min per chunk
+    volumes={"/cache": model_cache},
+    enable_memory_snapshot=True,
+    experimental_options={"enable_gpu_snapshot": True},
+)
+class T4Extractor:
+    """
+    T4 GPU extractor with memory snapshot for fast cold starts.
+
+    Uses Modal GPU Memory Snapshot to reduce cold start from ~2min to ~10s.
+    The snapshot captures loaded Marker models in VRAM.
+    """
+
+    @modal.enter(snap=True)
+    def warmup(self):
+        """Load models and capture in snapshot."""
+        import os
+        os.environ["HF_HOME"] = "/cache/huggingface"
+        os.environ["TORCH_HOME"] = "/cache/torch"
+        os.environ["MARKER_CACHE_DIR"] = "/cache/marker"
+
+        from marker.models import create_model_dict
+
+        print("[T4Extractor] Loading Marker models for snapshot...")
+        self.models = create_model_dict()
+        print("[T4Extractor] Models loaded and captured in snapshot")
+
+    @modal.method()
+    def extract_chunk(
+        self,
+        pdf_bytes: bytes,
+        page_range: list[int],
+        chunk_id: int,
+        force_ocr: bool = False
+    ) -> dict:
+        """
+        Extract text from a specific page range using T4 GPU.
+
+        Models are pre-loaded via snapshot, eliminating cold start.
+        """
+        import os
+        import time
+        import tempfile
+
+        from marker.converters.pdf import PdfConverter
+        from marker.output import text_from_rendered
+
+        start_time = time.time()
+
+        # Save PDF to temp file
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
+            f.write(pdf_bytes)
+            pdf_path = f.name
+
+        try:
+            print(f"[Chunk {chunk_id}] Processing pages {page_range[0]+1}-{page_range[-1]+1}...")
+
+            # Configure converter (models already loaded via snapshot)
+            config = {
+                "output_format": "markdown",
+                "paginate_output": True,
+                "disable_image_extraction": True,
+                "force_ocr": force_ocr,
+                "common_element_threshold": 0.4,
+                "common_element_min_blocks": 5,
+                "drop_repeated_text": True,
+                "OcrBuilder_recognition_batch_size": 64,
+                "page_range": page_range,
+            }
+
+            converter = PdfConverter(artifact_dict=self.models, config=config)
+
+            convert_start = time.time()
+            rendered = converter(pdf_path)
+            text, images, metadata = text_from_rendered(rendered)
+            convert_time = time.time() - convert_start
+
+            total_time = time.time() - start_time
+            print(f"[Chunk {chunk_id}] Done: {len(text):,} chars in {convert_time:.1f}s")
+
+            return {
+                "chunk_id": chunk_id,
+                "text": text,
+                "pages": len(page_range),
+                "page_range": [page_range[0], page_range[-1]],
+                "native_pages": metadata.get("native_pages", len(page_range)),
+                "ocr_pages": metadata.get("ocr_pages", 0),
+                "chars": len(text),
+                "convert_time": round(convert_time, 2),
+                "total_time": round(total_time, 2),
+                "snapshot_enabled": True,
+            }
+
+        finally:
+            os.unlink(pdf_path)
+
+
 @app.function(
     image=image,
     gpu="T4",  # 16GB VRAM - economia mode
