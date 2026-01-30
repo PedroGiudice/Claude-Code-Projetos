@@ -626,22 +626,8 @@ def extract_pdf_parallel(
     """
     Extract text from PDF using multiple T4 GPUs in parallel.
 
-    Splits the PDF into chunks and processes each chunk on a separate T4 container
-    using Modal's .map() for parallel execution. Faster and cheaper than A100 for
-    large PDFs (>300 pages).
-
-    Cost comparison (700 pages, ~50 min total processing):
-    - A100 sequential: ~$2.04 (35 min at $3.50/h)
-    - Multi-T4 parallel: ~$0.55 (7 workers x 8 min at $0.59/h)
-
-    Args:
-        pdf_bytes: Raw PDF file content
-        force_ocr: Force OCR on all pages
-        chunk_size: Pages per chunk (default: 100)
-        max_workers: Maximum parallel workers (default: 8, Modal limit)
-
-    Returns:
-        dict with combined text and detailed stats
+    Uses T4Extractor with GPU Memory Snapshot for fast cold starts.
+    Each T4 container restores from snapshot in ~10s instead of ~2min.
     """
     import time
     import tempfile
@@ -671,21 +657,22 @@ def extract_pdf_parallel(
 
     # Limit workers
     actual_workers = min(len(chunks), max_workers)
-    print(f"Processing {total_pages} pages in {len(chunks)} chunks using {actual_workers} parallel T4 GPUs")
+    print(f"Processing {total_pages} pages in {len(chunks)} chunks using {actual_workers} parallel T4 GPUs (snapshot-enabled)")
 
-    # Prepare arguments for .map()
-    # Each item is a tuple: (pdf_bytes, page_range, chunk_id, force_ocr)
-    map_args = [
-        (pdf_bytes, chunk, idx, force_ocr)
-        for idx, chunk in enumerate(chunks)
-    ]
+    # Use T4Extractor with GPU snapshot
+    extractor = T4Extractor()
 
-    # Execute in parallel using starmap
-    print(f"Launching {len(chunks)} parallel extraction jobs...")
+    # Prepare arguments for parallel execution
+    print(f"Launching {len(chunks)} parallel extraction jobs with GPU snapshot...")
     parallel_start = time.time()
 
-    # Modal .starmap() unpacks each tuple as arguments
-    results = list(extract_chunk_t4.starmap(map_args))
+    # Use map with the class method
+    results = list(extractor.extract_chunk.map(
+        [pdf_bytes] * len(chunks),
+        chunks,
+        list(range(len(chunks))),
+        [force_ocr] * len(chunks),
+    ))
 
     parallel_time = time.time() - parallel_start
     print(f"All {len(chunks)} chunks completed in {parallel_time:.1f}s")
@@ -718,7 +705,8 @@ def extract_pdf_parallel(
         "workers_used": actual_workers,
         "chunks": len(chunks),
         "chunk_size": chunk_size,
-        "mode": "multi-t4-parallel",
+        "mode": "multi-t4-parallel-snapshot",
+        "snapshot_enabled": True,
         "estimated_cost_usd": round(estimated_cost, 3),
         "chunk_stats": [
             {
