@@ -34,6 +34,7 @@ export interface ExtractOptions {
   engine: ExtractionEngine;
   gpuMode: GpuMode;
   useGemini: boolean;
+  useScript: boolean;
   margins: Margins;
   ignoreTerms: string[];
 }
@@ -103,6 +104,7 @@ export interface TextExtractorState {
   engine: ExtractionEngine;
   gpuMode: GpuMode;
   useGemini: boolean;
+  useScript: boolean;
   margins: Margins;
   ignoreTerms: string[];
 
@@ -127,6 +129,7 @@ export interface TextExtractorState {
   setEngine: (engine: ExtractionEngine) => void;
   setGpuMode: (mode: GpuMode) => void;
   setUseGemini: (useGemini: boolean) => void;
+  setUseScript: (useScript: boolean) => void;
   setMargins: (margins: Margins) => void;
   setIgnoreTerms: (terms: string[]) => void;
   addIgnoreTerm: (term: string) => void;

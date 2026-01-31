@@ -59,6 +59,9 @@ WORKDIR /app
 COPY --chown=appuser:appuser docker/services/text-extractor/api/ /app/api/
 COPY --chown=appuser:appuser docker/services/text-extractor/celery_worker.py /app/
 
+# Copy core module (document cleaning)
+COPY --chown=appuser:appuser docker/services/text-extractor/core/ /app/core/
+
 # Copy shared logging/middleware module
 COPY --chown=appuser:appuser shared/ /app/shared/
 

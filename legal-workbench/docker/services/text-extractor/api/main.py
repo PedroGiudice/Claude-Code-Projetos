@@ -245,6 +245,7 @@ async def extract_text(
     engine: EngineType = Form(EngineType.MARKER),
     gpu_mode: GpuMode = Form(GpuMode.AUTO),
     use_gemini: bool = Form(False),
+    use_script: bool = Form(False),
     options: Optional[str] = Form(None)
 ):
     """
@@ -320,7 +321,7 @@ async def extract_text(
         # Queue Celery task
         from celery_worker import extract_pdf
         task = extract_pdf.apply_async(
-            args=[job_id, temp_path, engine.value, gpu_mode.value, use_gemini, parsed_options],
+            args=[job_id, temp_path, engine.value, gpu_mode.value, use_gemini, use_script, parsed_options],
             task_id=job_id
         )
 
@@ -335,6 +336,7 @@ async def extract_text(
             "engine": engine.value,
             "gpu_mode": gpu_mode.value,
             "use_gemini": use_gemini,
+            "use_script": use_script,
             "pdf_hash": pdf_hash[:8]
         })
 

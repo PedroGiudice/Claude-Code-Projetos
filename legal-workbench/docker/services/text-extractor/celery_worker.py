@@ -13,6 +13,8 @@ from celery import Celery, Task
 from celery.exceptions import SoftTimeLimitExceeded
 from celery.signals import task_prerun, task_postrun, task_failure
 
+from core.cleaner import DocumentCleaner
+
 # Configure logger
 logger = logging.getLogger("celery_worker")
 log_level = logging.DEBUG if os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG" else logging.INFO
@@ -426,6 +428,7 @@ def extract_pdf(
     engine: str,
     gpu_mode: str = "auto",
     use_gemini: bool = False,
+    use_script: bool = False,
     options: Optional[Dict[str, Any]] = None
 ):
     """
@@ -487,6 +490,23 @@ def extract_pdf(
         else:
             raise ValueError(f"Unknown engine: {engine}")
         save_job_log(job_id, "INFO", f"Extraction completed: {pages_processed} pages")
+
+        # Script cleanup (antes do Gemini)
+        if use_script:
+            try:
+                cleaner = DocumentCleaner()
+                result = cleaner.clean(full_text, system="auto")
+                full_text = result.text
+                metadata["script_cleaned"] = True
+                metadata["cleanup_stats"] = {
+                    "system_detected": result.stats.system,
+                    "reduction_pct": result.stats.reduction_pct,
+                    "patterns_removed": result.stats.patterns_removed
+                }
+                save_job_log(job_id, "INFO", f"Script cleanup: {result.stats.reduction_pct:.1f}% removed")
+            except Exception as e:
+                save_job_log(job_id, "WARNING", f"Script cleanup failed: {e}")
+                metadata["script_cleaned"] = False
 
         # Update progress
         update_job_db(job_id, progress=70.0)

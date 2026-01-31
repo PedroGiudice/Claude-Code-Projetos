@@ -57,6 +57,7 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
   engine: 'marker',
   gpuMode: 'auto' as GpuMode,
   useGemini: false,
+  useScript: false,
   margins: { ...DEFAULT_MARGINS },
   ignoreTerms: [...LGPD_PRESET_TERMS],
 
@@ -109,6 +110,8 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
 
   setUseGemini: (useGemini) => set({ useGemini }),
 
+  setUseScript: (useScript) => set({ useScript }),
+
   setMargins: (margins) => set({ margins }),
 
   setIgnoreTerms: (terms) => set({ ignoreTerms: terms }),
@@ -143,7 +146,7 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
   },
 
   submitJob: async () => {
-    const { file, engine, gpuMode, useGemini, margins, ignoreTerms, addLog } = get();
+    const { file, engine, gpuMode, useGemini, useScript, margins, ignoreTerms, addLog } = get();
 
     if (!file) {
       addLog('Error: No file selected', 'error');
@@ -186,13 +189,17 @@ export const useTextExtractorStore = create<TextExtractorState>((set, get) => ({
     }
 
     addLog(`Submitting extraction job...`, 'info');
-    addLog(`Engine: ${engine}${useGemini ? ' + Gemini' : ''} | GPU: ${gpuMode}`, 'info');
+    addLog(
+      `Engine: ${engine}${useGemini ? ' + Gemini' : ''}${useScript ? ' + Script' : ''} | GPU: ${gpuMode}`,
+      'info'
+    );
 
     try {
       const response = await textExtractorApi.submitJob(file, {
         engine,
         gpuMode,
         useGemini,
+        useScript,
         margins,
         ignoreTerms,
       });

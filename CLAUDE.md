@@ -80,6 +80,7 @@ Não crie hooks para cada erro — documente aqui primeiro. Esta seção cresce 
 | 2026-01-13 | Troquei modelo especificado pelo usuário (gemini-3-pro-preview) | **NUNCA substituir modelo indicado pelo usuário - usar EXATAMENTE o especificado** |
 | 2026-01-17 | Build local (bun) não atualiza Docker no OCI - fiz rsync do dist mas container usa build interno | **SEMPRE usar cicd-operator para deploy no LW** - Docker faz build interno, rsync não basta |
 | 2026-01-17 | Assumi que testes falhando = deps faltando. Na verdade, LTE usa Marker (não pytesseract/pdf2image/anthropic) | **VER CLAUDE.md DO MÓDULO antes de rodar testes** - código legado tem imports obsoletos |
+| 2026-01-31 | Versão no Cargo.toml (0.1.0) divergia do tauri.conf.json (0.1.3) - build ia regredir versão | **Tauri: SEMPRE sincronizar versão em Cargo.toml E tauri.conf.json antes de build** |
 
 <!--
 Formato para adicionar:

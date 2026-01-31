@@ -5,7 +5,8 @@ import { isTauri, selectPdfNative } from '@/lib/tauri';
 import clsx from 'clsx';
 
 export function UploadPanel() {
-  const { file, fileInfo, status, useGemini, setFile, setUseGemini } = useTextExtractorStore();
+  const { file, fileInfo, status, useGemini, useScript, setFile, setUseGemini, setUseScript } =
+    useTextExtractorStore();
   const [isDragging, setIsDragging] = useState(false);
 
   const isDisabled = status === 'processing';
@@ -157,6 +158,18 @@ export function UploadPanel() {
           />
           <Sparkles size={14} className="te-icon-muted" />
           <span>Use Gemini enhancement (slower, cleaner output)</span>
+        </label>
+
+        <label className="te-checkbox-label">
+          <input
+            type="checkbox"
+            checked={useScript}
+            onChange={(e) => setUseScript(e.target.checked)}
+            disabled={isDisabled}
+            className="te-checkbox"
+          />
+          <FileText size={14} className="te-icon-muted" />
+          <span>Limpeza final (script)</span>
         </label>
       </div>
     </div>
